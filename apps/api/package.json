@@ -1,0 +1,28 @@
+{
+    "name": "@triathlon/api",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "tsx watch src/server.ts",
+        "build": "tsc && tsx src/server.ts",
+        "start": "node dist/server.js",
+        "test": "vitest run",
+        "type-check": "tsc --noEmit"
+    },
+    "dependencies": {
+        "hono": "^4",
+        "@hono/node-server": "^1",
+        "@supabase/supabase-js": "^2",
+        "@langchain/langgraph": "^0.2",
+        "@langchain/openai": "^0.4",
+        "@langchain/core": "^0.3",
+        "zod": "^3"
+    },
+    "devDependencies": {
+        "typescript": "^5.9",
+        "tsx": "^4",
+        "@types/node": "^22",
+        "vitest": "^3"
+    }
+}

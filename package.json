@@ -1,0 +1,22 @@
+{
+  "name": "triathlon-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Triathlon AI SaaS — Club-Agnostic AI Coaching Platform",
+  "packageManager": "pnpm@10.29.2",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "test:e2e": "turbo test:e2e",
+    "type-check": "turbo type-check",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "clean": "turbo clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "prettier": "^3",
+    "@types/node": "^22"
+  }
+}

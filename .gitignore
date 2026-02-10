@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+dist/
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Capacitor native projects (generated)
+ios/
+android/
+
+# Testing
+coverage/
+test-results/
+playwright-report/
+
+# Supabase
+supabase/.temp/
