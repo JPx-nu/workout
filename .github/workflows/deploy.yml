@@ -34,10 +34,11 @@ jobs:
 
       - name: Prepare Standalone Deployment Package
         run: |
-          cp -r apps/web/.next/standalone deploy-web
-          cp -r apps/web/public deploy-web/apps/web/public
+          # -L dereferences pnpm symlinks so Azure zip deploy works
+          cp -rL apps/web/.next/standalone deploy-web
+          cp -rL apps/web/public deploy-web/apps/web/public
           mkdir -p deploy-web/apps/web/.next/static
-          cp -r apps/web/.next/static deploy-web/apps/web/.next/
+          cp -rL apps/web/.next/static deploy-web/apps/web/.next/
 
       - name: Login to Azure
         uses: azure/login@v2
