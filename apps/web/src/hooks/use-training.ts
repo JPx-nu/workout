@@ -4,7 +4,7 @@
 // SWAP TO: Supabase query on training_plans + events tables
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
     mockTrainingPlan, mockUpcomingEvents,
     type TrainingPlan, type TrainingSession, type UpcomingEvent,
@@ -36,8 +36,10 @@ export function useTraining() {
         );
     };
 
+    const now = useMemo(() => Date.now(), []);
+
     const daysUntilEvent = Math.max(0, Math.ceil(
-        (new Date(plan.eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        (new Date(plan.eventDate).getTime() - now) / (1000 * 60 * 60 * 24),
     ));
 
     const completedCount = sessions.filter((s) => s.done).length;
@@ -46,7 +48,7 @@ export function useTraining() {
     const eventsWithDays: Array<UpcomingEvent & { daysUntil: number }> = events.map((e) => ({
         ...e,
         daysUntil: Math.max(0, Math.ceil(
-            (new Date(e.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+            (new Date(e.date).getTime() - now) / (1000 * 60 * 60 * 24),
         )),
     }));
 

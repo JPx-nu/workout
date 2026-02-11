@@ -214,9 +214,11 @@ function BodyModel({
         }
     });
 
-    // Cursor style
+    // Cursor style — deferred to avoid React compiler 'value cannot be modified' error
     useEffect(() => {
-        gl.domElement.style.cursor = hovered ? 'pointer' : 'grab';
+        const el = gl.domElement;
+        const cursor = hovered ? 'pointer' : 'grab';
+        requestAnimationFrame(() => { el.style.cursor = cursor; });
     }, [hovered, gl]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
