@@ -1,0 +1,88 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20' # Using 20 as established in Azure resources
+  PNPM_VERSION: '10'
+
+jobs:
+  build-and-deploy-web:
+    name: Build & Deploy Frontend (Web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Web App
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      # Prepare standalone deployment package
+      - name: Prepare Web Deployment Package
+        run: |
+          mkdir deploy-web
+          cp -r apps/web/.next/standalone/* deploy-web/
+          cp -r apps/web/public deploy-web/
+          cp -r apps/web/.next/static deploy-web/deploy-web/_next/static
+        # Note: standalone output puts static files in .next/static but expects them at root/_next/static
+
+      - name: Deploy Frontend to Azure
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'jpx-workout-web'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_WEB }}
+          package: './deploy-web'
+
+  build-and-deploy-api:
+    name: Build & Deploy Backend (API)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build API
+        run: pnpm --filter @triathlon/api build
+
+      - name: Prepare API Deployment Package
+        run: |
+          mkdir deploy-api
+          cp -r apps/api/dist deploy-api/
+          cp apps/api/package.json deploy-api/
+          # We need node_modules or install them in Azure. 
+          # For Web Apps, it's often better to zip everything.
+
+      - name: Deploy Backend to Azure
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'jpx-workout-api'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_API }}
+          package: './apps/api' # Using the app folder directly is safer for Node.js Web Apps
