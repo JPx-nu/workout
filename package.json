@@ -15,11 +15,9 @@
     "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@azure/mcp": "^2.0.0-beta.18",
     "@types/node": "^22",
     "prettier": "^3",
     "turbo": "^2"
-  },
-  "dependencies": {
-    "@azure/mcp": "^2.0.0-beta.18"
   }
 }

@@ -8,6 +8,9 @@ importers:
 
   .:
     devDependencies:
+      '@azure/mcp':
+        specifier: ^2.0.0-beta.18
+        version: 2.0.0-beta.18
       '@types/node':
         specifier: ^22
         version: 22.19.10
@@ -136,6 +139,55 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
+
+  '@azure/mcp-darwin-arm64@2.0.0-beta.18':
+    resolution: {integrity: sha512-QJrxv+52H6vYrEGNZcBzlBsCRHDvN6oZdFNmIm+hpTDFeGMKFNJJAdGIAbzyD3sPXFXGJJnW3w3c9yP4pbxZTg==}
+    engines: {node: '>=20.0.0'}
+    cpu: [arm64]
+    os: [darwin]
+    hasBin: true
+
+  '@azure/mcp-darwin-x64@2.0.0-beta.18':
+    resolution: {integrity: sha512-Cvt6ktRJ6pfL66w4sBMCFiZ+uJLmtPgpLyxG3LgXU5uE8apoFCGW+LCICFrZxeM9a9+vucM7g++g3++evMAmQg==}
+    engines: {node: '>=20.0.0'}
+    cpu: [x64]
+    os: [darwin]
+    hasBin: true
+
+  '@azure/mcp-linux-arm64@2.0.0-beta.18':
+    resolution: {integrity: sha512-YmGiHmZysDVNH8r1kZMvL9D51PTDrZBtsRUOFp4EXb/Z7WCvA/zYvfhluyZII8BXjpAxukUPbjjs1GTpSnSOEg==}
+    engines: {node: '>=20.0.0'}
+    cpu: [arm64]
+    os: [linux]
+    hasBin: true
+
+  '@azure/mcp-linux-x64@2.0.0-beta.18':
+    resolution: {integrity: sha512-GKkPs/9VHHrb5JE8HMItC+yf3THO2TACp+LOSAje75ouarUHFBTYbO8nQDSVI9+SBhP2stVX4y20meMQcjlW2A==}
+    engines: {node: '>=20.0.0'}
+    cpu: [x64]
+    os: [linux]
+    hasBin: true
+
+  '@azure/mcp-win32-arm64@2.0.0-beta.18':
+    resolution: {integrity: sha512-UgEygaolW63QLNTTu3FfsZ+hU4oSiC0QwMqkoIWI4+o2j+93t3NBEZ4vbyg0MMRq2JQ6zPpe7gplHd8V+YiZcA==}
+    engines: {node: '>=20.0.0'}
+    cpu: [arm64]
+    os: [win32]
+    hasBin: true
+
+  '@azure/mcp-win32-x64@2.0.0-beta.18':
+    resolution: {integrity: sha512-/EmjQwitDG+yFe69qbh/oMpTqx09970hdrvnFjghTIUkAa9v2xCl6NOlfNeyEkm1Pbvl7KgjmmdwhNww3K4nkQ==}
+    engines: {node: '>=20.0.0'}
+    cpu: [x64]
+    os: [win32]
+    hasBin: true
+
+  '@azure/mcp@2.0.0-beta.18':
+    resolution: {integrity: sha512-/dpGZmpOqnCzc4ZrrokcqxX5jQ8lCTlmtrH1Gu/b0OgK/+XROGfL2pJMDpF5GfSRUSynDZAssJPSrd6ZXoI/IQ==}
+    engines: {node: '>=20.0.0'}
+    cpu: [x64, arm64]
+    os: [linux, darwin, win32]
+    hasBin: true
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -3294,6 +3346,33 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
+  '@azure/mcp-darwin-arm64@2.0.0-beta.18':
+    optional: true
+
+  '@azure/mcp-darwin-x64@2.0.0-beta.18':
+    optional: true
+
+  '@azure/mcp-linux-arm64@2.0.0-beta.18':
+    optional: true
+
+  '@azure/mcp-linux-x64@2.0.0-beta.18':
+    optional: true
+
+  '@azure/mcp-win32-arm64@2.0.0-beta.18':
+    optional: true
+
+  '@azure/mcp-win32-x64@2.0.0-beta.18':
+    optional: true
+
+  '@azure/mcp@2.0.0-beta.18':
+    optionalDependencies:
+      '@azure/mcp-darwin-arm64': 2.0.0-beta.18
+      '@azure/mcp-darwin-x64': 2.0.0-beta.18
+      '@azure/mcp-linux-arm64': 2.0.0-beta.18
+      '@azure/mcp-linux-x64': 2.0.0-beta.18
+      '@azure/mcp-win32-arm64': 2.0.0-beta.18
+      '@azure/mcp-win32-x64': 2.0.0-beta.18
+
   '@babel/code-frame@7.29.0':
     dependencies:
       '@babel/helper-validator-identifier': 7.28.5
@@ -4847,8 +4926,8 @@ snapshots:
       '@next/eslint-plugin-next': 16.1.6
       eslint: 9.39.2(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@9.39.2(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.0.1(eslint@9.39.2(jiti@2.6.1))
@@ -4870,7 +4949,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2(jiti@2.6.1)):
+  eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)):
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
       debug: 4.4.3
@@ -4881,22 +4960,22 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1)):
+  eslint-module-utils@2.12.1(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
       '@typescript-eslint/parser': 8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       eslint: 9.39.2(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
-      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.2(jiti@2.6.1))
+      eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -4907,7 +4986,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.39.2(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.2(jiti@2.6.1))
+      eslint-module-utils: 2.12.1(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.55.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1)))(eslint@9.39.2(jiti@2.6.1))
       hasown: 2.0.2
       is-core-module: 2.16.1
       is-glob: 4.0.3

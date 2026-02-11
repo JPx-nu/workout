@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '20' # Using 20 as established in Azure resources
+  NODE_VERSION: '20'
 
 jobs:
   build-and-deploy-web:
@@ -32,14 +32,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      # Prepare standalone deployment package
-      - name: Prepare Web Deployment Package
+      - name: Prepare Standalone Deployment Package
         run: |
-          mkdir deploy-web
-          cp -r apps/web/.next/standalone/* deploy-web/
-          cp -r apps/web/public deploy-web/
-          cp -r apps/web/.next/static deploy-web/deploy-web/_next/static
-        # Note: standalone output puts static files in .next/static but expects them at root/_next/static
+          cp -r apps/web/.next/standalone deploy-web
+          cp -r apps/web/public deploy-web/apps/web/public
+          mkdir -p deploy-web/apps/web/.next/static
+          cp -r apps/web/.next/static deploy-web/apps/web/.next/
 
       - name: Deploy Frontend to Azure
         uses: azure/webapps-deploy@v3
@@ -72,12 +70,11 @@ jobs:
           mkdir deploy-api
           cp -r apps/api/dist deploy-api/
           cp apps/api/package.json deploy-api/
-          # We need node_modules or install them in Azure. 
-          # For Web Apps, it's often better to zip everything.
+          cd deploy-api && npm install --omit=dev
 
       - name: Deploy Backend to Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'jpx-workout-api'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_API }}
-          package: './apps/api' # Using the app folder directly is safer for Node.js Web Apps
+          package: './deploy-api'
