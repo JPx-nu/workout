@@ -34,18 +34,13 @@ jobs:
 
       - name: Prepare Standalone Deployment Package
         run: |
-          # 1. Copy standalone output (preserves pnpm .pnpm store as-is)
-          cp -r apps/web/.next/standalone deploy-web
+          # pnpm uses symlinks in node_modules which Azure zip deploy breaks.
+          # Use cp -rL to dereference all symlinks into real files.
+          # First remove any dangling/circular symlinks to avoid cp -rL errors.
+          find apps/web/.next/standalone -type l ! -exec test -e {} \; -delete 2>/dev/null || true
+          cp -rL apps/web/.next/standalone deploy-web
 
-          # 2. Dereference symlinked packages in apps/web/node_modules
-          #    (pnpm uses symlinks here → Azure zip deploy breaks them)
-          if [ -d deploy-web/apps/web/node_modules ]; then
-            rsync -aL --delete deploy-web/apps/web/node_modules/ deploy-web/apps/web/node_modules_resolved/
-            rm -rf deploy-web/apps/web/node_modules
-            mv deploy-web/apps/web/node_modules_resolved deploy-web/apps/web/node_modules
-          fi
-
-          # 3. Copy static assets
+          # Copy static assets (no symlinks here)
           cp -r apps/web/public deploy-web/apps/web/public
           mkdir -p deploy-web/apps/web/.next/static
           cp -r apps/web/.next/static deploy-web/apps/web/.next/
