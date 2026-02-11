@@ -34,11 +34,21 @@ jobs:
 
       - name: Prepare Standalone Deployment Package
         run: |
-          # -L dereferences pnpm symlinks so Azure zip deploy works
-          cp -rL apps/web/.next/standalone deploy-web
-          cp -rL apps/web/public deploy-web/apps/web/public
+          # 1. Copy standalone output (preserves pnpm .pnpm store as-is)
+          cp -r apps/web/.next/standalone deploy-web
+
+          # 2. Dereference symlinked packages in apps/web/node_modules
+          #    (pnpm uses symlinks here → Azure zip deploy breaks them)
+          if [ -d deploy-web/apps/web/node_modules ]; then
+            rsync -aL --delete deploy-web/apps/web/node_modules/ deploy-web/apps/web/node_modules_resolved/
+            rm -rf deploy-web/apps/web/node_modules
+            mv deploy-web/apps/web/node_modules_resolved deploy-web/apps/web/node_modules
+          fi
+
+          # 3. Copy static assets
+          cp -r apps/web/public deploy-web/apps/web/public
           mkdir -p deploy-web/apps/web/.next/static
-          cp -rL apps/web/.next/static deploy-web/apps/web/.next/
+          cp -r apps/web/.next/static deploy-web/apps/web/.next/
 
       - name: Login to Azure
         uses: azure/login@v2
