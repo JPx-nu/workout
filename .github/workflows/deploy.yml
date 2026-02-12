@@ -34,13 +34,8 @@ jobs:
 
       - name: Prepare Standalone Deployment Package
         run: |
-          # pnpm uses symlinks in node_modules which Azure zip deploy breaks.
-          # Use cp -rL to dereference all symlinks into real files.
-          # First remove any dangling/circular symlinks to avoid cp -rL errors.
-          find apps/web/.next/standalone -type l ! -exec test -e {} \; -delete 2>/dev/null || true
-          cp -rL apps/web/.next/standalone deploy-web
-
-          # Copy static assets (no symlinks here)
+          # With node-linker=hoisted in .npmrc, node_modules has no symlinks
+          cp -r apps/web/.next/standalone deploy-web
           cp -r apps/web/public deploy-web/apps/web/public
           mkdir -p deploy-web/apps/web/.next/static
           cp -r apps/web/.next/static deploy-web/apps/web/.next/
