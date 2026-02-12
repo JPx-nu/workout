@@ -34,6 +34,8 @@ jobs:
 
       - name: Prepare Standalone Deployment Package
         run: |
+          # WEBSITE_RUN_FROM_PACKAGE=1 must be set in Azure App Settings for this to work correctly.
+          # This ensures the zip is mounted directly, preventing stale files from previous deploys.
           # With node-linker=hoisted in .npmrc, node_modules has no symlinks
           cp -r apps/web/.next/standalone deploy-web
           cp -r apps/web/public deploy-web/apps/web/public
