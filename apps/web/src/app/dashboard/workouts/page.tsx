@@ -31,7 +31,7 @@ export default function WorkoutsPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 overflow-x-auto py-2 -mx-2 px-2 scrollbar-hide">
                 {(['ALL', 'SWIM', 'BIKE', 'RUN', 'STRENGTH'] as const).map((type) => {
                     const isActive = filter === type;
                     const Icon = type === 'ALL' ? Filter : activityIcons[type];
@@ -42,7 +42,7 @@ export default function WorkoutsPage() {
                                 background: type === 'ALL' ? 'oklch(0.65 0.18 170 / 0.2)' : undefined,
                                 boxShadow: '0 0 0 1px currentColor',
                             } : type === 'ALL' ? {
-                                background: 'oklch(0.3 0.01 260 / 0.3)',
+                                background: 'var(--color-glass-bg-subtle)',
                                 color: 'var(--color-text-secondary)',
                             } : { opacity: 0.5 }}>
                             <Icon size={12} /> {type === 'ALL' ? 'All' : type.charAt(0) + type.slice(1).toLowerCase()}
@@ -58,8 +58,8 @@ export default function WorkoutsPage() {
                     const color = activityColors[w.activityType];
 
                     return (
-                        <div key={w.id} className="glass-card p-5">
-                            <div className="flex items-start gap-4">
+                        <div key={w.id} className="glass-card p-4 lg:p-5">
+                            <div className="flex items-start gap-3 lg:gap-4">
                                 <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
                                     style={{ background: `color-mix(in oklch, ${color}, transparent 80%)` }}>
                                     <Icon size={20} style={{ color }} />
@@ -82,7 +82,7 @@ export default function WorkoutsPage() {
                                 </div>
 
                                 {/* Stats */}
-                                <div className="flex gap-6 shrink-0 text-right">
+                                <div className="hidden sm:flex gap-6 shrink-0 text-right">
                                     <div>
                                         <div className="text-sm font-semibold">{formatDuration(w.durationSec)}</div>
                                         <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Duration</div>
@@ -112,6 +112,31 @@ export default function WorkoutsPage() {
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                            {/* Mobile stats row */}
+                            <div className="flex sm:hidden gap-4 mt-3 pt-3 border-t overflow-x-auto" style={{ borderColor: 'var(--color-glass-border)' }}>
+                                <div className="shrink-0">
+                                    <div className="text-sm font-semibold">{formatDuration(w.durationSec)}</div>
+                                    <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Duration</div>
+                                </div>
+                                {w.distanceM && (
+                                    <div className="shrink-0">
+                                        <div className="text-sm font-semibold">{mToKm(w.distanceM)} km</div>
+                                        <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Distance</div>
+                                    </div>
+                                )}
+                                {w.avgHr && (
+                                    <div className="shrink-0">
+                                        <div className="text-sm font-semibold">{w.avgHr} bpm</div>
+                                        <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>HR</div>
+                                    </div>
+                                )}
+                                {w.tss && (
+                                    <div className="shrink-0">
+                                        <div className="text-sm font-semibold">{w.tss}</div>
+                                        <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>TSS</div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );

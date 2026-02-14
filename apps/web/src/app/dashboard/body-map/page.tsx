@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Activity, Heart, Moon, Zap } from 'lucide-react';
 import { useHealth } from '@/hooks/use-health';
 import BodySvg from '@/components/body-map/BodySvg';
@@ -15,10 +16,10 @@ export default function BodyMapPage() {
                 <div>
                     <h1 className="text-2xl font-bold">Body Map</h1>
                     <p className="mt-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                        Option A: Interactive SVG (react-body-highlighter)
+                        Muscle fatigue & recovery tracking
                     </p>
                 </div>
-                <a
+                <Link
                     href="/dashboard/body-map-3d"
                     className="px-4 py-2 rounded-full text-sm font-semibold transition-all"
                     style={{
@@ -28,7 +29,7 @@ export default function BodyMapPage() {
                     }}
                 >
                     Switch to 3D →
-                </a>
+                </Link>
             </div>
 
             {/* Health summary cards */}

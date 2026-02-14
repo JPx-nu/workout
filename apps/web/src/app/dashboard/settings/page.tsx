@@ -42,7 +42,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Profile — @mock */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 lg:p-6">
                 <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"
                     style={{ color: 'var(--color-text-secondary)' }}>
                     <User size={16} /> Profile
@@ -82,13 +82,13 @@ export default function SettingsPage() {
                         <input type="text" defaultValue={profile.timezone} className="glass-input w-full" />
                     </div>
                 </div>
-                <button className="btn-primary mt-5 flex items-center gap-2 text-sm">
+                <button className="btn-primary mt-5 flex items-center justify-center gap-2 text-sm w-full sm:w-auto">
                     <Save size={14} /> Save Profile
                 </button>
             </div>
 
             {/* Connected devices — static list, real integration in Phase 2 */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 lg:p-6">
                 <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"
                     style={{ color: 'var(--color-text-secondary)' }}>
                     <Watch size={16} /> Connected Devices
@@ -96,7 +96,7 @@ export default function SettingsPage() {
                 <div className="space-y-3">
                     {connectedDevices.map((device) => (
                         <div key={device.name}
-                            className="flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.03] transition-colors">
+                            className="flex items-center justify-between p-3 rounded-xl hover-surface transition-colors">
                             <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-lg flex items-center justify-center"
                                     style={{ background: `color-mix(in oklch, ${device.color}, transparent 85%)` }}>
@@ -113,7 +113,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Notifications — interactive toggles */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 lg:p-6">
                 <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"
                     style={{ color: 'var(--color-text-secondary)' }}>
                     <Bell size={16} /> Notifications
@@ -127,11 +127,11 @@ export default function SettingsPage() {
                                 <div className="text-sm font-medium">{pref.label}</div>
                                 <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{pref.description}</div>
                             </div>
-                            <div className="w-10 h-6 rounded-full relative transition-colors shrink-0 ml-4"
+                            <div className="w-12 h-7 rounded-full relative transition-colors shrink-0 ml-4"
                                 style={{
-                                    background: notifications[pref.key] ? 'var(--color-brand)' : 'oklch(0.3 0.01 260)',
+                                    background: notifications[pref.key] ? 'var(--color-brand)' : 'var(--color-glass-bg-subtle)',
                                 }}>
-                                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${notifications[pref.key] ? 'left-5' : 'left-1'
+                                <div className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${notifications[pref.key] ? 'left-6' : 'left-1'
                                     }`} />
                             </div>
                         </button>
@@ -140,7 +140,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Danger zone */}
-            <div className="glass-card p-6" style={{ borderColor: 'oklch(0.5 0.2 25 / 0.3)' }}>
+            <div className="glass-card p-4 lg:p-6" style={{ borderColor: 'oklch(0.5 0.2 25 / 0.3)' }}>
                 <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"
                     style={{ color: 'var(--color-danger)' }}>
                     <LogOut size={16} /> Account
@@ -148,7 +148,7 @@ export default function SettingsPage() {
                 <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
                     Sign out of your account or manage subscription.
                 </p>
-                <button className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover:bg-white/5"
+                <button className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface"
                     style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
                     Sign Out
                 </button>

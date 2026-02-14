@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { Waves, Bike, Footprints, Dumbbell, TrendingUp, Heart, Calendar, ChevronRight } from 'lucide-react';
 import { useWorkouts, formatDuration, mToKm } from '@/hooks/use-workouts';
 import { useTraining } from '@/hooks/use-training';
 import { useHealth } from '@/hooks/use-health';
+import { SpotlightCard } from '@/components/spotlight-card';
 import { useProfile } from '@/hooks/use-profile';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -24,7 +26,7 @@ function ReadinessGauge({ score }: { score: number }) {
         <div className="relative w-36 h-36">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="54" fill="none"
-                    stroke="oklch(0.2 0.01 260)" strokeWidth="8" />
+                    stroke="var(--color-progress-track)" strokeWidth="8" />
                 <circle cx="60" cy="60" r="54" fill="none"
                     stroke="url(#readinessGradient)" strokeWidth="8"
                     strokeLinecap="round"
@@ -84,28 +86,28 @@ export default function DashboardPage() {
             </div>
 
             {/* Stats cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 stagger-children">
                 {statCards.map(({ label, icon: Icon, badgeClass, value, sub }) => (
-                    <div key={label} className="glass-card p-5">
+                    <SpotlightCard key={label} className="p-4 lg:p-5">
                         <div className="flex items-center justify-between mb-3">
                             <span className={`badge ${badgeClass}`}>
                                 <Icon size={12} /> {label}
                             </span>
                         </div>
-                        <div className="text-2xl font-bold">{value}</div>
+                        <div className="text-xl lg:text-2xl font-bold">{value}</div>
                         <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{sub}</div>
-                    </div>
+                    </SpotlightCard>
                 ))}
             </div>
 
             {/* Middle row: Chart + Readiness */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
                 {/* Activity chart */}
-                <div className="glass-card p-6 lg:col-span-2">
+                <SpotlightCard className="p-4 lg:p-6 lg:col-span-2">
                     <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                         Training Volume (min/day)
                     </h3>
-                    <div className="h-56">
+                    <div className="h-44 lg:h-56">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData} barGap={2}>
                                 <XAxis dataKey="day" tick={{ fill: 'oklch(0.5 0.01 260)', fontSize: 12 }}
@@ -114,10 +116,10 @@ export default function DashboardPage() {
                                     axisLine={false} tickLine={false} width={30} />
                                 <Tooltip
                                     contentStyle={{
-                                        background: 'oklch(0.14 0.01 260 / 0.9)',
-                                        border: '1px solid oklch(0.95 0.005 260 / 0.1)',
+                                        background: 'var(--color-glass-bg-subtle)',
+                                        border: '1px solid var(--color-glass-border)',
                                         borderRadius: '0.75rem',
-                                        color: 'white',
+                                        color: 'var(--color-text-primary)',
                                         backdropFilter: 'blur(12px)',
                                     }}
                                 />
@@ -128,11 +130,11 @@ export default function DashboardPage() {
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
-                </div>
+                </SpotlightCard>
 
                 {/* Readiness + Upcoming */}
                 <div className="space-y-6">
-                    <div className="glass-card p-6 flex flex-col items-center">
+                    <div className="glass-card p-4 lg:p-6 flex flex-col items-center">
                         <ReadinessGauge score={healthSnapshot.readinessScore} />
                         <div className="flex items-center gap-2 mt-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                             <Heart size={14} style={{ color: 'var(--color-danger)' }} />
@@ -166,22 +168,22 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent workouts — @mock */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 lg:p-6">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-secondary)' }}>
                         Recent Workouts
                     </h3>
-                    <a href="/dashboard/workouts" className="text-xs font-medium flex items-center gap-1"
+                    <Link href="/dashboard/workouts" className="text-xs font-medium flex items-center gap-1"
                         style={{ color: 'var(--color-brand-light)' }}>
                         View all <ChevronRight size={14} />
-                    </a>
+                    </Link>
                 </div>
                 <div className="space-y-3">
                     {allWorkouts.slice(0, 4).map((w) => {
                         const Icon = activityIcons[w.activityType] ?? Dumbbell;
                         const color = activityColors[w.activityType] ?? 'var(--color-text-muted)';
                         return (
-                            <div key={w.id} className="flex items-center gap-4 p-3 rounded-xl transition-colors hover:bg-white/[0.03]">
+                            <div key={w.id} className="flex items-center gap-4 p-3 rounded-xl transition-colors hover-surface">
                                 <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                                     style={{ background: `color-mix(in oklch, ${color}, transparent 80%)` }}>
                                     <Icon size={16} style={{ color }} />
@@ -204,6 +206,6 @@ export default function DashboardPage() {
                     })}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

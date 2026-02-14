@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { MuscleFatigue } from '@/lib/mock/health';
 
 /* ─── Recovery recommendation based on fatigue level ─── */
@@ -34,39 +36,73 @@ function statusBadge(status: string): { label: string; color: string; bg: string
     }
 }
 
-/* ─── Muscle groups overview ─── */
+/* ─── Muscle groups overview (collapsible) ─── */
 function MuscleList({ fatigueData }: { fatigueData: MuscleFatigue[] }) {
+    const [isOpen, setIsOpen] = useState(false);
     const sorted = [...fatigueData].sort((a, b) => b.level - a.level);
+
     return (
-        <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-muted)' }}>
-                All Muscle Groups
-            </h4>
-            {sorted.map(f => {
-                const badge = statusBadge(f.status);
-                return (
-                    <div
-                        key={f.bodyPart}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all"
-                        style={{ background: 'var(--color-glass-bg)' }}
-                    >
-                        <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                                {f.muscle}
-                            </span>
-                        </div>
-                        <div className="w-20 h-1.5 rounded-full" style={{ background: 'var(--color-progress-track, rgba(255,255,255,0.1))' }}>
+        <div>
+            {/* Clickable header */}
+            <button
+                type="button"
+                onClick={() => setIsOpen(prev => !prev)}
+                className="w-full flex items-center justify-between py-2 group cursor-pointer"
+            >
+                <h4 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                    All Muscle Groups
+                </h4>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs tabular-nums" style={{ color: 'var(--color-text-muted)' }}>
+                        {fatigueData.length}
+                    </span>
+                    <ChevronDown
+                        size={14}
+                        className="transition-transform duration-200"
+                        style={{
+                            color: 'var(--color-text-muted)',
+                            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        }}
+                    />
+                </div>
+            </button>
+
+            {/* Collapsible list */}
+            <div
+                className="overflow-hidden transition-all duration-300 ease-in-out"
+                style={{
+                    maxHeight: isOpen ? `${sorted.length * 52 + 8}px` : '0px',
+                    opacity: isOpen ? 1 : 0,
+                }}
+            >
+                <div className="space-y-2 pt-1">
+                    {sorted.map(f => {
+                        const badge = statusBadge(f.status);
+                        return (
                             <div
-                                className="h-full rounded-full transition-all"
-                                style={{ width: `${f.level}%`, background: badge.color }}
-                            />
-                        </div>
-                        <span className="text-xs font-bold w-8 text-right" style={{ color: badge.color }}>
-                            {f.level}%
-                        </span>
-                    </div>
-                );
-            })}
+                                key={f.bodyPart}
+                                className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all"
+                                style={{ background: 'var(--color-glass-bg)' }}
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                                        {f.muscle}
+                                    </span>
+                                </div>
+                                <div className="w-20 h-1.5 rounded-full" style={{ background: 'var(--color-progress-track, rgba(255,255,255,0.1))' }}>
+                                    <div
+                                        className="h-full rounded-full transition-all"
+                                        style={{ width: `${f.level}%`, background: badge.color }}
+                                    />
+                                </div>
+                                <span className="text-xs font-bold w-8 text-right" style={{ color: badge.color }}>
+                                    {f.level}%
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 }

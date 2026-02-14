@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { mockFatigueData } from '@/lib/mock/health';
 
@@ -40,10 +41,10 @@ export default function BodyMap3DPage() {
                         Body Map — 3D View
                     </h1>
                     <p className="text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                        Option B: Interactive 3D anatomy model (hpfrei/body-anatomy-3d-viewer)
+                        Interactive 3D anatomy view
                     </p>
                 </div>
-                <a
+                <Link
                     href="/dashboard/body-map"
                     className="px-4 py-2 rounded-full text-sm font-semibold transition-all"
                     style={{
@@ -52,8 +53,8 @@ export default function BodyMap3DPage() {
                         color: 'var(--color-text-primary)',
                     }}
                 >
-                    ← Switch to 2D SVG
-                </a>
+                    ← Switch to 2D
+                </Link>
             </div>
 
             {/* 3D Viewer */}

@@ -96,7 +96,7 @@ export default function BodySvg({ fatigueData }: { fatigueData: MuscleFatigue[] 
                         data={exerciseData}
                         style={{ width: '100%', padding: '0' }}
                         svgStyle={{ maxHeight: '62vh' }}
-                        bodyColor="rgba(255,255,255,0.08)"
+                        bodyColor="rgba(255,255,255,0.18)"
                         highlightedColors={[
                             '#22c55e',  // frequency 1 = low (green)
                             '#f59e0b',  // frequency 2 = moderate (amber)

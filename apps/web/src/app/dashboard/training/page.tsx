@@ -27,7 +27,7 @@ export default function TrainingPage() {
 
             {/* Plan overview cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="glass-card p-5 text-center">
+                <div className="glass-card p-4 lg:p-5 text-center">
                     <Trophy size={20} style={{ color: 'var(--color-warning)' }} className="mx-auto mb-2" />
                     <div className="text-2xl font-bold">{daysUntilEvent}</div>
                     <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>Days to race</div>
@@ -36,7 +36,7 @@ export default function TrainingPage() {
                     </div>
                 </div>
 
-                <div className="glass-card p-5 text-center">
+                <div className="glass-card p-4 lg:p-5 text-center">
                     <Calendar size={20} style={{ color: 'var(--color-brand)' }} className="mx-auto mb-2" />
                     <div className="text-2xl font-bold">Week {plan.currentWeek}<span className="text-base font-normal" style={{ color: 'var(--color-text-muted)' }}>/{plan.totalWeeks}</span></div>
                     <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>Plan progress</div>
@@ -45,7 +45,7 @@ export default function TrainingPage() {
                     </div>
                 </div>
 
-                <div className="glass-card p-5 text-center">
+                <div className="glass-card p-4 lg:p-5 text-center">
                     <CheckCircle2 size={20} style={{ color: 'var(--color-success)' }} className="mx-auto mb-2" />
                     <div className="text-2xl font-bold">{completedCount}<span className="text-base font-normal" style={{ color: 'var(--color-text-muted)' }}>/{totalSessions}</span></div>
                     <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>Sessions this week</div>
@@ -53,7 +53,7 @@ export default function TrainingPage() {
             </div>
 
             {/* This week's sessions — @mock, clickable to toggle */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 lg:p-6">
                 <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                     This Week&apos;s Sessions
                 </h3>
@@ -64,7 +64,7 @@ export default function TrainingPage() {
                         return (
                             <button key={i} onClick={() => toggleSession(i)}
                                 className={`w-full flex items-center gap-4 p-3 rounded-xl transition-colors text-left
-                        ${session.done ? 'opacity-60' : 'hover:bg-white/[0.03]'}`}>
+                        ${session.done ? 'opacity-60' : 'hover-surface'}`}>
                                 {session.done ? (
                                     <CheckCircle2 size={20} style={{ color: 'var(--color-success)' }} className="shrink-0" />
                                 ) : (
@@ -85,7 +85,7 @@ export default function TrainingPage() {
                                 <span className="text-xs font-medium shrink-0 px-2 py-1 rounded-lg"
                                     style={{
                                         color: 'var(--color-text-muted)',
-                                        background: 'oklch(0.2 0.01 260 / 0.5)',
+                                        background: 'var(--color-glass-bg-subtle)',
                                     }}>
                                     {session.day}
                                 </span>
@@ -97,13 +97,13 @@ export default function TrainingPage() {
 
             {/* Upcoming events — @mock */}
             {events.length > 0 && (
-                <div className="glass-card p-6">
+                <div className="glass-card p-4 lg:p-6">
                     <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                         Race Calendar
                     </h3>
                     <div className="space-y-3">
                         {events.map((event) => (
-                            <div key={event.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.03] transition-colors">
+                            <div key={event.id} className="flex items-center justify-between p-3 rounded-xl hover-surface transition-colors">
                                 <div>
                                     <div className="text-sm font-medium">{event.name}</div>
                                     <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>

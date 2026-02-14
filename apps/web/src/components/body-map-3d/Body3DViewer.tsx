@@ -95,7 +95,7 @@ function BodyModel({
     fatigueData: MuscleFatigue[];
     onMeshClick: (name: string, bodyPart: string | null) => void;
 }) {
-    const { scene } = useGLTF('/models/body.glb', '/draco/');
+    const { scene } = useGLTF('/workout/models/body.glb', '/workout/draco/');
     const modelRef = useRef<THREE.Group>(null);
     const [hovered, setHovered] = useState<string | null>(null);
     const hoveredRef = useRef<string | null>(null);
@@ -552,4 +552,4 @@ export default function Body3DViewer({ fatigueData }: { fatigueData: MuscleFatig
     );
 }
 
-useGLTF.preload('/models/body.glb', '/draco/');
+useGLTF.preload('/workout/models/body.glb', '/workout/draco/');
