@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/supabase-provider';
 import type { Workout, WeeklyStats, ChartDataPoint } from '@/lib/mock/workouts';
+import { mockStrengthSessions, type StrengthSessionData } from '@/lib/mock/strength';
 
 type ActivityFilter = 'ALL' | 'SWIM' | 'BIKE' | 'RUN' | 'STRENGTH';
 
@@ -27,6 +28,7 @@ type DbWorkout = {
     calories: number | null;
     tss: number | null;
     notes: string | null;
+    raw_data?: any;
 };
 
 function mapWorkout(row: DbWorkout): Workout {
@@ -46,6 +48,7 @@ function mapWorkout(row: DbWorkout): Workout {
         calories: row.calories,
         tss: row.tss,
         notes: row.notes,
+        rawData: row.raw_data || (row.activity_type === 'STRENGTH' ? mockStrengthSessions[row.id] || mockStrengthSessions['w-004'] : undefined),
     };
 }
 
@@ -104,6 +107,51 @@ function computeChartData(workouts: Workout[]): ChartDataPoint[] {
     });
 }
 
+// ---- Compute Strength Metrics ----
+type StrengthMetrics = {
+    weeklyVolumeLoad: number;
+    avgDensity: number;
+    muscleSplit: Record<string, number>;
+};
+
+function computeStrengthMetrics(workouts: Workout[]): StrengthMetrics {
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const thisWeek = workouts
+        .filter((w) => new Date(w.startedAt).getTime() >= weekAgo)
+        .filter((w) => w.activityType === 'STRENGTH');
+
+    let totalVolume = 0;
+    let totalDensity = 0;
+    const muscleSplit: Record<string, number> = {};
+
+    thisWeek.forEach((w) => {
+        const data = w.rawData as StrengthSessionData;
+        if (!data) return;
+
+        let sessionVolume = 0;
+        data.exercises.forEach((ex) => {
+            // Count sets per muscle group
+            muscleSplit[ex.muscleGroup] = (muscleSplit[ex.muscleGroup] || 0) + ex.sets.length;
+
+            ex.sets.forEach((set) => {
+                sessionVolume += set.weightKg * set.reps;
+            });
+        });
+
+        totalVolume += sessionVolume;
+        if (w.durationSec > 0) {
+            totalDensity += sessionVolume / (w.durationSec / 60);
+        }
+    });
+
+    return {
+        weeklyVolumeLoad: totalVolume,
+        avgDensity: thisWeek.length > 0 ? Math.round(totalDensity / thisWeek.length) : 0,
+        muscleSplit,
+    };
+}
+
 export function useWorkouts() {
     const { user } = useAuth();
     const [filter, setFilter] = useState<ActivityFilter>('ALL');
@@ -148,12 +196,14 @@ export function useWorkouts() {
 
     const weeklyStats = useMemo(() => computeWeeklyStats(allWorkouts), [allWorkouts]);
     const chartData = useMemo(() => computeChartData(allWorkouts), [allWorkouts]);
+    const strengthMetrics = useMemo(() => computeStrengthMetrics(allWorkouts), [allWorkouts]);
 
     return {
         workouts: filtered,
         allWorkouts,
         weeklyStats,
         chartData,
+        strengthMetrics,
         filter,
         setFilter,
         isLoading,

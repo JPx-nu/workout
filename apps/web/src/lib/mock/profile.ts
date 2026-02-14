@@ -13,6 +13,7 @@ export type Profile = {
     avatarUrl: string | null;
     timezone: string;
     email: string;
+    defaultView: 'triathlon' | 'strength';
 };
 
 export const mockProfile: Profile = {
@@ -24,4 +25,5 @@ export const mockProfile: Profile = {
     avatarUrl: null,
     timezone: 'Europe/Stockholm',
     email: 'alex@stockholmtri.se',
+    defaultView: 'triathlon',
 };

@@ -17,9 +17,16 @@ const defaultProfile: Profile = {
     avatarUrl: null,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     email: '',
+    defaultView: 'triathlon',
 };
 
-export function useProfile(): { profile: Profile; isLoading: boolean; error: string | null; refetch: () => void } {
+export function useProfile(): {
+    profile: Profile;
+    isLoading: boolean;
+    error: string | null;
+    refetch: () => void;
+    updateDefaultView: (view: 'triathlon' | 'strength') => Promise<void>;
+} {
     const { user } = useAuth();
     const [profile, setProfile] = useState<Profile>(defaultProfile);
     const [isLoading, setIsLoading] = useState(true);
@@ -62,6 +69,7 @@ export function useProfile(): { profile: Profile; isLoading: boolean; error: str
                 avatarUrl: data.avatar_url ?? null,
                 timezone: data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
                 email: user.email ?? '',
+                defaultView: (data.default_view as 'triathlon' | 'strength') ?? 'triathlon',
             });
         }
 
@@ -72,5 +80,25 @@ export function useProfile(): { profile: Profile; isLoading: boolean; error: str
         fetchProfile();
     }, [fetchProfile]);
 
-    return { profile, isLoading, error, refetch: fetchProfile };
+    const updateDefaultView = async (view: 'triathlon' | 'strength') => {
+        if (!user) return;
+
+        // Optimistic update
+        setProfile((prev) => ({ ...prev, defaultView: view }));
+
+        const supabase = createClient();
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ default_view: view })
+            .eq('id', user.id);
+
+        if (updateError) {
+            console.error('Failed to update default view:', updateError);
+            // Revert on error
+            fetchProfile();
+            throw updateError;
+        }
+    };
+
+    return { profile, isLoading, error, refetch: fetchProfile, updateDefaultView };
 }

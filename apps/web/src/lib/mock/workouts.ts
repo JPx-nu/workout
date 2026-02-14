@@ -20,6 +20,7 @@ export type Workout = {
     calories: number | null;
     tss: number | null;
     notes: string | null;
+    rawData?: any;
 };
 
 export type WeeklyStats = {

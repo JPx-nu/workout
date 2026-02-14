@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Bell, Watch, Shield, Save, Smartphone, Heart, LogOut } from 'lucide-react';
+import { User, Bell, Watch, Shield, Save, Smartphone, Heart, LogOut, LayoutDashboard } from 'lucide-react';
 import { useProfile } from '@/hooks/use-profile';
 import { useState } from 'react';
 
@@ -12,7 +12,7 @@ const connectedDevices = [
 ];
 
 export default function SettingsPage() {
-    const { profile } = useProfile(); // @mock
+    const { profile, updateDefaultView } = useProfile(); // @mock
 
     const [notifications, setNotifications] = useState({
         training: true,
@@ -87,6 +87,42 @@ export default function SettingsPage() {
                 </button>
             </div>
 
+            {/* Dashboard Preferences */}
+            <div className="glass-card p-4 lg:p-6">
+                <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"
+                    style={{ color: 'var(--color-text-secondary)' }}>
+                    <LayoutDashboard size={16} /> Dashboard View
+                </h3>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => updateDefaultView('triathlon')}
+                        className={`flex-1 p-3 rounded-xl border text-left transition-all ${profile.defaultView === 'triathlon'
+                            ? 'bg-primary/10 border-primary'
+                            : 'border-transparent hover-surface'
+                            }`}
+                        style={{
+                            borderColor: profile.defaultView === 'triathlon' ? 'var(--color-brand)' : undefined
+                        }}
+                    >
+                        <div className="font-medium text-sm mb-1">Triathlon</div>
+                        <div className="text-xs text-muted">Swim, Bike, Run focus</div>
+                    </button>
+                    <button
+                        onClick={() => updateDefaultView('strength')}
+                        className={`flex-1 p-3 rounded-xl border text-left transition-all ${profile.defaultView === 'strength'
+                            ? 'bg-primary/10 border-primary'
+                            : 'border-transparent hover-surface'
+                            }`}
+                        style={{
+                            borderColor: profile.defaultView === 'strength' ? 'var(--color-strength)' : undefined
+                        }}
+                    >
+                        <div className="font-medium text-sm mb-1">Strength</div>
+                        <div className="text-xs text-muted">Lifting & Recovery focus</div>
+                    </button>
+                </div>
+            </div>
+
             {/* Connected devices — static list, real integration in Phase 2 */}
             <div className="glass-card p-4 lg:p-6">
                 <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"
@@ -153,6 +189,6 @@ export default function SettingsPage() {
                     Sign Out
                 </button>
             </div>
-        </div>
+        </div >
     );
 }
