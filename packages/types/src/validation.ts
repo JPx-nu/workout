@@ -24,6 +24,7 @@ export const ChatMessageInput = z.object({
     message: sanitizedString
         .pipe(z.string().min(1, 'Message cannot be empty').max(4000, 'Message too long (max 4000 characters)')),
     conversationId: z.uuid().optional(),
+    imageUrls: z.array(z.url()).max(3, 'Maximum 3 images allowed').optional(),
 });
 export type ChatMessageInput = z.infer<typeof ChatMessageInput>;
 
@@ -102,6 +103,8 @@ export const EnvSchema = z.object({
     SUPABASE_JWT_SECRET: z.string().min(1),
     AZURE_OPENAI_ENDPOINT: z.url().optional(),
     AZURE_OPENAI_API_KEY: z.string().optional(),
+    AZURE_OPENAI_DEPLOYMENT: z.string().optional(),
+    AZURE_OPENAI_API_VERSION: z.string().optional(),
     WEB_URL: z.url().optional(),
     API_URL: z.url().optional(),
     PORT: z.string().regex(/^\d+$/).optional(),

@@ -132,6 +132,7 @@ export interface ChatMessage {
         sources?: string[];
         confidence?: number;
         intent?: ChatIntent;
+        imageUrls?: string[];
     };
     created_at: string;
 }

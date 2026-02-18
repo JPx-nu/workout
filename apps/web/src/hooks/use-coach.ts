@@ -1,89 +1,393 @@
 // ============================================================
-// @mock — Service hook: useCoach
-// STATUS: Using mock data
-// SWAP TO: Supabase messages table + LangGraph streaming API
+// Hook: useCoach — AI Coach integration with SSE streaming
+// Replaces mock data with real API calls
 // ============================================================
 
-import { useState, useCallback } from 'react';
-import { mockConversation, suggestedPrompts, type Message } from '@/lib/mock';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { suggestedPrompts, type Message, type Conversation } from '@/lib/mock/coach';
+
+// API base URL — the Hono API server
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
 
 /**
- * Returns AI coach conversation state and actions.
- *
- * @mock Currently returns hardcoded mock data + simulated typing.
- * @real Will use:
- *   - supabase.from('messages').select() for history
- *   - POST /api/ai/chat with streaming response for new messages
- *   - supabase.channel('messages').on('INSERT', ...) for realtime
+ * AI Coach hook with real API integration.
+ * Streams responses via SSE and persists conversations.
  */
 export function useCoach() {
-    const [messages, setMessages] = useState<Message[]>(mockConversation.messages);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [isTyping, setIsTyping] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [input, setInput] = useState('');
+    const [conversationId, setConversationId] = useState<string | undefined>(undefined);
+    const [conversations, setConversations] = useState<
+        Array<{ id: string; title: string | null; updated_at: string; message_count: number }>
+    >([]);
+    const [activeToolCalls, setActiveToolCalls] = useState<string[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+    const abortRef = useRef<AbortController | null>(null);
+    const supabase = useMemo(() => createClient(), []);
 
-    const sendMessage = useCallback(() => {
+    // ── Load conversations list ──────────────────────────────
+    const loadConversations = useCallback(async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) return;
+
+            const res = await fetch(`${API_BASE}/api/ai/conversations`, {
+                headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setConversations(data.conversations ?? []);
+            }
+        } catch {
+            // Silently fail — conversations sidebar is non-critical
+        }
+    }, [supabase]);
+
+    // Load on mount
+    useEffect(() => {
+        loadConversations();
+    }, [loadConversations]);
+
+    // ── Load a specific conversation's messages ──────────────
+    const loadConversation = useCallback(
+        async (convId: string) => {
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.access_token) {
+                    setError('Not authenticated');
+                    return;
+                }
+
+                // Load messages from the messages table
+                const { data, error: dbError } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('conversation_id', convId)
+                    .order('created_at', { ascending: true });
+
+                if (dbError) throw dbError;
+
+                const msgs: Message[] = (data ?? []).map((m: { id: string; role: string; content: string; created_at: string; metadata: Record<string, unknown> | null }) => ({
+                    id: m.id,
+                    role: m.role as 'user' | 'assistant' | 'system',
+                    content: m.content,
+                    createdAt: m.created_at,
+                    metadata: m.metadata as Message['metadata'],
+                }));
+
+                setMessages(msgs);
+                setConversationId(convId);
+            } catch (err) {
+                setError('Failed to load conversation');
+                console.error('Load conversation error:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [supabase]
+    );
+
+    // ── Start a new conversation ─────────────────────────────
+    const newConversation = useCallback(() => {
+        setMessages([]);
+        setConversationId(undefined);
+        setError(null);
+        setActiveToolCalls([]);
+        setAttachedFiles([]);
+    }, []);
+
+    // ── File attachment management ───────────────────────────
+    const MAX_IMAGES = 3;
+    const MAX_SIZE_MB = 10;
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+    const attachFile = useCallback((file: File) => {
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            setError('Only JPEG, PNG, WebP, and GIF images are supported.');
+            return;
+        }
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            setError(`File too large (max ${MAX_SIZE_MB}MB).`);
+            return;
+        }
+        setAttachedFiles((prev) => {
+            if (prev.length >= MAX_IMAGES) {
+                setError(`Max ${MAX_IMAGES} images per message.`);
+                return prev;
+            }
+            return [...prev, file];
+        });
+        setError(null);
+    }, []);
+
+    const removeFile = useCallback((index: number) => {
+        setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+    }, []);
+
+    /** Upload files to Supabase Storage, returns signed URLs (bucket is private) */
+    const uploadImages = useCallback(async (files: File[], convId: string): Promise<string[]> => {
+        const urls: string[] = [];
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id ?? 'anon';
+
+        for (const file of files) {
+            const ext = file.name.split('.').pop() || 'jpg';
+            const path = `${userId}/${convId}/${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+
+            const { data, error: uploadErr } = await supabase.storage
+                .from('chat-images')
+                .upload(path, file, { contentType: file.type });
+
+            if (uploadErr) {
+                console.error('Upload error:', uploadErr);
+                continue;
+            }
+
+            if (data) {
+                const { data: signedUrlData, error: signErr } = await supabase.storage
+                    .from('chat-images')
+                    .createSignedUrl(data.path, 3600); // 1-hour TTL
+                if (!signErr && signedUrlData?.signedUrl) {
+                    urls.push(signedUrlData.signedUrl);
+                }
+            }
+        }
+        return urls;
+    }, [supabase]);
+
+    // ── Send message with SSE streaming ──────────────────────
+    const sendMessage = useCallback(async () => {
         const text = input.trim();
         if (!text || isTyping) return;
 
-        // Add user message
+        const filesToUpload = [...attachedFiles];
+        setAttachedFiles([]);
+        setError(null);
+
+        // Add user message optimistically (with image previews)
+        const previewUrls = filesToUpload.map((f) => URL.createObjectURL(f));
         const userMsg: Message = {
             id: `msg-${Date.now()}`,
             role: 'user',
             content: text,
             createdAt: new Date().toISOString(),
+            metadata: previewUrls.length > 0 ? { imageUrls: previewUrls } : undefined,
         };
         setMessages((prev) => [...prev, userMsg]);
         setInput('');
-
-        // @mock — simulate AI response with realistic delay
         setIsTyping(true);
-        setTimeout(() => {
-            const aiMsg: Message = {
-                id: `msg-${Date.now() + 1}`,
-                role: 'assistant',
-                content: getMockResponse(text),
-                createdAt: new Date().toISOString(),
-                metadata: {
-                    sources: ['workouts:recent', 'health_metrics:hrv'],
-                    confidence: 0.85,
-                    toolCalls: ['get_athlete_context'],
-                },
-            };
-            setMessages((prev) => [...prev, aiMsg]);
+        setActiveToolCalls([]);
+
+        // Get auth token
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+            setError('Not authenticated. Please sign in.');
             setIsTyping(false);
-        }, 1500 + Math.random() * 1500);
-    }, [input, isTyping]);
+            return;
+        }
+
+        // Upload images to Supabase Storage if any
+        let imageUrls: string[] = [];
+        if (filesToUpload.length > 0) {
+            const tempConvId = conversationId || 'pending';
+            imageUrls = await uploadImages(filesToUpload, tempConvId);
+            // Update user message with final URLs (replace blob: previews)
+            if (imageUrls.length > 0) {
+                setMessages((prev) =>
+                    prev.map((m) =>
+                        m.id === userMsg.id
+                            ? { ...m, metadata: { ...m.metadata, imageUrls } }
+                            : m
+                    )
+                );
+            }
+        }
+
+        // Abort any previous streaming request
+        if (abortRef.current) {
+            abortRef.current.abort();
+        }
+        abortRef.current = new AbortController();
+
+        try {
+            const res = await fetch(`${API_BASE}/api/ai/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    message: text,
+                    conversationId,
+                    ...(imageUrls.length > 0 && { imageUrls }),
+                }),
+                signal: abortRef.current.signal,
+            });
+
+            // Handle non-SSE responses (safety blocks, config errors)
+            const contentType = res.headers.get('content-type') ?? '';
+            if (contentType.includes('application/json')) {
+                const data = await res.json();
+                const aiMsg: Message = {
+                    id: `msg-${Date.now() + 1}`,
+                    role: 'assistant',
+                    content: data.content || data.error || 'No response',
+                    createdAt: new Date().toISOString(),
+                    metadata: data.metadata,
+                };
+                setMessages((prev) => [...prev, aiMsg]);
+                if (data.conversationId) setConversationId(data.conversationId);
+                setIsTyping(false);
+                return;
+            }
+
+            // Process SSE stream
+            const reader = res.body?.getReader();
+            const decoder = new TextDecoder();
+            let assistantContent = '';
+            let assistantMsgId = `msg-${Date.now() + 1}`;
+
+            // Add empty assistant message that we'll fill in
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: assistantMsgId,
+                    role: 'assistant',
+                    content: '',
+                    createdAt: new Date().toISOString(),
+                },
+            ]);
+
+            if (!reader) {
+                setError('Failed to read response stream');
+                setIsTyping(false);
+                return;
+            }
+
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                // Parse SSE events from buffer
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+                let eventType = '';
+                for (const line of lines) {
+                    if (line.startsWith('event: ')) {
+                        eventType = line.slice(7).trim();
+                    } else if (line.startsWith('data: ')) {
+                        const dataStr = line.slice(6);
+                        try {
+                            const data = JSON.parse(dataStr);
+
+                            switch (eventType) {
+                                case 'metadata':
+                                    if (data.conversationId) {
+                                        setConversationId(data.conversationId);
+                                    }
+                                    break;
+
+                                case 'delta':
+                                    assistantContent += data.content || '';
+                                    setMessages((prev) =>
+                                        prev.map((m) =>
+                                            m.id === assistantMsgId
+                                                ? { ...m, content: assistantContent }
+                                                : m
+                                        )
+                                    );
+                                    break;
+
+                                case 'tool':
+                                    setActiveToolCalls((prev) => [...prev, data.tool]);
+                                    break;
+
+                                case 'correction':
+                                    assistantContent = data.content;
+                                    setMessages((prev) =>
+                                        prev.map((m) =>
+                                            m.id === assistantMsgId
+                                                ? { ...m, content: assistantContent }
+                                                : m
+                                        )
+                                    );
+                                    break;
+
+                                case 'error':
+                                    setError(data.message);
+                                    assistantContent = data.message;
+                                    setMessages((prev) =>
+                                        prev.map((m) =>
+                                            m.id === assistantMsgId
+                                                ? { ...m, content: assistantContent }
+                                                : m
+                                        )
+                                    );
+                                    break;
+
+                                case 'done':
+                                    // Refresh conversations list
+                                    loadConversations();
+                                    break;
+                            }
+                        } catch {
+                            // Skip malformed JSON
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            if ((err as Error).name === 'AbortError') return;
+
+            setError('Failed to connect to AI Coach. Please try again.');
+            console.error('Chat error:', err);
+        } finally {
+            setIsTyping(false);
+            abortRef.current = null;
+        }
+    }, [input, isTyping, conversationId, supabase, loadConversations]);
+
+    // ── Stop streaming ───────────────────────────────────────
+    const stopStreaming = useCallback(() => {
+        if (abortRef.current) {
+            abortRef.current.abort();
+            abortRef.current = null;
+            setIsTyping(false);
+        }
+    }, []);
 
     return {
+        // State
         messages,
         isTyping,
+        isLoading,
         input,
         setInput,
-        sendMessage,
+        conversationId,
+        conversations,
+        activeToolCalls,
+        error,
         suggestedPrompts,
-        isLoading: false,
+        attachedFiles,
+
+        // Actions
+        sendMessage,
+        stopStreaming,
+        loadConversation,
+        newConversation,
+        attachFile,
+        removeFile,
     };
-}
-
-// @mock — contextual mock responses
-function getMockResponse(query: string): string {
-    const lower = query.toLowerCase();
-
-    if (lower.includes('tired') || lower.includes('fatigue') || lower.includes('heavy')) {
-        return 'Based on your recent data, your training load has been elevated:\n\n• **Weekly TSS**: 685 (target 600)\n• **HRV**: Trending down 8% over 3 days\n• **Sleep**: Below average at 6.2h\n\nI recommend a recovery day tomorrow. Consider an easy swim or light yoga instead of the planned intervals. Your body needs deload to absorb the training adaptations.\n\n💡 *This insight came from your Garmin HRV data + sleep logs.*';
-    }
-
-    if (lower.includes('taper') || lower.includes('race')) {
-        return '🏁 **Taper Plan for Ironman 70.3 Jönköping (June 14)**\n\nStarting 2 weeks out:\n\n**Week -2**: Reduce volume by 30%, maintain intensity\n- Swim: 5km total (down from 8km)\n- Bike: 140km total (down from 210km)\n- Run: 28km total (down from 42km)\n\n**Week -1 (Race Week)**: Reduce by 60%\n- Mon: Easy 30min swim\n- Tue: 45min bike with 3×5min race pace\n- Wed: 20min shakeout jog\n- Thu: Rest\n- Fri: 15min easy swim + visualization\n- Sat: Rest + race prep\n- Sun: 🏊🚴🏃 RACE DAY!\n\nWant me to save this to your training plan?';
-    }
-
-    if (lower.includes('swim') || lower.includes('technique')) {
-        return '🏊 **Swim Analysis (Last 30 Days)**\n\n| Metric | Value | Trend |\n|---|---|---|\n| Avg Pace | 1:52/100m | ↓ 3% faster |\n| SWOLF | 42 | ↓ 2 points (good!) |\n| Distance/Week | 8.5km | → Stable |\n| Threshold | 1:45/100m | ↓ 4% improvement |\n\nYour catch phase has improved significantly based on FORM data. Focus areas:\n1. **Bilateral breathing** — you favor right side\n2. **Open water sighting** — practice every 3rd session\n3. **Drafting position** — useful for race day\n\n*Data source: FORM Smart Goggles*';
-    }
-
-    if (lower.includes('eat') || lower.includes('nutrition') || lower.includes('food')) {
-        return '🍌 **Pre-Ride Nutrition Guide**\n\n**3 hours before** (if possible):\n- 600-800 calories\n- Oatmeal with banana, honey, and peanut butter\n- Coffee if tolerated\n\n**1 hour before**:\n- 200-300 calories\n- Energy bar or banana\n- Sip water (250-500ml)\n\n**During ride** (for rides >90min):\n- 60-90g carbs/hour\n- 500-750ml fluid/hour\n- Alternate between gels and solid food\n\nBased on your 74.5kg weight, you need ~48-67g carbs/hour minimum.\n\n⚠️ *Practice your race nutrition on long training rides!*';
-    }
-
-    return 'I\'m analyzing your recent training data and health metrics to provide a personalized recommendation.\n\nBased on what I can see:\n- Your training consistency is excellent (14 sessions this week)\n- HRV is slightly below baseline\n- Sleep quality could improve\n\nCould you be more specific about what you\'d like me to help with? I can assist with:\n\n1. 📊 Training load analysis\n2. 🧘 Recovery recommendations\n3. 📋 Plan adjustments\n4. 🏊 Technique feedback\n5. 🍎 Nutrition guidance\n\n*Powered by GraphRAG — combining your personal data with coaching knowledge.*';
 }

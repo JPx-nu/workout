@@ -14,6 +14,7 @@ export type Message = {
         sources?: string[];
         confidence?: number;
         toolCalls?: string[];
+        imageUrls?: string[];
     };
 };
 
