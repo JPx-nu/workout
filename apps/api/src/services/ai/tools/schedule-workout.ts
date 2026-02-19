@@ -41,7 +41,7 @@ export function createScheduleWorkoutTool(
                     .eq('status', 'active')
                     .order('created_at', { ascending: false })
                     .limit(1)
-                    .single();
+                    .maybeSingle();
 
                 const { data, error } = await client
                     .from('planned_workouts')
