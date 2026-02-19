@@ -12,14 +12,15 @@ export const AI_CONFIG = {
         apiKey: process.env.AZURE_OPENAI_API_KEY || '',
         /** Deployment name for the chat model (e.g. "gpt-5-mini") */
         deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-5-mini',
-        /** API version — v1 GA (August 2025) */
-        apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2025-08-01',
+        /** API version — preview (supports gpt-5-mini on AIServices) */
+        apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-12-01-preview',
     },
 
     /** Model behavior */
     model: {
-        temperature: 0.4,
-        maxTokens: 2048,
+        /** gpt-5-mini only supports temperature=1 (the default) */
+        temperature: 1,
+        maxCompletionTokens: 2048,
         /** Max messages to load from conversation history for context */
         historyLimit: 40,
     },

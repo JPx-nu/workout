@@ -10,7 +10,7 @@ import { SystemMessage, HumanMessage, AIMessage, type BaseMessage } from '@langc
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_CONFIG } from '../../config/ai.js';
 import { buildSystemPrompt } from './prompt.js';
-import { getProfile } from './supabase.js';
+import { getProfile, getDailyLogs } from './supabase.js';
 import { createAllTools } from './tools/index.js';
 
 /**
@@ -31,8 +31,15 @@ export async function createAgent(
     userId: string,
     clubId: string
 ) {
-    // Load profile for system prompt context
+    // Load profile + today's readiness data for system prompt context
     const profile = await getProfile(client, userId);
+    const today = new Date().toISOString().split('T')[0];
+    const dailyLogs = await getDailyLogs(client, userId, {
+        fromDate: today,
+        toDate: today,
+        limit: 1,
+    });
+    const todayLog = dailyLogs.length > 0 ? dailyLogs[0] : null;
 
     // Create LLM instance — uses AzureChatOpenAI for Azure Foundry compatibility
     const llm = new AzureChatOpenAI({
@@ -41,8 +48,9 @@ export async function createAgent(
         azureOpenAIApiDeploymentName: AI_CONFIG.azure.deploymentName,
         azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
         temperature: AI_CONFIG.model.temperature,
-        maxTokens: AI_CONFIG.model.maxTokens,
         streaming: AI_CONFIG.features.streaming,
+        // gpt-5-mini requires max_completion_tokens instead of max_tokens
+        modelKwargs: { max_completion_tokens: AI_CONFIG.model.maxCompletionTokens },
     });
 
     // Create tools bound to user context
@@ -52,7 +60,7 @@ export async function createAgent(
     const llmWithTools = llm.bindTools(tools);
 
     // Build the system prompt
-    const systemMessage = new SystemMessage(buildSystemPrompt(profile));
+    const systemMessage = new SystemMessage(buildSystemPrompt(profile, todayLog));
 
     // ── Define graph nodes ────────────────────────────────────
 

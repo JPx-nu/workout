@@ -5,16 +5,33 @@ import { secureHeaders } from 'hono/secure-headers';
 import { serve } from '@hono/node-server';
 import { webhookRoutes } from './routes/webhooks/index.js';
 import { aiRoutes } from './routes/ai/chat.js';
+import { plannedWorkoutsRoutes } from './routes/planned-workouts/index.js';
 import { jwtAuth, extractClaims } from './middleware/auth.js';
 import { rateLimit, RATE_LIMITS } from './middleware/rate-limit.js';
 
 const app = new Hono();
 
+// ── Global error handler ───────────────────────────────────────
+app.onError((err, c) => {
+    console.error('Unhandled error:', err);
+    return c.json({
+        error: err.message || 'Internal Server Error',
+        stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+    }, 500);
+});
+
 // ── Global middleware ──────────────────────────────────────────
 app.use('*', logger());
 app.use('*', secureHeaders());
 app.use('*', cors({
-    origin: process.env.WEB_URL || 'http://localhost:3000',
+    origin: (origin) => {
+        // Allow any localhost origin in development (Next.js, Flutter web, etc.)
+        if (origin && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+            return origin;
+        }
+        // Allow configured WEB_URL in production
+        return process.env.WEB_URL || 'http://localhost:3000';
+    },
     credentials: true,
 }));
 
@@ -38,6 +55,7 @@ app.use('/api/ai/*', rateLimit(RATE_LIMITS.aiChat));
 
 // Route groups
 app.route('/api/ai', aiRoutes);
+app.route('/api/planned-workouts', plannedWorkoutsRoutes);
 
 // ── Start server ───────────────────────────────────────────────
 const port = parseInt(process.env.PORT || '8787');

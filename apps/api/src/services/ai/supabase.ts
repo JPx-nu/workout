@@ -8,6 +8,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 /**
@@ -22,11 +23,12 @@ export function createAdminClient(): SupabaseClient {
 
 /**
  * Creates a Supabase client scoped to a specific user's JWT.
- * RLS policies are enforced — the client can only access data
- * the user is authorized to see.
+ * Uses the anon key so RLS policies are enforced and auth.jwt()
+ * correctly returns the user's token claims (including app_metadata).
+ * The service_role key bypasses RLS, which breaks requesting_club_id().
  */
 export function createUserClient(userJwt: string): SupabaseClient {
-    return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: { persistSession: false },
         global: {
             headers: { Authorization: `Bearer ${userJwt}` },

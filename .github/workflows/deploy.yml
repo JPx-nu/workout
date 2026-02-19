@@ -11,7 +11,7 @@ env:
 
 jobs:
   build-and-deploy-web:
-    name: Build & Deploy Frontend (Web)
+    name: Build & Deploy Frontend (Web + Flutter)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,24 +23,36 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      # ── Flutter SDK ──────────────────────────────────
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # ── Build Next.js ────────────────────────────────
       - name: Build Web App
         run: pnpm --filter web build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
+      # ── Build Flutter Web ────────────────────────────
+      - name: Build Flutter Web App
+        working-directory: apps/mobile
+        run: flutter build web --release --base-href /app/ --no-wasm-dry-run
+
+      # ── Prepare Deployment Package ───────────────────
       - name: Prepare Standalone Deployment Package
         run: |
-          # WEBSITE_RUN_FROM_PACKAGE=1 must be set in Azure App Settings for this to work correctly.
-          # This ensures the zip is mounted directly, preventing stale files from previous deploys.
-          # With node-linker=hoisted in .npmrc, node_modules has no symlinks
           cp -r apps/web/.next/standalone deploy-web
           cp -r apps/web/public deploy-web/apps/web/public
           mkdir -p deploy-web/apps/web/.next/static
           cp -r apps/web/.next/static deploy-web/apps/web/.next/
+          # Bundle Flutter web app at /app
+          mkdir -p deploy-web/apps/web/public/app
+          cp -r apps/mobile/build/web/* deploy-web/apps/web/public/app/
 
       - name: Login to Azure
         uses: azure/login@v2

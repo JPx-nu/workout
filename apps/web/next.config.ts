@@ -45,7 +45,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' capacitor://localhost ionic://localhost https://*.supabase.co wss://*.supabase.co https://*.openai.azure.com https://accounts.google.com",
+              "connect-src 'self' http://localhost:* capacitor://localhost ionic://localhost https://*.supabase.co wss://*.supabase.co https://*.openai.azure.com https://accounts.google.com",
               "frame-src 'self' https://accounts.google.com",
               "worker-src 'self' blob:",
               "frame-ancestors 'none'",

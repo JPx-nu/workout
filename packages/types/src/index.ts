@@ -155,3 +155,6 @@ export interface StandardWorkout {
     tss?: number;
     raw_data: Record<string, unknown>;
 }
+
+// ── Planned Workout Types ──────────────────────────────────────
+export * from './planned-workout.js';

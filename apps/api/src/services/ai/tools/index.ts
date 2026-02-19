@@ -12,6 +12,8 @@ import { createGetProgressReportTool } from './get-progress-report.js';
 import { createLogWorkoutTool } from './log-workout.js';
 import { createUpdateSorenessTool } from './update-soreness.js';
 import { createModifyTrainingPlanTool } from './modify-training-plan.js';
+import { createGenerateWorkoutPlanTool } from './generate-workout-plan.js';
+import { createScheduleWorkoutTool } from './schedule-workout.js';
 
 /**
  * Creates all agent tools bound to a specific user's auth context.
@@ -30,5 +32,9 @@ export function createAllTools(client: SupabaseClient, userId: string, clubId: s
         createLogWorkoutTool(client, userId, clubId),
         createUpdateSorenessTool(client, userId, clubId),
         createModifyTrainingPlanTool(client, userId),
+        // Training plan & scheduling tools
+        createGenerateWorkoutPlanTool(client, userId, clubId),
+        createScheduleWorkoutTool(client, userId, clubId),
     ];
 }
+

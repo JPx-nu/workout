@@ -46,14 +46,6 @@ const MEDICAL_DISCLAIMER = `\n\n---\n⚕️ *This is AI-generated guidance for i
 
 const LOW_CONFIDENCE_DISCLAIMER = `\n\n---\n⚠️ *I have limited data to support this recommendation. Please verify with your coach or healthcare provider.*`;
 
-// ── PII Patterns ───────────────────────────────────────────────
-
-const PII_PATTERNS = [
-    { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: '[EMAIL REDACTED]' },
-    { pattern: /\b(?:\+?[\d\s-]{7,15})\b/g, replacement: '[PHONE REDACTED]' },
-    { pattern: /\b\d{6,8}-?\d{4}\b/g, replacement: '[PERSONAL ID REDACTED]' }, // Swedish personnummer pattern
-] as const;
-
 // ── Interfaces ─────────────────────────────────────────────────
 
 export interface SafetyCheckResult {
@@ -127,16 +119,7 @@ export function processOutput(
 ): SafetyProcessedOutput {
     let processed = content;
     let disclaimerAdded = false;
-    let piiRedacted = false;
-
-    // PII redaction
-    for (const { pattern, replacement } of PII_PATTERNS) {
-        const regex = new RegExp(pattern.source, pattern.flags);
-        if (regex.test(processed)) {
-            processed = processed.replace(new RegExp(pattern.source, pattern.flags), replacement);
-            piiRedacted = true;
-        }
-    }
+    const piiRedacted = false;
 
     // Detect medical content in output
     const outputLower = processed.toLowerCase();

@@ -60,6 +60,7 @@ aiRoutes.post('/chat', async (c) => {
     // ── Auth & Supabase client ───────────────────────────────
     const auth = getAuth(c);
     const jwt = c.req.header('Authorization')?.replace('Bearer ', '') || '';
+    // User-scoped client — carries the user's JWT so auth.uid() works for RLS
     const client = createUserClient(jwt);
 
     // ── Conversation persistence ─────────────────────────────
