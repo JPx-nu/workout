@@ -74,3 +74,15 @@
 - All env vars documented in `.env.example`
 - Client-side env vars MUST be prefixed with `NEXT_PUBLIC_`
 - Server-only secrets (service role keys, API keys) MUST NEVER have `NEXT_PUBLIC_` prefix
+
+## Command Safety
+- The following CLI tools are **approved for auto-run** without user confirmation:
+  - `npm`, `npx`, `pnpm` — package management and script execution
+  - `node`, `tsc`, `eslint` — runtime, type checking, linting
+  - `git` — version control operations
+  - `turbo` — monorepo task runner
+  - `az` — Azure CLI for deployments
+  - `next` — Next.js CLI (dev, build, start)
+  - `wrangler` — Cloudflare/API deployment
+- These are non-destructive development tools used daily in this project
+- Still exercise caution with `rm`, `del`, `format`, or any command that deletes data
