@@ -28,7 +28,7 @@ type DbWorkout = {
     calories: number | null;
     tss: number | null;
     notes: string | null;
-    raw_data?: any;
+    raw_data?: Record<string, unknown>;
 };
 
 function mapWorkout(row: DbWorkout): Workout {
@@ -126,7 +126,7 @@ function computeStrengthMetrics(workouts: Workout[]): StrengthMetrics {
     const muscleSplit: Record<string, number> = {};
 
     thisWeek.forEach((w) => {
-        const data = w.rawData as StrengthSessionData;
+        const data = w.rawData as unknown as StrengthSessionData;
         if (!data) return;
 
         let sessionVolume = 0;

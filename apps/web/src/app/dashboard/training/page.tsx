@@ -146,8 +146,7 @@ export default function TrainingCalendarPage() {
     const { workouts, isLoading, refetch, updateWorkout, deleteWorkout } =
         usePlannedWorkouts(from, to);
 
-    const eventsServiceRef = useRef(createEventsServicePlugin());
-    const eventsService = eventsServiceRef.current;
+    const eventsService = useMemo(() => createEventsServicePlugin(), []);
 
     // Build Schedule-X calendar categories from activity types
     const calendars = useMemo(() => {

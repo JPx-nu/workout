@@ -6,6 +6,9 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recha
 import Link from 'next/link';
 import { formatDuration, mToKm } from '@/hooks/use-workouts';
 import type { Workout, WeeklyStats, ChartDataPoint } from '@/lib/mock/workouts';
+import type { HealthSnapshot } from '@/lib/mock/health';
+
+type UpcomingEvent = { id: string; name: string; date: string; daysUntil: number };
 
 const activityIcons: Record<string, typeof Waves> = {
     SWIM: Waves, BIKE: Bike, RUN: Footprints, STRENGTH: Dumbbell,
@@ -49,8 +52,8 @@ function ReadinessGauge({ score }: { score: number }) {
 interface TriathlonViewProps {
     weeklyStats: WeeklyStats;
     chartData: ChartDataPoint[];
-    healthSnapshot: any;
-    events: any[];
+    healthSnapshot: HealthSnapshot;
+    events: UpcomingEvent[];
     allWorkouts: Workout[];
 }
 

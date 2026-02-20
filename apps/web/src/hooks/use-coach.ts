@@ -253,7 +253,7 @@ export function useCoach() {
             const reader = res.body?.getReader();
             const decoder = new TextDecoder();
             let assistantContent = '';
-            let assistantMsgId = `msg-${Date.now() + 1}`;
+            const assistantMsgId = `msg-${Date.now() + 1}`;
 
             // Add empty assistant message that we'll fill in
             setMessages((prev) => [

@@ -18,7 +18,7 @@ export type Workout = {
     calories: number | null;
     tss: number | null;
     notes: string | null;
-    rawData?: any;
+    rawData?: Record<string, unknown>;
 };
 
 export type WeeklyStats = {
