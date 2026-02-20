@@ -74,14 +74,15 @@ aiRoutes.post('/chat', async (c) => {
     // Load history for context
     const history = await loadHistory(client, conversation.id, AI_CONFIG.model.historyLimit);
 
-    // Save user message immediately (include image URLs in metadata)
+    // Save user message and conditionally update title concurrently for lower latency
     const userMsgMetadata = imageUrls.length > 0 ? { imageUrls } : undefined;
-    await saveMessages(client, conversation.id, [{ role: 'user', content: message, metadata: userMsgMetadata }]);
 
-    // Update conversation title on first message
-    if (history.length === 0) {
-        await updateConversationTitle(client, conversation.id, message);
-    }
+    const savePromise = saveMessages(client, conversation.id, [{ role: 'user', content: message, metadata: userMsgMetadata }]);
+    const titlePromise = history.length === 0
+        ? updateConversationTitle(client, conversation.id, message)
+        : Promise.resolve();
+
+    await Promise.all([savePromise, titlePromise]);
 
     // ── Intent classification (for metadata) ─────────────────
     const intent = classifyIntent(message);
@@ -112,6 +113,8 @@ aiRoutes.post('/chat', async (c) => {
             ];
 
             let fullResponse = '';
+            let isRevisePass = false;
+            let notifiedReflection = false;
 
             // Stream the agent's response
             const agentStream = await agent.stream(
@@ -136,11 +139,33 @@ aiRoutes.post('/chat', async (c) => {
                     msgChunk.content &&
                     typeof msgChunk.content === 'string'
                 ) {
+                    if (isRevisePass) {
+                        // Clear the frontend and reset our accumulated buffer for the new draft
+                        await stream.writeSSE({ event: 'clear', data: JSON.stringify({}) });
+                        fullResponse = '';
+                        isRevisePass = false;
+                        notifiedReflection = false;
+                    }
+
                     fullResponse += msgChunk.content;
                     await stream.writeSSE({
                         event: 'delta',
                         data: JSON.stringify({ content: msgChunk.content }),
                     });
+                }
+
+                if (metadata.langgraph_node === 'reflectNode') {
+                    isRevisePass = true;
+                    if (!notifiedReflection) {
+                        notifiedReflection = true;
+                        await stream.writeSSE({
+                            event: 'tool',
+                            data: JSON.stringify({
+                                tool: 'Self-Evaluation',
+                                status: 'completed',
+                            }),
+                        });
+                    }
                 }
 
                 // Notify frontend about tool usage

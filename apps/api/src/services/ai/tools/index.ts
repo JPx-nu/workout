@@ -21,6 +21,8 @@ import { createSaveMemoryTool } from './save-memory.js';
 import { createAnalyzeBiometricTrendsTool } from './analyze-biometric-trends.js';
 import { createAnalyzeWorkoutsTool } from './analyze-workouts.js';
 import { createPredictInjuryRiskTool } from './predict-injury-risk.js';
+import { createGetSquadLeaderboardTool } from './get-squad-leaderboard.js';
+import { createPassBatonTool } from './pass-baton.js';
 
 /**
  * Creates all agent tools bound to a specific user's auth context.
@@ -35,6 +37,9 @@ export function createAllTools(client: SupabaseClient, userId: string, clubId: s
         createGetHealthMetricsTool(client, userId),
         createGetTrainingPlanTool(client, userId),
         createGetProgressReportTool(client, userId),
+        // Gamification tools
+        createGetSquadLeaderboardTool(client, userId),
+        createPassBatonTool(client, userId),
         // Write tools (require user confirmation via prompt)
         createLogWorkoutTool(client, userId, clubId),
         createUpdateSorenessTool(client, userId, clubId),

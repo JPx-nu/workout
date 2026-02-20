@@ -52,9 +52,11 @@ ${readinessContext}
 ${memoriesContext}
 ${STRENGTH_COACHING}
 ${TRAINING_PLAN_COACHING}
+${GAMIFICATION_COACHING}
 ${TOOL_GUIDELINES}
 ${SAFETY_RULES}`;
 }
+
 
 // ── Prompt sections ───────────────────────────────────────────
 
@@ -114,6 +116,19 @@ const TRAINING_PLAN_COACHING = `
 - Use \`modify_training_plan\` for changing existing plans (swap days, adjust intensity, skip weeks)
 - Before making changes, briefly confirm what they want changed: "Move your long run to Sunday instead?"
 - After changes, let them know it's reflected in the calendar`;
+
+const GAMIFICATION_COACHING = `
+## Social & Gamification
+
+### Squad Leaderboards
+- When the user asks how they are doing compared to their friends or squad, or needs motivation, use \`get_squad_leaderboard\`
+- Hype up the competition! E.g. "You're only 20 minutes behind Alex this week! Let's get that run in."
+- If they are #1, congratulate them for leading the pack.
+
+### Relay Events (Pass the Baton)
+- If they mention completing a leg of a relay or wanting to pass the baton, use \`pass_baton\`
+- You can get the target athlete IDs from the leaderboard if you need to pass it to someone specific (e.g. "pass it to Alex")
+- Confirm the handoff with a fun, team-oriented message! 🏃‍♂️💨`;
 
 const TOOL_GUIDELINES = `
 ## Tool Usage

@@ -82,9 +82,9 @@ async function runTest() {
             console.log(`🤖 AI: ${aiMessage.content}\n`);
 
             // Log tool calls if any
-            if (aiMessage.tool_calls && aiMessage.tool_calls.length > 0) {
+            if ('tool_calls' in aiMessage && Array.isArray((aiMessage as any).tool_calls) && (aiMessage as any).tool_calls.length > 0) {
                 console.log(`🛠️ Tools Called:`);
-                aiMessage.tool_calls.forEach((tc: any) => {
+                (aiMessage as any).tool_calls.forEach((tc: any) => {
                     console.log(`   - ${tc.name} (${JSON.stringify(tc.args)})`);
                 });
             }

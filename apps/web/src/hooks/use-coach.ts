@@ -314,6 +314,17 @@ export function useCoach() {
                                     setActiveToolCalls((prev) => [...prev, data.tool]);
                                     break;
 
+                                case 'clear':
+                                    assistantContent = '';
+                                    setMessages((prev) =>
+                                        prev.map((m) =>
+                                            m.id === assistantMsgId
+                                                ? { ...m, content: assistantContent }
+                                                : m
+                                        )
+                                    );
+                                    break;
+
                                 case 'correction':
                                     assistantContent = data.content;
                                     setMessages((prev) =>

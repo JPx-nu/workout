@@ -31,15 +31,19 @@ export async function createAgent(
     userId: string,
     clubId: string
 ) {
-    // Load profile + today's readiness data + memories for system prompt context
-    const profile = await getProfile(client, userId);
-    const memories = await getRecentMemories(client, userId, 10);
+    // Load profile + today's readiness data + memories concurrently for faster initialization
     const today = new Date().toISOString().split('T')[0];
-    const dailyLogs = await getDailyLogs(client, userId, {
-        fromDate: today,
-        toDate: today,
-        limit: 1,
-    });
+
+    const [profile, memories, dailyLogs] = await Promise.all([
+        getProfile(client, userId),
+        getRecentMemories(client, userId, 10),
+        getDailyLogs(client, userId, {
+            fromDate: today,
+            toDate: today,
+            limit: 1,
+        })
+    ]);
+
     const todayLog = dailyLogs.length > 0 ? dailyLogs[0] : null;
 
     // Create LLM instance — uses AzureChatOpenAI for Azure Foundry compatibility
@@ -75,8 +79,44 @@ export async function createAgent(
         return { messages: [response] };
     }
 
-    /** Route: check if the LLM wants to call tools or is done */
-    function shouldContinue(state: typeof MessagesAnnotation.State): 'tools' | typeof END {
+    /** Reflection node: evaluates the draft response */
+    async function reflectNode(state: typeof MessagesAnnotation.State) {
+        const lastMessage = state.messages[state.messages.length - 1];
+        if (!lastMessage || lastMessage._getType() !== 'ai' || !lastMessage.content) {
+            return { messages: [] };
+        }
+
+        const reflectionPrompt = new SystemMessage(
+            `You are a Head Coach reviewing an AI assistant's drafted response to an athlete.
+Evaluate the draft below for tone, safety, accuracy, and conciseness.
+Does it directly answer the user's question without rambling?
+If the draft is good, reply with exactly "ACCEPT".
+If the draft needs changes, provide a brief, actionable critique for the assistant to revise it.
+Do NOT rewrite the response yourself, just provide the critique.`
+        );
+
+        const response = await llm.invoke([
+            reflectionPrompt,
+            new HumanMessage(`Draft response:\n${lastMessage.content}`)
+        ]);
+
+        const critique = typeof response.content === 'string' ? response.content.trim() : '';
+
+        // If accepted, route to END
+        if (critique.toUpperCase() === 'ACCEPT' || critique.includes('ACCEPT')) {
+            return { messages: [] };
+        }
+
+        // If critiqued, add it as a user message so the llmCall sees the feedback and regenerates
+        return {
+            messages: [
+                new HumanMessage(`Head Coach critique: ${critique}. Please revise your response.`)
+            ]
+        };
+    }
+
+    /** Route: check if the LLM wants to call tools or is done drafting */
+    function shouldContinue(state: typeof MessagesAnnotation.State): 'tools' | 'reflectNode' {
         const lastMessage = state.messages[state.messages.length - 1];
 
         // If the last message has tool_calls, route to the tool node
@@ -89,6 +129,18 @@ export async function createAgent(
             return 'tools';
         }
 
+        return 'reflectNode';
+    }
+
+    /** Route: check if reflection accepted the draft */
+    function checkReflection(state: typeof MessagesAnnotation.State): 'llmCall' | typeof END {
+        const lastMessage = state.messages[state.messages.length - 1];
+
+        // If the last message is from Human (the critique), we must regenerate
+        if (lastMessage && lastMessage._getType() === 'human' && typeof lastMessage.content === 'string' && lastMessage.content.includes('Head Coach critique:')) {
+            return 'llmCall';
+        }
+
         return END;
     }
 
@@ -99,9 +151,14 @@ export async function createAgent(
     const graph = new StateGraph(MessagesAnnotation)
         .addNode('llmCall', llmCall)
         .addNode('tools', toolNode)
+        .addNode('reflectNode', reflectNode)
         .addEdge('__start__', 'llmCall')
         .addConditionalEdges('llmCall', shouldContinue, {
             tools: 'tools',
+            reflectNode: 'reflectNode',
+        })
+        .addConditionalEdges('reflectNode', checkReflection, {
+            llmCall: 'llmCall',
             [END]: END,
         })
         .addEdge('tools', 'llmCall')

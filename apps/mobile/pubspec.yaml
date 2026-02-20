@@ -37,6 +37,8 @@ dependencies:
 
   # Health
   health: ^11.0.0
+  vital_core: any
+  vital_health: any
 
   # Utilities
   freezed_annotation: ^3.0.0
