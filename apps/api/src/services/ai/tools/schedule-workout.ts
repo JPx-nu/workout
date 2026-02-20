@@ -43,6 +43,9 @@ export function createScheduleWorkoutTool(
                     .limit(1)
                     .maybeSingle();
 
+                console.log('[schedule_workout] Active plan:', activePlan?.id || 'none');
+                console.log('[schedule_workout] Inserting into planned_workouts for user:', userId, 'club:', clubId);
+
                 const { data, error } = await client
                     .from('planned_workouts')
                     .insert({
@@ -65,6 +68,7 @@ export function createScheduleWorkoutTool(
                     .select()
                     .single();
 
+                console.log('[schedule_workout] Insert result:', { data, error });
                 if (error) throw new Error(error.message);
 
                 const emoji = {
@@ -75,6 +79,7 @@ export function createScheduleWorkoutTool(
                 return `${emoji} Scheduled "${input.title}" on ${input.plannedDate}${input.plannedTime ? ` at ${input.plannedTime}` : ''}${input.durationMin ? ` (${input.durationMin} min)` : ''}${input.intensity ? ` — ${input.intensity}` : ''}. Check your training calendar!`;
 
             } catch (error) {
+                console.error('[schedule_workout] Error:', error);
                 const msg = error instanceof Error ? error.message : 'Unknown error';
                 return `❌ Failed to schedule workout: ${msg}`;
             }

@@ -67,7 +67,7 @@ export function createLogWorkoutTool(client: SupabaseClient, userId: string, clu
                 athlete_id: userId,
                 club_id: clubId,
                 activity_type: input.activityType,
-                source: 'COACH',
+                source: 'MANUAL',
                 started_at: startedAt,
                 duration_s: input.durationMin ? input.durationMin * 60 : null,
                 distance_m: input.distanceKm ? input.distanceKm * 1000 : null,
