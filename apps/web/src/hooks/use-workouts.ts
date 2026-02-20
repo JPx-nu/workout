@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/supabase-provider';
 import type { Workout, WeeklyStats, ChartDataPoint } from '@/lib/mock/workouts';
-import { mockStrengthSessions, type StrengthSessionData } from '@/lib/mock/strength';
+import type { StrengthSessionData } from '@/lib/mock/strength';
 
 type ActivityFilter = 'ALL' | 'SWIM' | 'BIKE' | 'RUN' | 'STRENGTH';
 
@@ -48,7 +48,7 @@ function mapWorkout(row: DbWorkout): Workout {
         calories: row.calories,
         tss: row.tss,
         notes: row.notes,
-        rawData: row.raw_data || (row.activity_type === 'STRENGTH' ? mockStrengthSessions[row.id] || mockStrengthSessions['w-004'] : undefined),
+        rawData: row.raw_data ?? undefined,
     };
 }
 

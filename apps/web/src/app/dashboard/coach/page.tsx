@@ -44,7 +44,7 @@ export default function CoachPage() {
                     </div>
                 </div>
 
-                {/* Messages — @mock */}
+                {/* Messages */}
                 <div className="flex-1 overflow-y-auto space-y-5 pb-4 min-h-0 scrollbar-hide">
                     <div className="max-w-4xl mx-auto w-full space-y-5">
                         {messages.map((msg) => (
@@ -234,7 +234,7 @@ export default function CoachPage() {
                 </div>
             </div>
 
-            {/* ═══ Conversation history sidebar — @mock ═══ */}
+            {/* ═══ Conversation history sidebar ═══ */}
             <div className="hidden xl:flex flex-col w-72 shrink-0 border-l" style={{ borderColor: 'var(--color-glass-border)' }}>
                 {/* Sidebar header */}
                 <div className="px-5 py-4 shrink-0 border-b" style={{ borderColor: 'var(--color-glass-border)' }}>

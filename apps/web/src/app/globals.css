@@ -148,6 +148,13 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Prevent iOS auto-zoom on input focus (accessibility-friendly) */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 /* Mesh gradient background — slow ambient drift for "alive" feel */
 body::before {
   content: '';

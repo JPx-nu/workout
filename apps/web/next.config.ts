@@ -1,11 +1,19 @@
 import type { NextConfig } from "next";
 import path from "node:path";
+import withSerwistInit from "@serwist/next";
+
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+});
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
   output: 'standalone',
   basePath: '/workout',
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  turbopack: {},   // Silence dev-mode warning about webpack config from withSerwist()
 
   // ── Security Headers ─────────────────────────────────────────
   async headers() {
@@ -59,4 +67,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);

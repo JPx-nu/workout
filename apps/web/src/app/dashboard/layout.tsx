@@ -11,6 +11,7 @@ import { useProfile } from '@/hooks/use-profile';
 import { useAuth } from '@/components/supabase-provider';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { MobileNav } from '@/components/mobile-nav';
+import { InstallPrompt } from '@/components/install-prompt';
 
 const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -154,6 +155,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {children}
                 </div>
             </main>
+
+            {/* PWA install prompt */}
+            <InstallPrompt />
 
             {/* Mobile bottom tab bar */}
             <MobileNav />

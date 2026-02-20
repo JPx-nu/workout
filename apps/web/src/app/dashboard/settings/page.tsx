@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Bell, Watch, Shield, Save, Smartphone, Heart, LogOut, LayoutDashboard } from 'lucide-react';
+import { User, Bell, Watch, Shield, Save, Smartphone, Heart, LogOut, LayoutDashboard, Check } from 'lucide-react';
 import { useProfile } from '@/hooks/use-profile';
 import { useState } from 'react';
 
@@ -12,7 +12,12 @@ const connectedDevices = [
 ];
 
 export default function SettingsPage() {
-    const { profile, updateDefaultView } = useProfile(); // @mock
+    const { profile, updateDefaultView, updateProfile } = useProfile();
+
+    const [displayName, setDisplayName] = useState<string | null>(null);
+    const [timezone, setTimezone] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
 
     const [notifications, setNotifications] = useState({
         training: true,
@@ -23,6 +28,23 @@ export default function SettingsPage() {
 
     const toggleNotification = (key: keyof typeof notifications) => {
         setNotifications((prev) => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handleSaveProfile = async () => {
+        setIsSaving(true);
+        setSaved(false);
+        try {
+            await updateProfile({
+                displayName: displayName ?? profile.displayName,
+                timezone: timezone ?? profile.timezone,
+            });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2000);
+        } catch {
+            // Error logged inside hook
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const notificationPrefs = [
@@ -41,7 +63,7 @@ export default function SettingsPage() {
                 </p>
             </div>
 
-            {/* Profile — @mock */}
+            {/* Profile */}
             <div className="glass-card p-4 lg:p-6">
                 <h3 className="text-sm font-semibold mb-4 flex items-center gap-2"
                     style={{ color: 'var(--color-text-secondary)' }}>
@@ -52,7 +74,12 @@ export default function SettingsPage() {
                         <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text-muted)' }}>
                             Display Name
                         </label>
-                        <input type="text" defaultValue={profile.displayName} className="glass-input w-full" />
+                        <input
+                            type="text"
+                            defaultValue={profile.displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            className="glass-input w-full"
+                        />
                     </div>
                     <div>
                         <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text-muted)' }}>
@@ -79,11 +106,21 @@ export default function SettingsPage() {
                         <label className="text-xs font-medium block mb-1.5" style={{ color: 'var(--color-text-muted)' }}>
                             Timezone
                         </label>
-                        <input type="text" defaultValue={profile.timezone} className="glass-input w-full" />
+                        <input
+                            type="text"
+                            defaultValue={profile.timezone}
+                            onChange={(e) => setTimezone(e.target.value)}
+                            className="glass-input w-full"
+                        />
                     </div>
                 </div>
-                <button className="btn-primary mt-5 flex items-center justify-center gap-2 text-sm w-full sm:w-auto">
-                    <Save size={14} /> Save Profile
+                <button
+                    onClick={handleSaveProfile}
+                    disabled={isSaving}
+                    className="btn-primary mt-5 flex items-center justify-center gap-2 text-sm w-full sm:w-auto disabled:opacity-50"
+                >
+                    {saved ? <Check size={14} /> : <Save size={14} />}
+                    {isSaving ? 'Saving…' : saved ? 'Saved!' : 'Save Profile'}
                 </button>
             </div>
 
@@ -184,10 +221,15 @@ export default function SettingsPage() {
                 <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
                     Sign out of your account or manage subscription.
                 </p>
-                <button className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface"
-                    style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}>
-                    Sign Out
-                </button>
+                <form action="/workout/auth/signout" method="POST">
+                    <button
+                        type="submit"
+                        className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface"
+                        style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
+                    >
+                        Sign Out
+                    </button>
+                </form>
             </div>
         </div >
     );

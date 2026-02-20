@@ -29,7 +29,7 @@ export function MobileNav() {
                         <Link
                             key={href}
                             href={href}
-                            className="flex flex-col items-center justify-center gap-1 py-2 px-3 min-w-[64px] min-h-[48px] transition-colors duration-200"
+                            className="relative flex flex-col items-center justify-center gap-1 py-2 px-3 min-w-[64px] min-h-[48px] transition-colors duration-200"
                             style={{
                                 color: isActive
                                     ? 'var(--color-brand-light)'

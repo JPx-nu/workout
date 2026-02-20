@@ -26,6 +26,7 @@ export function useProfile(): {
     error: string | null;
     refetch: () => void;
     updateDefaultView: (view: 'triathlon' | 'strength') => Promise<void>;
+    updateProfile: (fields: { displayName?: string; timezone?: string }) => Promise<void>;
 } {
     const { user } = useAuth();
     const [profile, setProfile] = useState<Profile>(defaultProfile);
@@ -100,5 +101,33 @@ export function useProfile(): {
         }
     };
 
-    return { profile, isLoading, error, refetch: fetchProfile, updateDefaultView };
+    const updateProfile = async (fields: { displayName?: string; timezone?: string }) => {
+        if (!user) return;
+
+        const prev = profile;
+        // Optimistic update
+        setProfile((p) => ({
+            ...p,
+            ...(fields.displayName !== undefined ? { displayName: fields.displayName } : {}),
+            ...(fields.timezone !== undefined ? { timezone: fields.timezone } : {}),
+        }));
+
+        const dbFields: Record<string, string> = {};
+        if (fields.displayName !== undefined) dbFields.display_name = fields.displayName;
+        if (fields.timezone !== undefined) dbFields.timezone = fields.timezone;
+
+        const supabase = createClient();
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update(dbFields)
+            .eq('id', user.id);
+
+        if (updateError) {
+            console.error('Failed to update profile:', updateError);
+            setProfile(prev); // revert
+            throw updateError;
+        }
+    };
+
+    return { profile, isLoading, error, refetch: fetchProfile, updateDefaultView, updateProfile };
 }

@@ -17,7 +17,7 @@ const badgeClasses: Record<string, string> = {
 };
 
 export default function WorkoutsPage() {
-    const { workouts, allWorkouts, filter, setFilter } = useWorkouts(); // @mock
+    const { workouts, allWorkouts, filter, setFilter } = useWorkouts();
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -51,7 +51,7 @@ export default function WorkoutsPage() {
                 })}
             </div>
 
-            {/* Workout list — @mock */}
+            {/* Workout list */}
             <div className="space-y-3 stagger-children">
                 {workouts.map((w) => {
                     const Icon = activityIcons[w.activityType] ?? Dumbbell;

@@ -16,7 +16,7 @@ import {
 } from '@schedule-x/calendar';
 import { createEventsServicePlugin } from '@schedule-x/events-service';
 import 'temporal-polyfill/global';
-import '@schedule-x/theme-default/dist/index.css';
+import '@schedule-x/theme-shadcn/dist/index.css';
 import {
     Plus, ChevronLeft, ChevronRight, CalendarDays, CalendarRange, Calendar,
     Waves, Bike, Footprints, Dumbbell, Activity, Zap,

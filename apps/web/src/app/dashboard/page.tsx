@@ -8,10 +8,10 @@ import { TriathlonView } from './components/triathlon-view';
 import { StrengthView } from './components/strength-view';
 
 export default function DashboardPage() {
-    const { profile } = useProfile();           // @mock
-    const { weeklyStats, chartData, allWorkouts, strengthMetrics } = useWorkouts(); // @mock
-    const { events } = useTraining();             // @mock
-    const { healthSnapshot } = useHealth();       // @mock
+    const { profile } = useProfile();
+    const { weeklyStats, chartData, allWorkouts, strengthMetrics } = useWorkouts();
+    const { events } = useTraining();
+    const { healthSnapshot } = useHealth();
 
     const firstName = profile.displayName.split(' ')[0];
 

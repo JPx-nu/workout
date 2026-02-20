@@ -6,7 +6,7 @@ import { useHealth } from '@/hooks/use-health';
 import BodySvg from '@/components/body-map/BodySvg';
 
 export default function BodyMapPage() {
-    // @mock — all data from useHealth hook
+
     const { fatigueData, dailyLogs, healthSnapshot } = useHealth();
     const recentLogs = dailyLogs.slice(0, 5);
 
@@ -53,7 +53,7 @@ export default function BodyMapPage() {
                 <BodySvg fatigueData={fatigueData} />
             </div>
 
-            {/* Daily logs — @mock */}
+            {/* Daily logs */}
             <div className="glass-card p-6">
                 <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                     Daily Wellness Log
