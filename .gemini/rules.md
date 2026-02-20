@@ -85,4 +85,5 @@
   - `next` — Next.js CLI (dev, build, start)
   - `wrangler` — Cloudflare/API deployment
 - These are non-destructive development tools used daily in this project
+- **Browser navigation** to `localhost`, `127.0.0.1`, and `jpx.nu` is always safe and approved
 - Still exercise caution with `rm`, `del`, `format`, or any command that deletes data
