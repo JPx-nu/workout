@@ -14,6 +14,13 @@ import { createUpdateSorenessTool } from './update-soreness.js';
 import { createModifyTrainingPlanTool } from './modify-training-plan.js';
 import { createGenerateWorkoutPlanTool } from './generate-workout-plan.js';
 import { createScheduleWorkoutTool } from './schedule-workout.js';
+import { createMatchDocumentsTool } from './match-documents.js';
+import { createTraverseGraphTool } from './traverse-graph.js';
+import { createSearchWorkoutsTool } from './search-workouts.js';
+import { createSaveMemoryTool } from './save-memory.js';
+import { createAnalyzeBiometricTrendsTool } from './analyze-biometric-trends.js';
+import { createAnalyzeWorkoutsTool } from './analyze-workouts.js';
+import { createPredictInjuryRiskTool } from './predict-injury-risk.js';
 
 /**
  * Creates all agent tools bound to a specific user's auth context.
@@ -35,6 +42,14 @@ export function createAllTools(client: SupabaseClient, userId: string, clubId: s
         // Training plan & scheduling tools
         createGenerateWorkoutPlanTool(client, userId, clubId),
         createScheduleWorkoutTool(client, userId, clubId),
+        // GraphRAG & Knowledge Graph tools
+        createMatchDocumentsTool(client, clubId),
+        createTraverseGraphTool(client, userId),
+        createSearchWorkoutsTool(client, userId),
+        createSaveMemoryTool(client, userId),
+        createAnalyzeBiometricTrendsTool(client, userId),
+        createAnalyzeWorkoutsTool(client, userId),
+        createPredictInjuryRiskTool(client, userId),
     ];
 }
 

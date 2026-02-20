@@ -12,6 +12,8 @@ export const AI_CONFIG = {
         apiKey: process.env.AZURE_OPENAI_API_KEY || '',
         /** Deployment name for the chat model (e.g. "gpt-5-mini") */
         deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-5-mini',
+        /** Deployment name for the embeddings model (e.g. "text-embedding-3-small") */
+        embeddingsDeployment: process.env.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT || 'text-embedding-3-small',
         /** API version — preview (supports gpt-5-mini on AIServices) */
         apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-12-01-preview',
     },

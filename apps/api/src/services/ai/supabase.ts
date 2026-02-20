@@ -67,6 +67,7 @@ export interface Workout {
     tss: number | null;
     raw_data: Record<string, unknown> | null;
     notes: string | null;
+    embedding?: number[];
     created_at: string;
 }
 
@@ -108,6 +109,17 @@ export interface HealthMetric {
     source: string | null;
     raw_data: Record<string, unknown> | null;
     created_at: string;
+}
+
+export interface AthleteMemory {
+    id: string;
+    athlete_id: string;
+    category: string;
+    content: string;
+    embedding?: number[];
+    importance: number;
+    created_at: string;
+    updated_at: string;
 }
 
 // ── Read services ─────────────────────────────────────────────
@@ -244,6 +256,23 @@ export async function getInjuries(
     return data ?? [];
 }
 
+export async function getRecentMemories(
+    client: SupabaseClient,
+    userId: string,
+    limit = 10
+): Promise<AthleteMemory[]> {
+    const { data, error } = await client
+        .from('athlete_memories')
+        .select('*')
+        .eq('athlete_id', userId)
+        .order('importance', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+    if (error) throw new Error(`Failed to fetch memories: ${error.message}`);
+    return data ?? [];
+}
+
 // ── Write services ────────────────────────────────────────────
 
 export async function insertWorkout(
@@ -257,6 +286,20 @@ export async function insertWorkout(
         .single();
 
     if (error) throw new Error(`Failed to log workout: ${error.message}`);
+    return data;
+}
+
+export async function insertMemory(
+    client: SupabaseClient,
+    memory: Omit<AthleteMemory, 'id' | 'created_at' | 'updated_at'>
+): Promise<AthleteMemory> {
+    const { data, error } = await client
+        .from('athlete_memories')
+        .insert(memory)
+        .select()
+        .single();
+
+    if (error) throw new Error(`Failed to save memory: ${error.message}`);
     return data;
 }
 

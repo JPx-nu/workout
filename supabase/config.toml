@@ -1,6 +1,6 @@
-[project]
-id = "jpx-triathlon"
-name = "JPx Triathlon AI"
+# [project]
+# id = "jpx-triathlon"
+# name = "JPx Triathlon AI"
 
 [api]
 enabled = true

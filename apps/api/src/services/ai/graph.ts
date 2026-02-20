@@ -10,7 +10,7 @@ import { SystemMessage, HumanMessage, AIMessage, type BaseMessage } from '@langc
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_CONFIG } from '../../config/ai.js';
 import { buildSystemPrompt } from './prompt.js';
-import { getProfile, getDailyLogs } from './supabase.js';
+import { getProfile, getDailyLogs, getRecentMemories } from './supabase.js';
 import { createAllTools } from './tools/index.js';
 
 /**
@@ -31,8 +31,9 @@ export async function createAgent(
     userId: string,
     clubId: string
 ) {
-    // Load profile + today's readiness data for system prompt context
+    // Load profile + today's readiness data + memories for system prompt context
     const profile = await getProfile(client, userId);
+    const memories = await getRecentMemories(client, userId, 10);
     const today = new Date().toISOString().split('T')[0];
     const dailyLogs = await getDailyLogs(client, userId, {
         fromDate: today,
@@ -60,7 +61,7 @@ export async function createAgent(
     const llmWithTools = llm.bindTools(tools);
 
     // Build the system prompt
-    const systemMessage = new SystemMessage(buildSystemPrompt(profile, todayLog));
+    const systemMessage = new SystemMessage(buildSystemPrompt(profile, todayLog, memories));
 
     // ── Define graph nodes ────────────────────────────────────
 

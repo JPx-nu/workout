@@ -9,6 +9,8 @@ import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { insertWorkout } from '../supabase.js';
+import { AzureOpenAIEmbeddings } from '@langchain/openai';
+import { AI_CONFIG } from '../../../config/ai.js';
 
 // ── Zod schemas for structured strength data ──────────────────
 
@@ -63,6 +65,24 @@ export function createLogWorkoutTool(client: SupabaseClient, userId: string, clu
                     ? { exercises: input.exercises, metadata: { source: 'COACH', schema_version: 2 } }
                     : null;
 
+            // Generate embedding for natural language search
+            let embedding: number[] | undefined;
+            if (input.notes || rawData?.exercises) {
+                try {
+                    const textToEmbed = `Activity: ${input.activityType}. Notes: ${input.notes ?? 'None'}. Ex: ${rawData?.exercises ? JSON.stringify(rawData.exercises) : 'None'
+                        }`;
+                    const embeddingsModel = new AzureOpenAIEmbeddings({
+                        azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+                        azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint.split('.')[0].replace('https://', ''),
+                        azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
+                        azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+                    });
+                    embedding = await embeddingsModel.embedQuery(textToEmbed);
+                } catch (err) {
+                    console.error('Failed to generate embedding for workout', err);
+                }
+            }
+
             const workout = await insertWorkout(client, {
                 athlete_id: userId,
                 club_id: clubId,
@@ -79,6 +99,7 @@ export function createLogWorkoutTool(client: SupabaseClient, userId: string, clu
                 tss: input.tss ?? null,
                 raw_data: rawData,
                 notes: input.notes ?? null,
+                embedding: embedding,
             });
 
             // Build response with exercise summary for STRENGTH workouts
