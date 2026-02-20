@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 export function ServiceWorkerRegister() {
-    useEffect(() => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker
-                .register('/workout/sw.js')
-                .then((reg) => {
-                    console.log('[SW] registered, scope:', reg.scope);
-                })
-                .catch((err) => {
-                    console.warn('[SW] registration failed:', err);
-                });
-        }
-    }, []);
+	useEffect(() => {
+		if ("serviceWorker" in navigator) {
+			navigator.serviceWorker
+				.register("/workout/sw.js")
+				.then((reg) => {
+					console.log("[SW] registered, scope:", reg.scope);
+				})
+				.catch((err) => {
+					console.warn("[SW] registration failed:", err);
+				});
+		}
+	}, []);
 
-    return null;
+	return null;
 }

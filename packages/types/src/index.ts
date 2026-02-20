@@ -62,6 +62,18 @@ export interface Profile {
     updated_at: string;
 }
 
+export type AppProfile = {
+    id: string;
+    displayName: string;
+    role: UserRole;
+    clubId: string;
+    clubName: string;
+    avatarUrl: string | null;
+    timezone: string;
+    email: string;
+    defaultView: "triathlon" | "strength";
+};
+
 export interface Workout {
     id: string;
     athlete_id: string;

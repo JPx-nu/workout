@@ -5,18 +5,18 @@
 // These files only export types + a few static constants.
 // ============================================================
 
-export { type Profile } from './profile';
+export { type Conversation, type Message, suggestedPrompts } from "./coach";
 export {
-    type Workout, type WeeklyStats, type ChartDataPoint,
-} from './workouts';
-export {
-    type TrainingPlan, type TrainingSession, type UpcomingEvent,
-} from './training';
-export {
-    suggestedPrompts,
-    type Message, type Conversation,
-} from './coach';
-export {
-    mockFatigueData,
-    type MuscleFatigue, type DailyLog, type HealthSnapshot, type FatigueLevel,
-} from './health';
+	type DailyLog,
+	type FatigueLevel,
+	type HealthSnapshot,
+	type MuscleFatigue,
+	mockFatigueData,
+} from "./health";
+export type { AppProfile as Profile } from "@triathlon/types";
+export type {
+	TrainingPlan,
+	TrainingSession,
+	UpcomingEvent,
+} from "./training";
+export type { ChartDataPoint, WeeklyStats, Workout } from "./workouts";

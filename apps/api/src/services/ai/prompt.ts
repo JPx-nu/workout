@@ -4,7 +4,7 @@
 // daily readiness data, and prescriptive coaching rules.
 // ============================================================
 
-import type { AthleteProfile, DailyLog, AthleteMemory } from './supabase.js';
+import type { AthleteMemory, AthleteProfile, DailyLog } from "./supabase.js";
 
 /**
  * Builds the system prompt for the AI coaching agent.
@@ -12,41 +12,42 @@ import type { AthleteProfile, DailyLog, AthleteMemory } from './supabase.js';
  * has immediate awareness before the athlete speaks.
  */
 export function buildSystemPrompt(
-  profile: AthleteProfile | null,
-  todayLog: DailyLog | null = null,
-  memories: AthleteMemory[] = []
+	profile: AthleteProfile | null,
+	todayLog: DailyLog | null = null,
+	memories: AthleteMemory[] = [],
 ): string {
-  const userContext = profile
-    ? `
+	const userContext = profile
+		? `
 ## Current Athlete Context
-- **Name**: ${profile.display_name || 'Athlete'}
-- **Timezone**: ${profile.timezone || 'UTC'}
+- **Name**: ${profile.display_name || "Athlete"}
+- **Timezone**: ${profile.timezone || "UTC"}
 - **Role**: ${profile.role}
 `
-    : `\n## Current Athlete Context\nNo profile data loaded yet. Ask the athlete about their goals and background.\n`;
+		: `\n## Current Athlete Context\nNo profile data loaded yet. Ask the athlete about their goals and background.\n`;
 
-  const readinessContext = todayLog
-    ? `
+	const readinessContext = todayLog
+		? `
 ## Today's Readiness
-- Sleep: ${todayLog.sleep_hours ?? '?'}h (quality: ${todayLog.sleep_quality ?? '?'}/5)
-- Mood: ${todayLog.mood ?? '?'}/5
-- HRV: ${todayLog.hrv ?? 'not recorded'} ms
-- Resting HR: ${todayLog.resting_hr ?? 'not recorded'} bpm
-- Yesterday's RPE: ${todayLog.rpe ?? 'n/a'}
+- Sleep: ${todayLog.sleep_hours ?? "?"}h (quality: ${todayLog.sleep_quality ?? "?"}/5)
+- Mood: ${todayLog.mood ?? "?"}/5
+- HRV: ${todayLog.hrv ?? "not recorded"} ms
+- Resting HR: ${todayLog.resting_hr ?? "not recorded"} bpm
+- Yesterday's RPE: ${todayLog.rpe ?? "n/a"}
 
 If sleep is poor (<6h) or HRV is noticeably low, **proactively** mention it in your first response and suggest acting on it (e.g. "I see you didn't sleep well, maybe we should swap today's interval run for an easy spin?"). Use your \`analyze_biometric_trends\` or \`predict_injury_risk\` tools if you suspect they are overtraining.`
-    : '';
+		: "";
 
-  const memoriesContext = memories.length > 0
-    ? `
+	const memoriesContext =
+		memories.length > 0
+			? `
 ## Athlete Memory & Context
 Here is what you know about this athlete from past conversations:
-${memories.map(m => `- ${m.content}`).join('\n')}
+${memories.map((m) => `- ${m.content}`).join("\n")}
 
 Use these facts to personalize your responses, remember their preferences, and avoid asking them things they've already told you. Do not list these facts back to them, just act on them naturally.`
-    : '';
+			: "";
 
-  return `${BASE_PROMPT}
+	return `${BASE_PROMPT}
 ${userContext}
 ${readinessContext}
 ${memoriesContext}
@@ -56,7 +57,6 @@ ${GAMIFICATION_COACHING}
 ${TOOL_GUIDELINES}
 ${SAFETY_RULES}`;
 }
-
 
 // ── Prompt sections ───────────────────────────────────────────
 

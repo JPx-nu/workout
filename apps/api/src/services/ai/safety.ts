@@ -16,17 +16,45 @@
 const MAX_INPUT_LENGTH = 4000;
 
 const EMERGENCY_KEYWORDS = [
-    'suicide', 'suicidal', 'kill myself', 'end my life', 'want to die',
-    'self-harm', 'self harm', 'cutting myself', 'hurt myself',
-    'overdose', 'no reason to live', 'better off dead',
+	"suicide",
+	"suicidal",
+	"kill myself",
+	"end my life",
+	"want to die",
+	"self-harm",
+	"self harm",
+	"cutting myself",
+	"hurt myself",
+	"overdose",
+	"no reason to live",
+	"better off dead",
 ] as const;
 
 const MEDICAL_TRIGGER_KEYWORDS = [
-    'diagnosis', 'diagnose', 'prescription', 'medication', 'medicine',
-    'treatment', 'disease', 'disorder', 'symptom', 'injury',
-    'nutrition', 'supplement', 'diet', 'calorie', 'macro',
-    'pain', 'chronic', 'acute', 'condition', 'surgery',
-    'heart rate', 'blood pressure', 'spo2', 'vo2max',
+	"diagnosis",
+	"diagnose",
+	"prescription",
+	"medication",
+	"medicine",
+	"treatment",
+	"disease",
+	"disorder",
+	"symptom",
+	"injury",
+	"nutrition",
+	"supplement",
+	"diet",
+	"calorie",
+	"macro",
+	"pain",
+	"chronic",
+	"acute",
+	"condition",
+	"surgery",
+	"heart rate",
+	"blood pressure",
+	"spo2",
+	"vo2max",
 ] as const;
 
 const EMERGENCY_RESPONSE = `🚨 **I'm concerned about your wellbeing.**
@@ -49,17 +77,17 @@ const LOW_CONFIDENCE_DISCLAIMER = `\n\n---\n⚠️ *I have limited data to suppo
 // ── Interfaces ─────────────────────────────────────────────────
 
 export interface SafetyCheckResult {
-    passed: boolean;
-    blocked: boolean;
-    reason?: string;
-    response?: string;
+	passed: boolean;
+	blocked: boolean;
+	reason?: string;
+	response?: string;
 }
 
 export interface SafetyProcessedOutput {
-    content: string;
-    disclaimerAdded: boolean;
-    piiRedacted: boolean;
-    lowConfidence: boolean;
+	content: string;
+	disclaimerAdded: boolean;
+	piiRedacted: boolean;
+	lowConfidence: boolean;
 }
 
 // ── Input Safety Check ─────────────────────────────────────────
@@ -69,39 +97,39 @@ export interface SafetyProcessedOutput {
  * Returns a block response if emergency content is detected.
  */
 export function checkInput(message: string): SafetyCheckResult {
-    // Length validation
-    if (message.length > MAX_INPUT_LENGTH) {
-        return {
-            passed: false,
-            blocked: true,
-            reason: 'input_too_long',
-            response: `Your message is too long (${message.length} characters). Please keep messages under ${MAX_INPUT_LENGTH} characters.`,
-        };
-    }
+	// Length validation
+	if (message.length > MAX_INPUT_LENGTH) {
+		return {
+			passed: false,
+			blocked: true,
+			reason: "input_too_long",
+			response: `Your message is too long (${message.length} characters). Please keep messages under ${MAX_INPUT_LENGTH} characters.`,
+		};
+	}
 
-    if (message.trim().length === 0) {
-        return {
-            passed: false,
-            blocked: true,
-            reason: 'empty_input',
-            response: 'Please enter a message.',
-        };
-    }
+	if (message.trim().length === 0) {
+		return {
+			passed: false,
+			blocked: true,
+			reason: "empty_input",
+			response: "Please enter a message.",
+		};
+	}
 
-    // Emergency keyword detection
-    const lowered = message.toLowerCase();
-    const isEmergency = EMERGENCY_KEYWORDS.some((kw) => lowered.includes(kw));
+	// Emergency keyword detection
+	const lowered = message.toLowerCase();
+	const isEmergency = EMERGENCY_KEYWORDS.some((kw) => lowered.includes(kw));
 
-    if (isEmergency) {
-        return {
-            passed: false,
-            blocked: true,
-            reason: 'emergency_detected',
-            response: EMERGENCY_RESPONSE,
-        };
-    }
+	if (isEmergency) {
+		return {
+			passed: false,
+			blocked: true,
+			reason: "emergency_detected",
+			response: EMERGENCY_RESPONSE,
+		};
+	}
 
-    return { passed: true, blocked: false };
+	return { passed: true, blocked: false };
 }
 
 // ── Output Safety Processing ───────────────────────────────────
@@ -111,40 +139,40 @@ export function checkInput(message: string): SafetyCheckResult {
  * Adds disclaimers and redacts PII.
  */
 export function processOutput(
-    content: string,
-    options: {
-        confidence?: number;
-        hasMedicalContent?: boolean;
-    } = {},
+	content: string,
+	options: {
+		confidence?: number;
+		hasMedicalContent?: boolean;
+	} = {},
 ): SafetyProcessedOutput {
-    let processed = content;
-    let disclaimerAdded = false;
-    const piiRedacted = false;
+	let processed = content;
+	let disclaimerAdded = false;
+	const piiRedacted = false;
 
-    // Detect medical content in output
-    const outputLower = processed.toLowerCase();
-    const hasMedical =
-        options.hasMedicalContent ??
-        MEDICAL_TRIGGER_KEYWORDS.some((kw) => outputLower.includes(kw));
+	// Detect medical content in output
+	const outputLower = processed.toLowerCase();
+	const hasMedical =
+		options.hasMedicalContent ??
+		MEDICAL_TRIGGER_KEYWORDS.some((kw) => outputLower.includes(kw));
 
-    if (hasMedical) {
-        processed += MEDICAL_DISCLAIMER;
-        disclaimerAdded = true;
-    }
+	if (hasMedical) {
+		processed += MEDICAL_DISCLAIMER;
+		disclaimerAdded = true;
+	}
 
-    // Low confidence warning
-    const lowConfidence = (options.confidence ?? 1.0) < 0.6;
-    if (lowConfidence) {
-        processed += LOW_CONFIDENCE_DISCLAIMER;
-        disclaimerAdded = true;
-    }
+	// Low confidence warning
+	const lowConfidence = (options.confidence ?? 1.0) < 0.6;
+	if (lowConfidence) {
+		processed += LOW_CONFIDENCE_DISCLAIMER;
+		disclaimerAdded = true;
+	}
 
-    return {
-        content: processed,
-        disclaimerAdded,
-        piiRedacted,
-        lowConfidence,
-    };
+	return {
+		content: processed,
+		disclaimerAdded,
+		piiRedacted,
+		lowConfidence,
+	};
 }
 
 // ── Content Classification ─────────────────────────────────────
@@ -152,26 +180,42 @@ export function processOutput(
 /**
  * Classifies user input intent for routing and safety decisions.
  */
-export function classifyIntent(message: string): 'training' | 'medical' | 'emergency' | 'general' {
-    const lower = message.toLowerCase();
+export function classifyIntent(
+	message: string,
+): "training" | "medical" | "emergency" | "general" {
+	const lower = message.toLowerCase();
 
-    if (EMERGENCY_KEYWORDS.some((kw) => lower.includes(kw))) {
-        return 'emergency';
-    }
+	if (EMERGENCY_KEYWORDS.some((kw) => lower.includes(kw))) {
+		return "emergency";
+	}
 
-    if (MEDICAL_TRIGGER_KEYWORDS.some((kw) => lower.includes(kw))) {
-        return 'medical';
-    }
+	if (MEDICAL_TRIGGER_KEYWORDS.some((kw) => lower.includes(kw))) {
+		return "medical";
+	}
 
-    const trainingKeywords = [
-        'training', 'workout', 'swim', 'bike', 'run', 'pace',
-        'interval', 'tempo', 'threshold', 'taper', 'race', 'plan',
-        'tss', 'ftp', 'zone', 'recovery', 'rest day',
-    ];
+	const trainingKeywords = [
+		"training",
+		"workout",
+		"swim",
+		"bike",
+		"run",
+		"pace",
+		"interval",
+		"tempo",
+		"threshold",
+		"taper",
+		"race",
+		"plan",
+		"tss",
+		"ftp",
+		"zone",
+		"recovery",
+		"rest day",
+	];
 
-    if (trainingKeywords.some((kw) => lower.includes(kw))) {
-        return 'training';
-    }
+	if (trainingKeywords.some((kw) => lower.includes(kw))) {
+		return "training";
+	}
 
-    return 'general';
+	return "general";
 }
