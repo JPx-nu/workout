@@ -528,13 +528,34 @@ function WorkoutDetailModal({
 
 					{workout.coachNotes && (
 						<div
-							className="p-3 rounded-xl text-xs italic"
+							className="p-3 rounded-xl text-xs flex flex-col gap-2"
+							style={{
+								background: "var(--color-glass-bg-subtle)",
+								color: "var(--color-text-secondary)",
+							}}
+						>
+							<div>
+								🤖 <span className="italic">{workout.coachNotes}</span>
+							</div>
+							{workout.source === "AI" && (
+								<div
+									className="text-[10px] mt-1 pt-2 border-t"
+									style={{ borderColor: "var(--color-glass-border)", color: "var(--color-text-muted)" }}
+								>
+									<strong>Human Oversight Required:</strong> This session was generated or adjusted by the JPx AI Coach based on your telemetry (e.g., HRV, recovery score). Please review and adjust if it does not match your perceived readiness.
+								</div>
+							)}
+						</div>
+					)}
+					{!workout.coachNotes && workout.source === "AI" && (
+						<div
+							className="p-3 rounded-xl text-[10px]"
 							style={{
 								background: "var(--color-glass-bg-subtle)",
 								color: "var(--color-text-muted)",
 							}}
 						>
-							🤖 {workout.coachNotes}
+							<strong>Human Oversight Required:</strong> This session was generated or adjusted by the JPx AI Coach based on your telemetry. Please review and adjust if it does not match your perceived readiness.
 						</div>
 					)}
 				</div>

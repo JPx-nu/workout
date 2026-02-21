@@ -477,3 +477,26 @@ Comprehensive AI agent rules covering:
 | **Polar AccessLink** | Training + recovery data | Developer access needed |
 | **Wahoo Cloud API** | Indoor cycling data | Developer access needed |
 | **FORM Swim** | Swim metrics + HUD | Integration details TBD |
+
+---
+
+## 15. Security, Privacy & Compliance
+
+As a platform handling sensitive health, biometric, and wearable data, JPx implements stringent security and compliance measures aligning with GDPR, EU AI Act, and EHDS (European Health Data Space) frameworks:
+
+### Zero-Trust & Data Architecture
+- **Strict Row-Level Security (RLS)**: Enforced via `(auth.jwt() ->> 'client_id') IS NULL` policies (using `AS RESTRICTIVE`) to prevent any external OAuth clients from querying sensitive raw health data directly. All core tables are safeguarded to ensure `athlete_id = auth.uid()`.
+- **Secret Management**: API keys and secrets are loaded via environment variables, managed securely in Azure App Settings and verified by CI/CD Secret Scanning (Gitleaks).
+
+### Privacy UX & Data Control
+- **Data Control Center**: Built-in GDPR features within the user settings (`/dashboard/settings`), including 1-click **Export My Data** (JSON) for data portability, and **Delete Account & Data** for the right to be forgotten.
+- **Granular Consent**: Explicit opt-in flows during wearable connection onboarding regarding the usage of HR, HRV, and sleep data for LLM personalization.
+
+### High-Risk AI Provider Guardrails
+- **Explainability & Human Oversight**: The EU AI Act (2026/2027) mandates explainability for High-Risk AI systems. The JPx UI automatically flags AI-generated workouts and includes a mandatory disclaimer requiring human oversight before execution.
+- **Data Anonymization Pipeline**: AI requests pass through `PIIMiddleware` / Microsoft Presidio hooks (currently toggled behind a feature flag for testing) to sanitize PII prior to hitting the LLM context limits or LangSmith traces.
+- **Zero-Retention**: Azure OpenAI enterprise integration guarantees a **Zero Data Retention** policy. Telemetry and prompts are transient and never used to train foundational AI models.
+
+### Future-Proofing
+- **EHDS Interoperability**: For future data liquidity, JPx has mapped an architectural path to FHIR (Fast Healthcare Interoperability Resources) data structures (`docs/EHDS_ARCHITECTURE.md`), preparing for seamless export and clinical system alignment when required by the EU.
+

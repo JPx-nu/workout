@@ -60,5 +60,6 @@ export function createAllTools(
 		createAnalyzeBiometricTrendsTool(client, userId),
 		createAnalyzeWorkoutsTool(client, userId),
 		createPredictInjuryRiskTool(client, userId),
+		analyzeForm,
 	];
 }

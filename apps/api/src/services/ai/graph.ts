@@ -63,6 +63,13 @@ export async function createAgent(
 		modelKwargs: { max_completion_tokens: AI_CONFIG.model.maxCompletionTokens },
 	});
 
+	// [FUTURE] PII Anonymization Middleware (Inactive)
+	// Implement Presidio/LangChain JS PII stripping here before it hits the trace or LLM
+	const anonymizePII = async (messages: BaseMessage[]) => {
+		// e.g., messages.map(msg => presidio.anonymize(msg.content))
+		return messages;
+	};
+
 	// Create tools bound to user context
 	const tools = createAllTools(client, userId, clubId);
 
@@ -79,7 +86,12 @@ export async function createAgent(
 	/** LLM call node: injects system prompt + invokes the model */
 	async function llmCall(state: typeof MessagesAnnotation.State) {
 		// Prepend system message to the conversation
-		const messagesWithSystem = [systemMessage, ...state.messages];
+		let messagesWithSystem = [systemMessage, ...state.messages];
+
+		// Apply PII stripping if enabled (currently disabled/inactive per request)
+		if ((AI_CONFIG.features as any).enablePIIMiddleware) {
+			messagesWithSystem = await anonymizePII(messagesWithSystem);
+		}
 
 		const response = await llmWithTools.invoke(messagesWithSystem);
 
@@ -208,12 +220,12 @@ export function toBaseMessages(
 		const content =
 			msg.role === "user" && imageUrls.length > 0
 				? [
-						{ type: "text" as const, text: msg.content },
-						...imageUrls.map((url) => ({
-							type: "image_url" as const,
-							image_url: { url },
-						})),
-					]
+					{ type: "text" as const, text: msg.content },
+					...imageUrls.map((url) => ({
+						type: "image_url" as const,
+						image_url: { url },
+					})),
+				]
 				: msg.content;
 
 		switch (msg.role) {
