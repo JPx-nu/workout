@@ -290,8 +290,9 @@ function BodyModel({
 
 	const handlePointerOut = useCallback(() => setHovered(null), []);
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 	const handleClick = useCallback(
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(e: any) => {
 			e.stopPropagation();
 			const mesh = e.object as THREE.Mesh;

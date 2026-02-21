@@ -18,8 +18,8 @@ export default function TermsOfServicePage() {
                     </h2>
                     <p>
                         By accessing or using the JPx platform, AI Coach, 3D movement analysis, and associated APIs
-                        (collectively, the "Service"), you agree to be bound by these Terms of Service. The Service is
-                        provided by JPx AB ("we", "us", or "our"), headquartered in Gothenburg, Sweden. If you do not agree
+                        (collectively, the &quot;Service&quot;), you agree to be bound by these Terms of Service. The Service is
+                        provided by JPx AB (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;), headquartered in Gothenburg, Sweden. If you do not agree
                         to all the terms and conditions, you may not use the Service.
                     </p>
                 </section>
@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
                     <p>
                         The AI Coach utilizes advanced Large Language Models (LLMs) and heuristic algorithms. As an EU AI Act
                         High-Risk System, you acknowledge and agree to maintain <strong>Human Oversight</strong> over all AI recommendations.
-                        You assume all risks associated with participating in endurance sports and utilizing the Service's recommendations.
+                        You assume all risks associated with participating in endurance sports and utilizing the Service&apos;s recommendations.
                     </p>
                 </section>
 
@@ -97,7 +97,7 @@ export default function TermsOfServicePage() {
                     <h2 className="text-xl font-bold text-white mb-4">6. Modification of Terms</h2>
                     <p>
                         We reserve the right to modify these Terms at any time. We will notify you of any material changes by
-                        posting the new Terms on the site and updating the "Effective Date" or via email. Your continuous use
+                        posting the new Terms on the site and updating the &quot;Effective Date&quot; or via email. Your continuous use
                         of the Service after such modifications signifies your acceptance of the updated Terms.
                     </p>
                 </section>

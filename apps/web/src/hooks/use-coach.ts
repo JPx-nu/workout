@@ -5,7 +5,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-	type Conversation,
 	type Message,
 	suggestedPrompts,
 } from "@/lib/mock/coach";

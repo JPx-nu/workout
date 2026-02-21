@@ -27,7 +27,6 @@ export default function CoachPage() {
 		loadConversation,
 		newConversation,
 		conversationId,
-		activeToolCalls,
 		attachedFiles,
 		attachFile,
 		removeFile,
@@ -107,6 +106,7 @@ export default function CoachPage() {
 										msg.metadata.imageUrls.length > 0 && (
 											<div className="flex flex-wrap gap-2 mb-2">
 												{msg.metadata.imageUrls.map((url, i) => (
+													// eslint-disable-next-line @next/next/no-img-element
 													<img
 														key={i}
 														src={url}
@@ -250,6 +250,7 @@ export default function CoachPage() {
 					<div className="flex gap-2 pt-2 max-w-4xl mx-auto w-full shrink-0">
 						{attachedFiles.map((file, i) => (
 							<div key={i} className="relative group">
+								{/* eslint-disable-next-line @next/next/no-img-element */}
 								<img
 									src={URL.createObjectURL(file)}
 									alt={file.name}
