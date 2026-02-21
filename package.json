@@ -12,11 +12,13 @@
     "test:e2e": "turbo test:e2e",
     "type-check": "turbo type-check",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
-    "clean": "turbo clean && rm -rf node_modules"
+    "clean": "turbo clean && rm -rf node_modules",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@azure/mcp": "^2.0.0-beta.18",
     "@types/node": "^22",
+    "husky": "^9.1.7",
     "prettier": "^3",
     "turbo": "^2"
   }
