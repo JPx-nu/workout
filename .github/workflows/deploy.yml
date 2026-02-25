@@ -106,19 +106,38 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Configure API App Settings
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          EP: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          DEP: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          SUPA_URL: ${{ secrets.SUPABASE_URL }}
+          SUPA_ANON: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          SUPA_SVC: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WEB: ${{ secrets.WEB_URL }}
         run: |
+          jq -n \
+            --arg ep "$EP" \
+            --arg key "$KEY" \
+            --arg dep "$DEP" \
+            --arg supa_url "$SUPA_URL" \
+            --arg supa_anon "$SUPA_ANON" \
+            --arg supa_svc "$SUPA_SVC" \
+            --arg web "$WEB" \
+            '{
+              AZURE_OPENAI_ENDPOINT: $ep,
+              AZURE_OPENAI_API_KEY: $key,
+              AZURE_OPENAI_DEPLOYMENT: $dep,
+              SUPABASE_URL: $supa_url,
+              SUPABASE_ANON_KEY: $supa_anon,
+              SUPABASE_SERVICE_ROLE_KEY: $supa_svc,
+              WEB_URL: $web,
+              WEBSITE_RUN_FROM_PACKAGE: "0"
+            }' > settings.json
           az webapp config appsettings set \
-            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --resource-group "$RG" \
             --name jpx-workout-api \
-            --settings \
-              AZURE_OPENAI_ENDPOINT="${{ secrets.AZURE_OPENAI_ENDPOINT }}" \
-              AZURE_OPENAI_API_KEY="${{ secrets.AZURE_OPENAI_API_KEY }}" \
-              AZURE_OPENAI_DEPLOYMENT="${{ secrets.AZURE_OPENAI_DEPLOYMENT }}" \
-              SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-              SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" \
-              SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
-              WEB_URL="${{ secrets.WEB_URL }}" \
-              WEBSITE_RUN_FROM_PACKAGE="1"
+            --settings @settings.json
 
       - name: Configure API Startup Command
         run: |
