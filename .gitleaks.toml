@@ -1,0 +1,13 @@
+# Extend default Gitleaks rules
+[extend]
+useDefault = true
+
+# Allowlist: intentionally tracked env files for personal dev sync between machines
+# (private repo, single developer)
+[[allowlists]]
+description = "Local env files - intentionally tracked for personal dev sync"
+paths = [
+  '''^env\.local$''',
+  '''^\.env\.local$''',
+  '''^\.env$'''
+]
