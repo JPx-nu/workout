@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '24'
+  NODE_VERSION: "24"
 
 jobs:
   build-and-deploy-web:
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       # ── Flutter SDK ──────────────────────────────────
       - uses: subosito/flutter-action@v2
@@ -70,8 +70,8 @@ jobs:
       - name: Deploy Frontend to Azure
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'jpx-workout-web'
-          package: './deploy-web'
+          app-name: "jpx-workout-web"
+          package: "./deploy-web"
 
   build-and-deploy-api:
     name: Build & Deploy Backend (API)
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -97,6 +97,7 @@ jobs:
           mkdir deploy-api
           cp -r apps/api/dist deploy-api/
           cp apps/api/package.json deploy-api/
+          cp apps/api/web.config deploy-api/ 2>/dev/null || true
           cd deploy-api && npm install --omit=dev
 
       - name: Login to Azure
@@ -104,8 +105,30 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Configure API App Settings
+        run: |
+          az webapp config appsettings set \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name jpx-workout-api \
+            --settings \
+              AZURE_OPENAI_ENDPOINT="${{ secrets.AZURE_OPENAI_ENDPOINT }}" \
+              AZURE_OPENAI_API_KEY="${{ secrets.AZURE_OPENAI_API_KEY }}" \
+              AZURE_OPENAI_DEPLOYMENT="${{ secrets.AZURE_OPENAI_DEPLOYMENT }}" \
+              SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+              SUPABASE_ANON_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}" \
+              SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+              WEB_URL="${{ secrets.WEB_URL }}" \
+              WEBSITE_RUN_FROM_PACKAGE="1"
+
+      - name: Configure API Startup Command
+        run: |
+          az webapp config set \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --name jpx-workout-api \
+            --startup-file "node dist/server.js"
+
       - name: Deploy Backend to Azure
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'jpx-workout-api'
-          package: './deploy-api'
+          app-name: "jpx-workout-api"
+          package: "./deploy-api"

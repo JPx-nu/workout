@@ -30,8 +30,8 @@ aiRoutes.post("/chat", async (c) => {
 		typeof body.conversationId === "string" ? body.conversationId : undefined;
 	const imageUrls: string[] = Array.isArray(body.imageUrls)
 		? body.imageUrls
-				.filter((u: unknown): u is string => typeof u === "string")
-				.slice(0, AI_CONFIG.uploads.maxImagesPerMessage)
+			.filter((u: unknown): u is string => typeof u === "string")
+			.slice(0, AI_CONFIG.uploads.maxImagesPerMessage)
 		: [];
 
 	if (!message) {
@@ -117,6 +117,9 @@ aiRoutes.post("/chat", async (c) => {
 
 	// ── LangGraph agent invocation with SSE streaming ────────
 	return streamSSE(c, async (stream) => {
+		// Disable Azure App Service / IIS / ARR response buffering for SSE
+		c.header("X-Accel-Buffering", "no");
+		c.header("Cache-Control", "no-cache, no-transform");
 		try {
 			const agent = await createAgent(client, auth.userId, auth.clubId);
 
@@ -128,12 +131,12 @@ aiRoutes.post("/chat", async (c) => {
 			const userContent =
 				imageUrls.length > 0
 					? [
-							{ type: "text" as const, text: message },
-							...imageUrls.map((url) => ({
-								type: "image_url" as const,
-								image_url: { url },
-							})),
-						]
+						{ type: "text" as const, text: message },
+						...imageUrls.map((url) => ({
+							type: "image_url" as const,
+							image_url: { url },
+						})),
+					]
 					: message;
 
 			const inputMessages = [

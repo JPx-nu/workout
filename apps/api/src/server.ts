@@ -34,8 +34,15 @@ app.use(
 			if (origin && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
 				return origin;
 			}
-			// Allow configured WEB_URL in production
-			return process.env.WEB_URL || "http://localhost:3000";
+			// Allow configured WEB_URL and Azure production domain
+			const allowed = [
+				process.env.WEB_URL,
+				"https://jpx-workout-web.azurewebsites.net",
+			].filter(Boolean) as string[];
+			if (origin && allowed.includes(origin)) {
+				return origin;
+			}
+			return allowed[0] || "http://localhost:3000";
 		},
 		credentials: true,
 	}),
