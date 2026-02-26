@@ -38,6 +38,7 @@ app.use(
 			const allowed = [
 				process.env.WEB_URL,
 				"https://jpx-workout-web.azurewebsites.net",
+				"https://jpx.nu",
 			].filter(Boolean) as string[];
 			if (origin && allowed.includes(origin)) {
 				return origin;
