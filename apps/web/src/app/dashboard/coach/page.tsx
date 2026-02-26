@@ -9,6 +9,7 @@ import {
 	Paperclip,
 	Send,
 	Sparkles,
+	Square,
 	User,
 	X,
 } from "lucide-react";
@@ -22,6 +23,7 @@ export default function CoachPage() {
 		input,
 		setInput,
 		sendMessage,
+		stopStreaming,
 		suggestedPrompts,
 		conversations,
 		loadConversation,
@@ -336,13 +338,26 @@ export default function CoachPage() {
 						}
 						className="glass-input flex-1"
 					/>
-					<button
-						onClick={sendMessage}
-						disabled={!input.trim() || isTyping}
-						className="btn-primary px-4 disabled:opacity-40 disabled:cursor-not-allowed"
-					>
-						<Send size={18} />
-					</button>
+					{/* Context-aware send/stop button */}
+					{isTyping && !input.trim() ? (
+						<button
+							onClick={stopStreaming}
+							className="btn-primary px-4 animate-pulse"
+							style={{ background: "var(--color-error, #ef4444)" }}
+							aria-label="Stop generating"
+						>
+							<Square size={16} fill="currentColor" />
+						</button>
+					) : (
+						<button
+							onClick={sendMessage}
+							disabled={!input.trim()}
+							className="btn-primary px-4 disabled:opacity-40 disabled:cursor-not-allowed"
+							aria-label={isTyping ? "Send and interrupt" : "Send message"}
+						>
+							<Send size={18} />
+						</button>
+					)}
 				</div>
 			</div>
 

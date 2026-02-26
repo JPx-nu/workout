@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
@@ -49,6 +50,12 @@ app.use(
 	}),
 );
 
+// ── Request body size limits ───────────────────────────────────
+// Default 2 MB for general API routes
+app.use("/api/*", bodyLimit({ maxSize: 2 * 1024 * 1024 }));
+// AI chat supports image uploads — allow up to 12 MB
+app.use("/api/ai/*", bodyLimit({ maxSize: 12 * 1024 * 1024 }));
+
 // ── Health check (public) ──────────────────────────────────────
 app.get("/health", (c) =>
 	c.json({
@@ -78,9 +85,28 @@ const port = parseInt(process.env.PORT || "8787");
 
 console.log(`🏊‍♂️🚴‍♂️🏃‍♂️ Triathlon AI API server starting on port ${port}`);
 
-serve({
+const server = serve({
 	fetch: app.fetch,
 	port,
 });
 
+// ── Graceful shutdown ──────────────────────────────────────────
+// Ensures in-flight requests complete before Azure restarts the process
+function shutdown(signal: string) {
+	console.log(`\n🛑 ${signal} received — shutting down gracefully…`);
+	server.close(() => {
+		console.log("✅ Server closed. Goodbye.");
+		process.exit(0);
+	});
+	// Force exit after 10s if connections don't drain
+	setTimeout(() => {
+		console.warn("⚠️  Forced shutdown after 10s timeout");
+		process.exit(1);
+	}, 10_000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
 export default app;
+

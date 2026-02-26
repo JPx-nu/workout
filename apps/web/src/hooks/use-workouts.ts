@@ -5,8 +5,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/supabase-provider";
-import type { StrengthSessionData } from "@/lib/mock/strength";
-import type { ChartDataPoint, WeeklyStats, Workout } from "@/lib/mock/workouts";
+import type { StrengthSessionData } from "@/lib/types";
+import type { ChartDataPoint, WeeklyStats, Workout } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 
 type ActivityFilter = "ALL" | "SWIM" | "BIKE" | "RUN" | "STRENGTH";

@@ -10,7 +10,7 @@ import type {
 	FatigueLevel,
 	HealthSnapshot,
 	MuscleFatigue,
-} from "@/lib/mock/health";
+} from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 
 const defaultSnapshot: HealthSnapshot = {
@@ -110,7 +110,7 @@ export function useHealth() {
 						(latest.sleepQuality * 10 +
 							latest.mood * 5 +
 							(latest.hrv > 0 ? 30 : 0)) /
-							1.4,
+						1.4,
 					),
 				),
 			});

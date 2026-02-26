@@ -15,7 +15,13 @@ import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AI_CONFIG } from "../../config/ai.js";
 import { buildSystemPrompt } from "./prompt.js";
-import { getDailyLogs, getProfile, getRecentMemories } from "./supabase.js";
+import {
+	getDailyLogs,
+	getProfile,
+	getRecentMemories,
+	searchMemoriesBySimilarity,
+	type AthleteMemory,
+} from "./supabase.js";
 import { createAllTools } from "./tools/index.js";
 
 /**
@@ -35,13 +41,14 @@ export async function createAgent(
 	client: SupabaseClient,
 	userId: string,
 	clubId: string,
+	userMessage?: string,
 ) {
-	// Load profile + today's readiness data + memories concurrently for faster initialization
+	// Load profile + today's readiness data + pinned memories concurrently for faster initialization
 	const today = new Date().toISOString().split("T")[0];
 
-	const [profile, memories, dailyLogs] = await Promise.all([
+	const [profile, pinnedMemories, dailyLogs] = await Promise.all([
 		getProfile(client, userId),
-		getRecentMemories(client, userId, 10),
+		getRecentMemories(client, userId, 5), // Top-5 most important pinned memories
 		getDailyLogs(client, userId, {
 			fromDate: today,
 			toDate: today,
@@ -50,6 +57,50 @@ export async function createAgent(
 	]);
 
 	const todayLog = dailyLogs.length > 0 ? dailyLogs[0] : null;
+
+	// Semantic memory recall: embed user message and find relevant memories
+	let allMemories: AthleteMemory[] = [...pinnedMemories];
+
+	if (userMessage) {
+		try {
+			const { AzureOpenAIEmbeddings } = await import("@langchain/openai");
+			const embeddingsModel = new AzureOpenAIEmbeddings({
+				azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+				azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
+					.split(".")[0]
+					.replace("https://", ""),
+				azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
+				azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+			});
+
+			const queryEmbedding = await embeddingsModel.embedQuery(userMessage);
+			const semanticResults = await searchMemoriesBySimilarity(
+				client,
+				userId,
+				queryEmbedding,
+				{ matchThreshold: 0.4, matchCount: 8 },
+			);
+
+			// Merge semantic results with pinned, deduplicate by content
+			const pinnedContents = new Set(pinnedMemories.map((m) => m.content));
+			for (const result of semanticResults) {
+				if (!pinnedContents.has(result.content)) {
+					allMemories.push({
+						id: result.id,
+						athlete_id: userId,
+						category: result.category,
+						content: result.content,
+						importance: result.importance,
+						created_at: "",
+						updated_at: "",
+					});
+				}
+			}
+		} catch (err) {
+			// Semantic search is best-effort — don't break the agent if it fails
+			console.warn("Semantic memory recall failed (non-fatal):", err);
+		}
+	}
 
 	// Create LLM instance — uses AzureChatOpenAI for Azure Foundry compatibility
 	const llm = new AzureChatOpenAI({
@@ -78,7 +129,7 @@ export async function createAgent(
 
 	// Build the system prompt
 	const systemMessage = new SystemMessage(
-		buildSystemPrompt(profile, todayLog, memories),
+		buildSystemPrompt(profile, todayLog, allMemories),
 	);
 
 	// ── Define graph nodes ────────────────────────────────────

@@ -20,8 +20,8 @@ import {
 } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { formatDuration, mToKm } from "@/hooks/use-workouts";
-import type { HealthSnapshot } from "@/lib/mock/health";
-import type { ChartDataPoint, WeeklyStats, Workout } from "@/lib/mock/workouts";
+import type { HealthSnapshot } from "@/lib/types";
+import type { ChartDataPoint, WeeklyStats, Workout } from "@/lib/types";
 
 type UpcomingEvent = {
 	id: string;

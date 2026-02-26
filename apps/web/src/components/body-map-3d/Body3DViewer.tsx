@@ -11,7 +11,7 @@ import {
 	useState,
 } from "react";
 import * as THREE from "three";
-import type { MuscleFatigue } from "@/lib/mock/health";
+import type { MuscleFatigue } from "@/lib/types";
 
 /* ─── Map muscle names from GLB userData → fatigue bodyPart keys ─── */
 const MUSCLE_NAME_MAP: Record<string, string> = {

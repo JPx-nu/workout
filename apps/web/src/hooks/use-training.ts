@@ -9,7 +9,7 @@ import type {
 	TrainingPlan,
 	TrainingSession,
 	UpcomingEvent,
-} from "@/lib/mock/training";
+} from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 
 const emptyPlan: TrainingPlan = {

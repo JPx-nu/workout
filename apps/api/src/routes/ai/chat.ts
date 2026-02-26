@@ -16,6 +16,7 @@ import {
 	classifyIntent,
 	processOutput,
 } from "../../services/ai/safety.js";
+import { extractMemories } from "../../services/ai/memory-extractor.js";
 import { createUserClient } from "../../services/ai/supabase.js";
 
 export const aiRoutes = new Hono();
@@ -121,7 +122,7 @@ aiRoutes.post("/chat", async (c) => {
 		c.header("X-Accel-Buffering", "no");
 		c.header("Cache-Control", "no-cache, no-transform");
 		try {
-			const agent = await createAgent(client, auth.userId, auth.clubId);
+			const agent = await createAgent(client, auth.userId, auth.clubId, message);
 
 			// Build input with history + new user message
 			// toBaseMessages handles multimodal content via metadata.imageUrls
@@ -240,6 +241,11 @@ aiRoutes.post("/chat", async (c) => {
 					},
 				},
 			]);
+
+			// Fire-and-forget: extract memories from this conversation turn
+			extractMemories(client, auth.userId, message, fullResponse).catch(
+				(err) => console.warn("Background memory extraction failed:", err),
+			);
 
 			// Signal completion
 			await stream.writeSSE({

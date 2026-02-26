@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	type Message,
 	suggestedPrompts,
-} from "@/lib/mock/coach";
+} from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 
 // API base URL — the Hono API server
@@ -196,7 +196,14 @@ export function useCoach() {
 	// ── Send message with SSE streaming ──────────────────────
 	const sendMessage = useCallback(async () => {
 		const text = input.trim();
-		if (!text || isTyping) return;
+		if (!text) return;
+
+		// If AI is currently streaming, abort it and keep the partial response
+		if (isTyping && abortRef.current) {
+			abortRef.current.abort();
+			abortRef.current = null;
+			setIsTyping(false);
+		}
 
 		const filesToUpload = [...attachedFiles];
 		setAttachedFiles([]);

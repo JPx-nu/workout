@@ -2,7 +2,7 @@
 
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import type { MuscleFatigue } from "@/lib/mock/health";
+import type { MuscleFatigue } from "@/lib/types";
 
 /* ─── Recovery recommendation based on fatigue level ─── */
 function getRecovery(level: number): {

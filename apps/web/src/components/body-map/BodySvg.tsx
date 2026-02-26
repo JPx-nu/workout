@@ -5,7 +5,7 @@ import Model, {
 	type IExerciseData,
 	type IMuscleStats,
 } from "react-body-highlighter";
-import type { MuscleFatigue } from "@/lib/mock/health";
+import type { MuscleFatigue } from "@/lib/types";
 import MuscleDetail from "./MuscleDetail";
 import {
 	fatigueToLibMuscles,
@@ -19,9 +19,9 @@ import {
    The library colors muscles by "frequency" (1–N) mapped to
    the `highlightedColors` array index. We bucket our 0-100
    fatigue levels into 3 tiers:
-     1 = low    (0-39)   → green
-     2 = moderate (40-69) → amber  
-     3 = high   (70-100)  → red
+	 1 = low    (0-39)   → green
+	 2 = moderate (40-69) → amber  
+	 3 = high   (70-100)  → red
    ═══════════════════════════════════════════════════ */
 function fatigueToFrequency(level: number): number {
 	if (level >= 70) return 3;

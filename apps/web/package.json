@@ -12,7 +12,6 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@triathlon/types": "workspace:*",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@schedule-x/calendar": "^4.2.0",
@@ -21,7 +20,8 @@
     "@schedule-x/theme-shadcn": "^4.2.0",
     "@serwist/next": "^9.5.6",
     "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.95.3",
+    "@supabase/supabase-js": "^2.98.0",
+    "@triathlon/types": "workspace:*",
     "@types/three": "^0.182.0",
     "geist": "^1.7.0",
     "lucide-react": "^0.563.0",
@@ -36,14 +36,14 @@
     "three": "^0.182.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^20.19.34",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
+    "eslint": "^9.39.3",
     "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3"
   }
 }

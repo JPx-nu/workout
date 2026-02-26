@@ -296,6 +296,34 @@ export async function getRecentMemories(
 	return data ?? [];
 }
 
+/**
+ * Semantic memory search — finds memories relevant to a given query
+ * by embedding the query and searching via pgvector cosine similarity.
+ * Uses the existing `match_memories` RPC function.
+ */
+export async function searchMemoriesBySimilarity(
+	client: SupabaseClient,
+	userId: string,
+	queryEmbedding: number[],
+	options: { matchThreshold?: number; matchCount?: number } = {},
+): Promise<Array<{ id: string; category: string; content: string; importance: number; similarity: number }>> {
+	const { matchThreshold = 0.4, matchCount = 8 } = options;
+
+	const { data, error } = await client.rpc("match_memories", {
+		p_athlete_id: userId,
+		query_embedding: queryEmbedding,
+		match_threshold: matchThreshold,
+		match_count: matchCount,
+	});
+
+	if (error) {
+		console.warn("Semantic memory search failed:", error.message);
+		return [];
+	}
+
+	return data ?? [];
+}
+
 // ── Write services ────────────────────────────────────────────
 
 export async function insertWorkout(

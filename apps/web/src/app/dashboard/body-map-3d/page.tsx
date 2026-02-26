@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { mockFatigueData } from "@/lib/mock/health";
+import { defaultFatigueData } from "@/lib/types";
 
 /* Dynamic import — WebGL/Three.js cannot SSR */
 const Body3DViewer = dynamic(
@@ -65,7 +65,7 @@ export default function BodyMap3DPage() {
 			</div>
 
 			{/* 3D Viewer */}
-			<Body3DViewer fatigueData={mockFatigueData} />
+			<Body3DViewer fatigueData={defaultFatigueData} />
 
 			{/* Attribution */}
 			<p

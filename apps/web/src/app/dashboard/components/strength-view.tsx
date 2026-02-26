@@ -19,8 +19,8 @@ import {
 } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { formatDuration } from "@/hooks/use-workouts";
-import type { StrengthSessionData } from "@/lib/mock/strength";
-import type { Workout } from "@/lib/mock/workouts";
+import type { StrengthSessionData } from "@/lib/types";
+import type { Workout } from "@/lib/types";
 
 // Reusing types from hook
 type StrengthMetrics = {
