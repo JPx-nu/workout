@@ -34,7 +34,7 @@ export function useCoach() {
 		Array<{
 			id: string;
 			title: string | null;
-			updated_at: string;
+			created_at: string;
 			message_count: number;
 		}>
 	>([]);

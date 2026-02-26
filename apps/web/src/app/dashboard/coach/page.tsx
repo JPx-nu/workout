@@ -420,7 +420,7 @@ export default function CoachPage() {
 											<span>{conv.message_count} msgs</span>
 											<span>·</span>
 											<span>
-												{new Date(conv.updated_at).toLocaleDateString("en-US", {
+												{new Date(conv.created_at).toLocaleDateString("en-US", {
 													month: "short",
 													day: "numeric",
 												})}
