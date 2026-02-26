@@ -10,10 +10,12 @@ dist/
 .env
 .env.local
 .env.*.local
+env.local
 
 # IDE
 .vscode/
 .idea/
+.cursor/
 *.swp
 *.swo
 
@@ -32,3 +34,15 @@ playwright-report/
 
 # Supabase
 supabase/.temp/
+
+# Azure publish profiles
+*.publishsettings
+*-profile.xml
+
+# Build artifacts / lint output
+eslint-output.json
+build_log.txt
+*.log
+
+# npm lockfile (this is a pnpm workspace)
+package-lock.json
