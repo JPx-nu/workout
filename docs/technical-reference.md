@@ -1,6 +1,6 @@
 # Triathlon AI SaaS — Technical Reference & Implementation Status
 
-> **Version:** 0.2.0 · **Last Updated:** 2026-02-12  
+> **Version:** 0.3.0 · **Last Updated:** 2026-02-26  
 > **Source of Truth:** Cross-references [Triathlon AI SaaS Plan Review.md](../Triathlon%20AI%20SaaS%20Plan%20Review.md)
 
 ---
@@ -104,7 +104,7 @@ triathlon-app/                  ← Root (pnpm workspace + Turborepo)
 | **CSS** | Tailwind CSS v4 + Liquid Glass | Tailwind v4 + `@tailwindcss/postcss` + custom Liquid Glass CSS variables | ✅ Done |
 | **3D Visualization** | React Three Fiber | `@react-three/fiber` 9.5 + `@react-three/drei` 10.7 + `three` 0.182 | ✅ Done |
 | **Backend Framework** | Hono (Node.js) | Hono 4 + `@hono/node-server` + JWT auth + rate limiter | ✅ Done |
-| **AI Orchestration** | LangGraph 1.1 | `@langchain/langgraph` 1.1.4 + `@langchain/openai` 0.4 + `@langchain/core` 0.3 | ✅ Installed, not wired |
+| **AI Orchestration** | LangGraph 1.1 | `@langchain/langgraph` 1.1.4 + `@langchain/openai` 0.4 + `@langchain/core` 0.3 | ✅ Working (SSE streaming) |
 | **Validation** | Zod 4 | Zod 4 — `z.interface()`, `z.uuid()`, `z.url()`, `z.iso.datetime()` | ✅ Done |
 | **Database** | Supabase (Postgres + pgvector) | Supabase JS v2, pgvector enabled, full schema, optimized RLS | ✅ Schema complete |
 | **Auth** | Supabase Auth + Custom Claims JWT | Custom claims auth hook + JWT middleware on API | ✅ Done |
@@ -120,11 +120,13 @@ triathlon-app/                  ← Root (pnpm workspace + Turborepo)
 All 6 migrations cover the complete schema.
 
 ### Migration 1: Extensions
+
 - `uuid-ossp` — UUID generation
 - `vector` (pgvector) — Vector embeddings for RAG
 - `pg_trgm` — Trigram fuzzy text search
 
 ### Migration 2: Core Tables
+
 | Table | Purpose | Key Fields |
 |---|---|---|
 | `clubs` | Multi-tenant root | `id`, `name`, `slug`, `settings` |
@@ -139,6 +141,7 @@ All 6 migrations cover the complete schema.
 **Triggers:** `handle_new_user()` auto-creates a profile on signup.
 
 ### Migration 3: RAG & Knowledge Graph
+
 | Table | Purpose |
 |---|---|
 | `documents` | Club PDF/markdown uploads with processing status |
@@ -147,10 +150,12 @@ All 6 migrations cover the complete schema.
 | `kg_edges` | Relationships (PERFORMED, CAUSED, RECOMMENDS, RESTRICTS, HAS_INJURY, etc.) |
 
 **Functions:**
+
 - `match_documents(query_embedding, threshold, count, club_id)` — Vector similarity search
 - `traverse_athlete_graph(athlete_id, depth, relationship_types)` — Recursive CTE graph traversal
 
 ### Migration 4: Gamification & Chat
+
 | Table | Purpose |
 |---|---|
 | `squads` | Team groupings within a club |
@@ -161,11 +166,13 @@ All 6 migrations cover the complete schema.
 | `messages` | Individual messages with role + metadata |
 
 ### Migration 5: RLS & Auth Hook
+
 - **Custom Claims Auth Hook** (`custom_access_token_hook`) — Injects `club_id` and `role` into JWT `app_metadata` on login
 - **Helper** (`requesting_club_id()`) — Extracts `club_id` from JWT for RLS policies
 - **RLS Policies** — Comprehensive policies on ALL 15 tables using `club_id = requesting_club_id()` pattern
 
 ### Migration 6: RLS Performance Optimization
+
 - All `auth.uid()` and `requesting_club_id()` calls wrapped in `(select ...)` subqueries
 - Postgres evaluates wrapped functions **once per query** instead of once per row
 - Significant performance improvement on tables with many rows
@@ -175,6 +182,7 @@ All 6 migrations cover the complete schema.
 ## 5. Frontend — Current State
 
 ### Stack
+
 - **Framework:** Next.js 16.1.6 (App Router, `output: 'standalone'`)
 - **React:** 19.2.3 with React Compiler (`reactCompiler: true`)
 - **CSS:** Tailwind v4 with custom Liquid Glass design system via CSS variables
@@ -184,18 +192,21 @@ All 6 migrations cover the complete schema.
 - **Icons:** Lucide React
 
 ### Dashboard Pages
+
 | Route | Status | Description |
 |---|---|---|
-| `/dashboard` | ✅ Mock data | Overview with stats cards, weekly chart (Recharts), recent workouts |
-| `/dashboard/workouts` | ✅ Mock data | Workout list with filtering by activity type |
-| `/dashboard/training` | ✅ Mock data | Training plan calendar view |
-| `/dashboard/coach` | ✅ Mock data | AI chat interface (placeholder responses) |
-| `/dashboard/body-map` | ✅ Mock data | 2D SVG interactive body map with muscle detail panel |
+| `/dashboard` | ✅ Supabase | Overview with stats cards, training volume chart, readiness score |
+| `/dashboard/workouts` | ✅ Supabase | Workout list with Swim/Bike/Run/Strength filters |
+| `/dashboard/training` | ✅ Supabase | Training plan calendar with Day/Week/Month views |
+| `/dashboard/coach` | ✅ Working | AI Coach chat with LangGraph streaming + conversation history |
+| `/dashboard/body-map` | ✅ Supabase | 2D SVG interactive body map with muscle detail panel |
 | `/dashboard/body-map-3d` | ⚠️ Partially working | 3D GLTF body model with R3F (crash fixes applied) |
-| `/dashboard/settings` | ✅ Mock data | User preferences, notifications, connected devices |
+| `/dashboard/settings` | ✅ Supabase | Profile management, dashboard view preferences |
 
 ### Security Headers
+
 CSP configured in `next.config.ts`:
+
 - `default-src 'self' capacitor://localhost ionic://localhost` — Capacitor WebView ready
 - `connect-src` allows Supabase, Azure OpenAI, and Capacitor schemes
 - `unsafe-eval` for Three.js WASM — **TODO: replace with nonce before App Store submission**
@@ -203,16 +214,21 @@ CSP configured in `next.config.ts`:
 - Permissions-Policy: camera=(), microphone=(), geolocation=()
 
 ### Design System: Liquid Glass
+
 Implemented through CSS custom properties in `globals.css`. Full reference: [docs/design-system.md](./design-system.md).
 
 ### Data Layer
-All hooks (`use-profile`, `use-workouts`, `use-training`, `use-coach`, `use-health`) currently return **mock data** from `lib/mock/`. Supabase client/server module exists but is not yet connected to hooks.
+
+All hooks (`use-profile`, `use-workouts`, `use-training`, `use-coach`, `use-health`) are **connected to Supabase**. The `use-coach` hook communicates with the API (`NEXT_PUBLIC_API_URL`) for AI chat and uses Supabase directly for conversation history. The `use-planned-workouts` hook calls the API for planned workout CRUD.
+
+> **Known Issue:** Dashboard occasionally fetches `undefined` URL → 404 (non-blocking, cosmetic).
 
 ---
 
 ## 6. Backend (API) — Current State
 
 ### Stack
+
 - **Framework:** Hono 4 + `@hono/node-server`
 - **Auth:** `hono/jwt` middleware + custom claims extraction
 - **Rate Limiting:** Sliding-window in-memory limiter with Draft 7 `RateLimit-*` headers
@@ -223,16 +239,19 @@ All hooks (`use-profile`, `use-workouts`, `use-training`, `use-coach`, `use-heal
 - **Dev:** tsx (watch mode)
 
 ### Middleware Stack
+
 | Middleware | Route | Description |
 |---|---|---|
 | Logger | `*` | Request logging |
 | Secure Headers | `*` | OWASP security headers |
-| CORS | `*` | Origin from `WEB_URL` env |
+| CORS | `*` | Allows `WEB_URL` env + `jpx-workout-web.azurewebsites.net` + `jpx.nu` |
 | JWT Auth | `/api/*` | Validates Supabase JWT, extracts `userId`, `clubId`, `role` |
 | Rate Limiter | `/api/ai/*` | 20 req/min per client for AI endpoints |
 
 ### AI Safety Guard
+
 Integrated at the chat endpoint level (`services/ai/safety.ts`):
+
 - **Emergency detection:** crisis/self-harm keywords → helpline resources, hard stop
 - **Medical disclaimer:** auto-injected on health/nutrition/medical content
 - **Input validation:** reject messages > 4000 chars
@@ -240,17 +259,20 @@ Integrated at the chat endpoint level (`services/ai/safety.ts`):
 - **Confidence gating:** responses < 0.6 confidence flagged with extra disclaimers
 
 ### Endpoints
+
 | Route | Method | Status | Description |
 |---|---|---|---|
 | `/health` | GET | ✅ Working | Health check with version, runtime info |
-| `/api/ai/chat` | POST | ⚠️ Stub | Safety-guarded; returns placeholder response |
-| `/api/ai/conversations` | GET | ⚠️ Stub | Returns empty array |
+| `/api/ai/chat` | POST | ✅ Working | Safety-guarded LangGraph agent with SSE streaming |
+| `/api/ai/conversations` | GET | ✅ Working | Lists user conversations with message counts |
+| `/api/planned-workouts` | GET/POST | ✅ Working | Planned workout CRUD |
 | `/webhooks/garmin/activities` | POST | ⚠️ Stub | Logs payload |
 | `/webhooks/polar/activities` | POST | ⚠️ Stub | Logs payload |
 | `/webhooks/wahoo/activities` | POST | ⚠️ Stub | Logs payload |
 | `/webhooks/form/activities` | POST | ⚠️ Stub | Logs payload |
 
 ### Services (Scaffolded Directories)
+
 | Service | Status |
 |---|---|
 | `services/ai/nodes/` | 📁 Empty — LangGraph state machine nodes |
@@ -263,13 +285,16 @@ Integrated at the chat endpoint level (`services/ai/safety.ts`):
 ## 7. Shared Packages
 
 ### `@triathlon/types` (`packages/types/`)
+
 **Status: ✅ Complete**
 
 **Domain Types** (`index.ts`):
+
 - **Enums:** `ActivityType`, `DataSource`, `UserRole`, `RaceDistanceType`, `HealthMetricType`, `KGEntityType`, `KGRelationship`, `ChatIntent`, `ChatRole`
 - **Interfaces:** `Club`, `Profile`, `Workout`, `DailyLog`, `Injury`, `HealthMetric`, `ChatMessage`, `StandardWorkout`
 
 **Validation Schemas** (`validation.ts`) — Zod 4:
+
 - `ChatMessageInput` — sanitized message + conversation UUID
 - `WorkoutInput` — webhook payload with activity type, duration, distance, HR, pace, power
 - `ProfileUpdate` — display name, timezone, avatar URL
@@ -280,6 +305,7 @@ Integrated at the chat endpoint level (`services/ai/safety.ts`):
 - XSS-safe string sanitizer via `.transform()` (strips HTML tags)
 
 ### `packages/config/`
+
 **Status: 📁 Scaffolded** — Empty, intended for shared ESLint/TS config.
 
 ---
@@ -287,34 +313,50 @@ Integrated at the chat endpoint level (`services/ai/safety.ts`):
 ## 8. CI/CD & Deployment
 
 ### CI Pipeline (`ci.yml`)
+
 ```
 lint-and-typecheck → test → build → security-audit (main only)
 ```
+
 - Uses Node.js 24
 - Security audit step runs `scripts/security-audit.ts` (currently a stub, `continue-on-error: true`)
 
 ### Deployment (`deploy.yml`)
+
 - **Trigger:** Push to `main` or manual dispatch
 - **Web:** Builds Next.js standalone → copies to `deploy-web/` → deploys to `jpx-workout-web` (Azure App Service)
 - **API:** Builds TypeScript → copies dist to `deploy-api/` → deploys to `jpx-workout-api` (Azure App Service)
 - Node.js 24 in all jobs
 - Dependencies: `pnpm` with `node-linker=hoisted` (`.npmrc`) for Azure compatibility
 - `outputFileTracingRoot` set to monorepo root in `next.config.ts`
+- **Custom domain:** Site served via `https://jpx.nu/workout` (reverse proxy to Azure)
+- **Azure resource group:** `jpx-main-rg`
 
-### Environment Variables (`.env.example`)
-```
-NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_JWT_SECRET
-AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_DEPLOYMENT_GPT4O, AZURE_OPENAI_DEPLOYMENT_EMBEDDING
-GARMIN_CONSUMER_KEY/SECRET, POLAR_CLIENT_ID/SECRET, WAHOO_CLIENT_ID/SECRET
-WEB_URL, API_URL
-```
+### GitHub Secrets (Repository)
+
+| Secret | Purpose |
+|---|---|
+| `AZURE_CREDENTIALS` | Azure login for deployment |
+| `AZURE_RESOURCE_GROUP` | Resource group name (`jpx-main-rg`) |
+| `AZURE_OPENAI_ENDPOINT` | AI model endpoint |
+| `AZURE_OPENAI_API_KEY` | AI authentication |
+| `AZURE_OPENAI_DEPLOYMENT` | AI model name (e.g., `gpt-5-mini`) |
+| `NEXT_PUBLIC_API_URL` | Frontend → API URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client-side Supabase key |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Client-side Supabase publishable key |
+| `NEXT_PUBLIC_SUPABASE_URL` | Client-side Supabase URL |
+| `SUPABASE_URL` | Server-side Supabase URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side admin key |
+| `WEB_URL` | CORS allowed origin (`https://jpx.nu`) |
 
 ---
 
 ## 9. Agent Configuration
 
 ### Project Rules (`.gemini/rules.md`)
+
 Comprehensive AI agent rules covering:
+
 - Monorepo conventions, TypeScript strictness, Zod 4 usage
 - Liquid Glass design system adherence
 - Data layer `@mock`/`@real` annotation convention
@@ -325,6 +367,7 @@ Comprehensive AI agent rules covering:
 - Git conventional commits, environment variable naming
 
 ### Agent Workflows
+
 - **`/dev`** (`.agent/workflows/dev.md`) — Starting dev servers, adding pages/routes/migrations
 - **`/deploy`** (`.agent/workflows/deploy.md`) — Azure App Service deployment
 
@@ -399,35 +442,41 @@ Comprehensive AI agent rules covering:
 ## 11. Priority Work Queue
 
 ### Immediate (Phase 1 Completion)
+
 1. **Wire Supabase auth** — Connect `lib/supabase/client.ts` to hooks, replace mock data
 2. **Connect all hooks to Supabase** — Replace mock layer with real data fetching
 3. **Fix 3D body map stability** — Ensure stable rendering with proper DRACO/GLTF loading
 4. **Implement security audit** — Flesh out `scripts/security-audit.ts`
 
 ### Short-term (Phase 2: Data Mesh)
+
 5. **Implement webhook validators** — Garmin signature, Polar token, Wahoo signature verification
-6. **Build normalization service** — `StandardWorkout` transformers for each source
-7. **Build document ingestion pipeline** — PDF parsing → chunking → Azure OpenAI embedding → pgvector
+2. **Build normalization service** — `StandardWorkout` transformers for each source
+3. **Build document ingestion pipeline** — PDF parsing → chunking → Azure OpenAI embedding → pgvector
 
 ### Medium-term (Phase 3: Agentic Brain)
+
 8. **Implement LangGraph agent** — State machine with Triage/Context/Planner/Execution/Synthesis nodes
-9. **Wire RAG + KG retrieval** — Use `match_documents` + `traverse_athlete_graph` as LangGraph tools
-10. **Connect chat UI to real agent** — Replace stub response with streaming LangGraph output
+2. **Wire RAG + KG retrieval** — Use `match_documents` + `traverse_athlete_graph` as LangGraph tools
+3. **Connect chat UI to real agent** — Replace stub response with streaming LangGraph output
 
 ---
 
 ## 12. Native App Readiness (Capacitor.js)
 
 ### Strategy
+
 - **MVP:** Web app served as a WebView via Capacitor pointing at the hosted URL
 - **Integration Phase:** Capacitor plugins for HealthKit/Health Connect, push notifications, haptics
 
 ### Ready Now ✅
+
 - CSP includes `capacitor://localhost` and `ionic://localhost`
 - Agent rules enforce native-compatible patterns (safe areas, touch targets, no browser-only APIs)
 - All routes use URL-safe paths (deep link compatible)
 
 ### Pending (Before App Store Submission)
+
 | Item | Priority | Notes |
 |---|---|---|
 | Capacitor.js project init | High | `npx @capacitor/cli init` in `apps/mobile/` |
@@ -446,19 +495,23 @@ Comprehensive AI agent rules covering:
 ## 13. Key Configuration Notes
 
 ### pnpm + Azure Compatibility
+
 - `.npmrc` contains `node-linker=hoisted` to avoid symlink issues on Azure App Service
 - `next.config.ts` uses `outputFileTracingRoot` pointing to monorepo root for standalone tracing
 - `WEBSITE_RUN_FROM_PACKAGE=1` must be set in Azure App Settings
 
 ### React Compiler
+
 - Enabled via `reactCompiler: true` in `next.config.ts`
 - `babel-plugin-react-compiler` 1.0.0 installed as dev dependency
 - Provides automatic memoization for data-heavy dashboard components
 
 ### Vector Dimensions
+
 - Embedding column uses `vector(2000)` — verify this matches the Azure OpenAI `text-embedding-3-large` model output dimensions (default is 3072, but dimensionality can be configured)
 
 ### RLS Security Model
+
 - All tenant data isolated by `club_id` extracted from JWT `app_metadata`
 - All RLS function calls wrapped in `(select ...)` for per-query evaluation performance
 - No secondary lookup needed — `requesting_club_id()` reads directly from token
@@ -485,18 +538,21 @@ Comprehensive AI agent rules covering:
 As a platform handling sensitive health, biometric, and wearable data, JPx implements stringent security and compliance measures aligning with GDPR, EU AI Act, and EHDS (European Health Data Space) frameworks:
 
 ### Zero-Trust & Data Architecture
+
 - **Strict Row-Level Security (RLS)**: Enforced via `(auth.jwt() ->> 'client_id') IS NULL` policies (using `AS RESTRICTIVE`) to prevent any external OAuth clients from querying sensitive raw health data directly. All core tables are safeguarded to ensure `athlete_id = auth.uid()`.
 - **Secret Management**: API keys and secrets are loaded via environment variables, managed securely in Azure App Settings and verified by CI/CD Secret Scanning (Gitleaks).
 
 ### Privacy UX & Data Control
+
 - **Data Control Center**: Built-in GDPR features within the user settings (`/dashboard/settings`), including 1-click **Export My Data** (JSON) for data portability, and **Delete Account & Data** for the right to be forgotten.
 - **Granular Consent**: Explicit opt-in flows during wearable connection onboarding regarding the usage of HR, HRV, and sleep data for LLM personalization.
 
 ### High-Risk AI Provider Guardrails
+
 - **Explainability & Human Oversight**: The EU AI Act (2026/2027) mandates explainability for High-Risk AI systems. The JPx UI automatically flags AI-generated workouts and includes a mandatory disclaimer requiring human oversight before execution.
 - **Data Anonymization Pipeline**: AI requests pass through `PIIMiddleware` / Microsoft Presidio hooks (currently toggled behind a feature flag for testing) to sanitize PII prior to hitting the LLM context limits or LangSmith traces.
 - **Zero-Retention**: Azure OpenAI enterprise integration guarantees a **Zero Data Retention** policy. Telemetry and prompts are transient and never used to train foundational AI models.
 
 ### Future-Proofing
-- **EHDS Interoperability**: For future data liquidity, JPx has mapped an architectural path to FHIR (Fast Healthcare Interoperability Resources) data structures (`docs/EHDS_ARCHITECTURE.md`), preparing for seamless export and clinical system alignment when required by the EU.
 
+- **EHDS Interoperability**: For future data liquidity, JPx has mapped an architectural path to FHIR (Fast Healthcare Interoperability Resources) data structures (`docs/EHDS_ARCHITECTURE.md`), preparing for seamless export and clinical system alignment when required by the EU.
