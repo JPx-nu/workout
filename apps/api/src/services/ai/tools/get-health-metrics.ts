@@ -13,43 +13,45 @@ export function createGetHealthMetricsTool(
 	userId: string,
 ) {
 	return tool(
-		async ({
-			days,
-			metricType,
-		}: Record<string, string | number | undefined>) => {
-			const lookbackDays = (days as number | undefined) ?? 7;
-			const fromDate = new Date(Date.now() - lookbackDays * 86400000)
-				.toISOString()
-				.split("T")[0];
+		async ({ days, metricType }) => {
+			try {
+				const lookbackDays = days ?? 7;
+				const fromDate = new Date(Date.now() - lookbackDays * 86400000)
+					.toISOString()
+					.split("T")[0];
 
-			const [dailyLogs, healthMetrics] = await Promise.all([
-				getDailyLogs(client, userId, { fromDate, limit: lookbackDays }),
-				getHealthMetrics(client, userId, {
-					fromDate,
-					metricType: metricType as string | undefined,
-				}),
-			]);
+				const [dailyLogs, healthMetrics] = await Promise.all([
+					getDailyLogs(client, userId, { fromDate, limit: lookbackDays }),
+					getHealthMetrics(client, userId, {
+						fromDate,
+						metricType,
+					}),
+				]);
 
-			return JSON.stringify({
-				dailyLogs: dailyLogs.map((d) => ({
-					date: d.log_date,
-					sleepHours: d.sleep_hours,
-					sleepQuality: d.sleep_quality,
-					rpe: d.rpe,
-					mood: d.mood,
-					hrv: d.hrv,
-					restingHr: d.resting_hr,
-					weightKg: d.weight_kg,
-					notes: d.notes,
-				})),
-				healthMetrics: healthMetrics.map((m) => ({
-					type: m.metric_type,
-					value: m.value,
-					unit: m.unit,
-					recordedAt: m.recorded_at,
-					source: m.source,
-				})),
-			});
+				return JSON.stringify({
+					dailyLogs: dailyLogs.map((d) => ({
+						date: d.log_date,
+						sleepHours: d.sleep_hours,
+						sleepQuality: d.sleep_quality,
+						rpe: d.rpe,
+						mood: d.mood,
+						hrv: d.hrv,
+						restingHr: d.resting_hr,
+						weightKg: d.weight_kg,
+						notes: d.notes,
+					})),
+					healthMetrics: healthMetrics.map((m) => ({
+						type: m.metric_type,
+						value: m.value,
+						unit: m.unit,
+						recordedAt: m.recorded_at,
+						source: m.source,
+					})),
+				});
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : "Unknown error";
+				return `Error fetching health metrics: ${msg}. Please check parameters and try again.`;
+			}
 		},
 		{
 			name: "get_health_metrics",
@@ -64,7 +66,7 @@ export function createGetHealthMetricsTool(
 					.string()
 					.optional()
 					.describe("Filter health metrics by type (e.g., VO2_MAX, BODY_FAT)"),
-			}) as any,
+			}),
 		},
 	);
 }

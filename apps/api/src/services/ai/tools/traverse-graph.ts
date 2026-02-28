@@ -13,31 +13,36 @@ export function createTraverseGraphTool(
 ) {
 	return tool(
 		async ({ maxDepth = 2, edgeTypes }) => {
-			// The starting node is the athlete's user profile ID
-			// Make sure the graph has matching nodes
-			const { data, error } = await client.rpc("traverse_athlete_graph", {
-				start_node_id: userId,
-				max_depth: maxDepth,
-				edge_types: edgeTypes ?? null,
-			});
+			try {
+				// The starting node is the athlete's user profile ID
+				// Make sure the graph has matching nodes
+				const { data, error } = await client.rpc("traverse_athlete_graph", {
+					start_node_id: userId,
+					max_depth: maxDepth,
+					edge_types: edgeTypes ?? null,
+				});
 
-			if (error) {
-				return `Error traversing memory graph: ${error.message}`;
+				if (error) {
+					return `Error traversing memory graph: ${error.message}`;
+				}
+
+				if (!data || data.length === 0) {
+					return "No relationships found in the athlete graph.";
+				}
+
+				return JSON.stringify(
+					data.map((d: any) => ({
+						id: d.node_id,
+						label: d.node_label,
+						type: d.node_type,
+						path: d.path_names.join(" -> "),
+						depth: d.depth,
+					})),
+				);
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : "Unknown error";
+				return `Error traversing memory graph: ${msg}. Please try again.`;
 			}
-
-			if (!data || data.length === 0) {
-				return "No relationships found in the athlete graph.";
-			}
-
-			return JSON.stringify(
-				data.map((d: any) => ({
-					id: d.node_id,
-					label: d.node_label,
-					type: d.node_type,
-					path: d.path_names.join(" -> "),
-					depth: d.depth,
-				})),
-			);
 		},
 		{
 			name: "traverse_athlete_graph",

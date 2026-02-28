@@ -9,6 +9,7 @@ import { RATE_LIMITS, rateLimit } from "./middleware/rate-limit.js";
 import { aiRoutes } from "./routes/ai/chat.js";
 import { plannedWorkoutsRoutes } from "./routes/planned-workouts/index.js";
 import { webhookRoutes } from "./routes/webhooks/index.js";
+import { integrationRoutes } from "./routes/integrations/index.js";
 
 const app = new Hono();
 
@@ -79,6 +80,7 @@ app.use("/api/ai/*", rateLimit(RATE_LIMITS.aiChat));
 // Route groups
 app.route("/api/ai", aiRoutes);
 app.route("/api/planned-workouts", plannedWorkoutsRoutes);
+app.route("/api/integrations", integrationRoutes);
 
 // ── Start server ───────────────────────────────────────────────
 const port = parseInt(process.env.PORT || "8787");

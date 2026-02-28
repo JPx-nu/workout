@@ -13,31 +13,36 @@ import { insertMemory } from "../supabase.js";
 export function createSaveMemoryTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ category, content, importance = 3 }) => {
-			// Generate embedding for natural language search scaling later
-			let embedding: number[] | undefined;
 			try {
-				const embeddingsModel = new AzureOpenAIEmbeddings({
-					azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-					azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-						.split(".")[0]
-						.replace("https://", ""),
-					azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-					azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+				// Generate embedding for natural language search scaling later
+				let embedding: number[] | undefined;
+				try {
+					const embeddingsModel = new AzureOpenAIEmbeddings({
+						azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+						azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
+							.split(".")[0]
+							.replace("https://", ""),
+						azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
+						azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+					});
+					embedding = await embeddingsModel.embedQuery(content);
+				} catch (err) {
+					console.error("Failed to generate embedding for athlete memory", err);
+				}
+
+				const memory = await insertMemory(client, {
+					athlete_id: userId,
+					category,
+					content,
+					importance,
+					embedding,
 				});
-				embedding = await embeddingsModel.embedQuery(content);
-			} catch (err) {
-				console.error("Failed to generate embedding for athlete memory", err);
+
+				return `Memory saved successfully (ID: ${memory.id}). The agent will now remember this fact in future conversations.`;
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : "Unknown error";
+				return `Error saving memory: ${msg}. Please try again.`;
 			}
-
-			const memory = await insertMemory(client, {
-				athlete_id: userId,
-				category,
-				content,
-				importance,
-				embedding,
-			});
-
-			return `Memory saved successfully (ID: ${memory.id}). The agent will now remember this fact in future conversations.`;
 		},
 		{
 			name: "save_memory",

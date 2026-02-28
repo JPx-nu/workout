@@ -46,14 +46,35 @@ triathlon-app/                  ← Root (pnpm workspace + Turborepo)
 │           ├── middleware/
 │           │   ├── auth.ts     ← JWT auth (hono/jwt) + claims extraction
 │           │   └── rate-limit.ts ← Sliding-window rate limiter
+│           ├── config/
+│           │   └── integrations.ts ← Provider env-var config
 │           ├── routes/
 │           │   ├── ai/chat.ts          ← AI Coach endpoint (safety-guarded)
-│           │   └── webhooks/index.ts   ← Webhook receivers (stubs)
+│           │   ├── integrations/       ← OAuth routes per provider
+│           │   │   ├── index.ts        ← Status + sync-history endpoints
+│           │   │   ├── strava.ts       ← Strava OAuth + manual sync
+│           │   │   ├── garmin.ts       ← Garmin (pending API approval)
+│           │   │   ├── polar.ts        ← Polar OAuth + manual sync
+│           │   │   └── wahoo.ts        ← Wahoo OAuth + manual sync
+│           │   └── webhooks/index.ts   ← Provider-agnostic webhook dispatcher
 │           ├── services/
-│           │   ├── ai/         ← LangGraph agent (scaffolded)
+│           │   ├── ai/         ← LangGraph agent
 │           │   │   ├── safety.ts  ← AI safety guard
 │           │   │   ├── nodes/     ← Agent nodes directory
 │           │   │   └── tools/     ← Agent tools directory
+│           │   ├── integrations/  ← Fitness platform integration library
+│           │   │   ├── types.ts        ← IntegrationProvider interface
+│           │   │   ├── registry.ts     ← Provider map
+│           │   │   ├── oauth.ts        ← Generic OAuth factory
+│           │   │   ├── oauth-state.ts  ← HMAC-signed CSRF protection
+│           │   │   ├── crypto.ts       ← AES-256-GCM token encryption
+│           │   │   ├── normalizer.ts   ← Dedup + schema mapping
+│           │   │   ├── token-manager.ts← Auto-refresh + decrypt
+│           │   │   ├── webhook-queue.ts← Async job queue
+│           │   │   ├── http.ts        ← Retry with backoff
+│           │   │   ├── errors.ts      ← Typed error hierarchy
+│           │   │   ├── index.ts       ← Barrel export
+│           │   │   └── providers/     ← Per-platform implementations
 │           │   ├── ingestion/  ← Document ingestion (scaffolded)
 │           │   └── normalization/ ← Workout data normalization (scaffolded)
 │           └── __tests__/
@@ -67,13 +88,15 @@ triathlon-app/                  ← Root (pnpm workspace + Turborepo)
 ├── supabase/
 │   ├── config.toml
 │   ├── functions/              ← Edge Functions (empty)
-│   └── migrations/             ← 6 migration files
+│   └── migrations/             ← 8+ migration files
 │       ├── 00001_enable_extensions.sql
 │       ├── 00002_create_core_tables.sql
 │       ├── 00003_create_rag_and_kg_tables.sql
 │       ├── 00004_create_gamification_and_chat.sql
 │       ├── 00005_create_rls_and_auth_hook.sql
-│       └── 00006_optimize_rls_performance.sql
+│       ├── 00006_optimize_rls_performance.sql
+│       ├── 00014_add_connected_accounts.sql  ← OAuth token storage
+│       └── 00015_add_sync_history.sql         ← Sync audit log
 ├── docs/
 │   ├── technical-reference.md  ← This document
 │   └── design-system.md        ← Liquid Glass design system reference
@@ -112,6 +135,7 @@ triathlon-app/                  ← Root (pnpm workspace + Turborepo)
 | **Hosting** | Azure App Service | `jpx-workout-web` + `jpx-workout-api` | ✅ Pipeline done |
 | **CI/CD** | GitHub Actions | CI (`ci.yml`) + Deploy (`deploy.yml`) | ✅ Done |
 | **Build System** | Turborepo + pnpm | Turborepo 2 + pnpm 10 | ✅ Done |
+| **Fitness Integrations** | Strava, Garmin, Polar, Wahoo | Provider-agnostic library with encrypted tokens, async webhooks | ✅ Library complete |
 
 ---
 
@@ -450,13 +474,13 @@ Comprehensive AI agent rules covering:
 
 ### Short-term (Phase 2: Data Mesh)
 
-5. **Implement webhook validators** — Garmin signature, Polar token, Wahoo signature verification
+1. **Implement webhook validators** — Garmin signature, Polar token, Wahoo signature verification
 2. **Build normalization service** — `StandardWorkout` transformers for each source
 3. **Build document ingestion pipeline** — PDF parsing → chunking → Azure OpenAI embedding → pgvector
 
 ### Medium-term (Phase 3: Agentic Brain)
 
-8. **Implement LangGraph agent** — State machine with Triage/Context/Planner/Execution/Synthesis nodes
+1. **Implement LangGraph agent** — State machine with Triage/Context/Planner/Execution/Synthesis nodes
 2. **Wire RAG + KG retrieval** — Use `match_documents` + `traverse_athlete_graph` as LangGraph tools
 3. **Connect chat UI to real agent** — Replace stub response with streaming LangGraph output
 

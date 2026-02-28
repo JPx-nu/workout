@@ -368,6 +368,26 @@ export async function upsertDailyLog(
 	return data;
 }
 
+export async function insertInjury(
+	client: SupabaseClient,
+	injury: {
+		athlete_id: string;
+		body_part: string;
+		severity: number;
+		reported_at: string;
+		notes?: string;
+	},
+) {
+	const { data, error } = await client
+		.from("injuries")
+		.insert(injury)
+		.select()
+		.single();
+
+	if (error) throw new Error(`Failed to log injury: ${error.message}`);
+	return data;
+}
+
 export async function updateTrainingPlan(
 	client: SupabaseClient,
 	planId: string,

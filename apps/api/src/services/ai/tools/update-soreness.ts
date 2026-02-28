@@ -14,35 +14,26 @@ export function createUpdateSorenessTool(
 	clubId: string,
 ) {
 	return tool(
-		async (input: Record<string, string | number | undefined>) => {
-			const date = input.date as string | undefined;
-			const rpe = input.rpe as number | undefined;
-			const mood = input.mood as number | undefined;
-			const sleepHours = input.sleepHours as number | undefined;
-			const sleepQuality = input.sleepQuality as number | undefined;
-			const hrv = input.hrv as number | undefined;
-			const restingHr = input.restingHr as number | undefined;
-			const weightKg = input.weightKg as number | undefined;
-			const notes = input.notes as string | undefined;
+		async (input) => {
+			try {
+				const { date, rpe, mood, sleepHours, sleepQuality, hrv, restingHr, weightKg, notes } = input;
+				const logDate = date ?? new Date().toISOString().split("T")[0];
 
-			const logDate = date ?? new Date().toISOString().split("T")[0];
+				const log = await upsertDailyLog(client, {
+					athlete_id: userId,
+					club_id: clubId,
+					log_date: logDate,
+					rpe: rpe ?? null,
+					mood: mood ?? null,
+					sleep_hours: sleepHours ?? null,
+					sleep_quality: sleepQuality ?? null,
+					hrv: hrv ?? null,
+					resting_hr: restingHr ?? null,
+					weight_kg: weightKg ?? null,
+					notes: notes ?? null,
+				});
 
-			const log = await upsertDailyLog(client, {
-				athlete_id: userId,
-				club_id: clubId,
-				log_date: logDate,
-				rpe: rpe ?? null,
-				mood: mood ?? null,
-				sleep_hours: sleepHours ?? null,
-				sleep_quality: sleepQuality ?? null,
-				hrv: hrv ?? null,
-				resting_hr: restingHr ?? null,
-				weight_kg: weightKg ?? null,
-				notes: notes ?? null,
-			});
-
-			return `Daily log updated for ${log.log_date}. Fields set: ${
-				Object.entries({
+				return `Daily log updated for ${log.log_date}. Fields set: ${Object.entries({
 					rpe,
 					mood,
 					sleepHours,
@@ -51,10 +42,14 @@ export function createUpdateSorenessTool(
 					restingHr,
 					weightKg,
 				})
-					.filter(([, v]) => v != null)
-					.map(([k, v]) => `${k}=${v}`)
-					.join(", ") || "notes only"
-			}`;
+						.filter(([, v]) => v != null)
+						.map(([k, v]) => `${k}=${v}`)
+						.join(", ") || "notes only"
+					}`;
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : "Unknown error";
+				return `Error updating daily log: ${msg}. Please try again.`;
+			}
 		},
 		{
 			name: "update_daily_log",
@@ -76,7 +71,7 @@ export function createUpdateSorenessTool(
 				restingHr: z.number().optional().describe("Resting heart rate"),
 				weightKg: z.number().optional().describe("Body weight in kg"),
 				notes: z.string().optional().describe("Additional notes"),
-			}) as any,
+			}),
 		},
 	);
 }

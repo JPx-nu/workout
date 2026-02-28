@@ -15,42 +15,47 @@ export function createMatchDocumentsTool(
 ) {
 	return tool(
 		async ({ query, threshold = 0.7, limit = 5 }) => {
-			// Initialize embeddings
-			const embeddings = new AzureOpenAIEmbeddings({
-				azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-				azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-					.split(".")[0]
-					.replace("https://", ""),
-				azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-				azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-			});
+			try {
+				// Initialize embeddings
+				const embeddings = new AzureOpenAIEmbeddings({
+					azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+					azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
+						.split(".")[0]
+						.replace("https://", ""),
+					azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
+					azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+				});
 
-			// Generate vector for the query
-			const query_embedding = await embeddings.embedQuery(query);
+				// Generate vector for the query
+				const query_embedding = await embeddings.embedQuery(query);
 
-			// Call the Supabase RPC match_documents
-			const { data, error } = await client.rpc("match_documents", {
-				query_embedding,
-				match_threshold: threshold,
-				match_count: limit,
-				filter_club_id: clubId,
-			});
+				// Call the Supabase RPC match_documents
+				const { data, error } = await client.rpc("match_documents", {
+					query_embedding,
+					match_threshold: threshold,
+					match_count: limit,
+					filter_club_id: clubId,
+				});
 
-			if (error) {
-				return `Error searching documents: ${error.message}`;
+				if (error) {
+					return `Error searching documents: ${error.message}`;
+				}
+
+				if (!data || data.length === 0) {
+					return "No highly relevant documents found for that query.";
+				}
+
+				return JSON.stringify(
+					data.map((d: any) => ({
+						title: d.title,
+						content: d.content,
+						similarity: d.similarity,
+					})),
+				);
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : "Unknown error";
+				return `Error searching documents: ${msg}. Please try again.`;
 			}
-
-			if (!data || data.length === 0) {
-				return "No highly relevant documents found for that query.";
-			}
-
-			return JSON.stringify(
-				data.map((d: any) => ({
-					title: d.title,
-					content: d.content,
-					similarity: d.similarity,
-				})),
-			);
 		},
 		{
 			name: "match_documents",

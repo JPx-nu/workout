@@ -102,81 +102,84 @@ export function createLogWorkoutTool(
 	clubId: string,
 ) {
 	return tool(
-		async (input: z.infer<typeof workoutLogSchema>) => {
-			const startedAt = input.startedAt ?? new Date().toISOString();
+		async (input) => {
+			try {
+				const startedAt = input.startedAt ?? new Date().toISOString();
 
-			// Build raw_data for strength workouts
-			const rawData =
-				input.exercises && input.exercises.length > 0
-					? {
+				// Build raw_data for strength workouts
+				const rawData =
+					input.exercises && input.exercises.length > 0
+						? {
 							exercises: input.exercises,
 							metadata: { source: "COACH", schema_version: 2 },
 						}
-					: null;
+						: null;
 
-			// Generate embedding for natural language search
-			let embedding: number[] | undefined;
-			if (input.notes || rawData?.exercises) {
-				try {
-					const textToEmbed = `Activity: ${input.activityType}. Notes: ${input.notes ?? "None"}. Ex: ${
-						rawData?.exercises ? JSON.stringify(rawData.exercises) : "None"
-					}`;
-					const embeddingsModel = new AzureOpenAIEmbeddings({
-						azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-						azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-							.split(".")[0]
-							.replace("https://", ""),
-						azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-						azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-					});
-					embedding = await embeddingsModel.embedQuery(textToEmbed);
-				} catch (err) {
-					console.error("Failed to generate embedding for workout", err);
+				// Generate embedding for natural language search
+				let embedding: number[] | undefined;
+				if (input.notes || rawData?.exercises) {
+					try {
+						const textToEmbed = `Activity: ${input.activityType}. Notes: ${input.notes ?? "None"}. Ex: ${rawData?.exercises ? JSON.stringify(rawData.exercises) : "None"
+							}`;
+						const embeddingsModel = new AzureOpenAIEmbeddings({
+							azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+							azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
+								.split(".")[0]
+								.replace("https://", ""),
+							azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
+							azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+						});
+						embedding = await embeddingsModel.embedQuery(textToEmbed);
+					} catch (err) {
+						console.error("Failed to generate embedding for workout", err);
+					}
 				}
+
+				const workout = await insertWorkout(client, {
+					athlete_id: userId,
+					club_id: clubId,
+					activity_type: input.activityType,
+					source: "MANUAL",
+					started_at: startedAt,
+					duration_s: input.durationMin ? input.durationMin * 60 : null,
+					distance_m: input.distanceKm ? input.distanceKm * 1000 : null,
+					avg_hr: input.avgHr ?? null,
+					max_hr: null,
+					avg_pace_s_km: null,
+					avg_power_w: null,
+					calories: null,
+					tss: input.tss ?? null,
+					raw_data: rawData,
+					notes: input.notes ?? null,
+					embedding: embedding,
+				});
+
+				// Build response with exercise summary for STRENGTH workouts
+				if (rawData?.exercises) {
+					const exerciseLines = rawData.exercises.map(
+						(ex) => {
+							const workingSets = ex.sets.filter((s) => s.set_type !== "warmup");
+							const totalVol = workingSets.reduce(
+								(sum, s) => sum + s.weight_kg * s.reps,
+								0,
+							);
+							return `  - ${ex.name}: ${workingSets.length} working sets, ${totalVol} kg total volume`;
+						},
+					);
+					return `Workout logged successfully (ID: ${workout.id}).\nActivity: ${workout.activity_type}, Date: ${workout.started_at}\n\nExercises logged:\n${exerciseLines.join("\n")}\n\nNow retrieve workout history to compare this session against recent ones.`;
+				}
+
+				return `Workout logged successfully (ID: ${workout.id}). Activity: ${workout.activity_type}, Date: ${workout.started_at}`;
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : "Unknown error";
+				return `Error logging workout: ${msg}. Please double check the input and try again.`;
 			}
-
-			const workout = await insertWorkout(client, {
-				athlete_id: userId,
-				club_id: clubId,
-				activity_type: input.activityType,
-				source: "MANUAL",
-				started_at: startedAt,
-				duration_s: input.durationMin ? input.durationMin * 60 : null,
-				distance_m: input.distanceKm ? input.distanceKm * 1000 : null,
-				avg_hr: input.avgHr ?? null,
-				max_hr: null,
-				avg_pace_s_km: null,
-				avg_power_w: null,
-				calories: null,
-				tss: input.tss ?? null,
-				raw_data: rawData,
-				notes: input.notes ?? null,
-				embedding: embedding,
-			});
-
-			// Build response with exercise summary for STRENGTH workouts
-			if (rawData?.exercises) {
-				const exerciseLines = rawData.exercises.map(
-					(ex: z.infer<typeof exerciseSchema>) => {
-						const workingSets = ex.sets.filter((s) => s.set_type !== "warmup");
-						const totalVol = workingSets.reduce(
-							(sum, s) => sum + s.weight_kg * s.reps,
-							0,
-						);
-						return `  - ${ex.name}: ${workingSets.length} working sets, ${totalVol} kg total volume`;
-					},
-				);
-				return `Workout logged successfully (ID: ${workout.id}).\nActivity: ${workout.activity_type}, Date: ${workout.started_at}\n\nExercises logged:\n${exerciseLines.join("\n")}\n\nNow retrieve workout history to compare this session against recent ones.`;
-			}
-
-			return `Workout logged successfully (ID: ${workout.id}). Activity: ${workout.activity_type}, Date: ${workout.started_at}`;
 		},
 		{
 			name: "log_workout",
 			description:
 				"Logs a new workout for the athlete. For STRENGTH workouts, include structured exercise data (exercises with sets, reps, weight, RPE). Always confirm details with the athlete before calling this tool.",
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			schema: workoutLogSchema as any,
+			schema: workoutLogSchema,
 		},
 	);
 }

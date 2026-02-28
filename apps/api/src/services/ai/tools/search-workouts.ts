@@ -15,46 +15,51 @@ export function createSearchWorkoutsTool(
 ) {
 	return tool(
 		async ({ query, threshold = 0.6, limit = 5 }) => {
-			// Initialize embeddings
-			const embeddings = new AzureOpenAIEmbeddings({
-				azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-				azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-					.split(".")[0]
-					.replace("https://", ""),
-				azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-				azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-			});
+			try {
+				// Initialize embeddings
+				const embeddings = new AzureOpenAIEmbeddings({
+					azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+					azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
+						.split(".")[0]
+						.replace("https://", ""),
+					azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
+					azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+				});
 
-			// Generate vector for the query
-			const query_embedding = await embeddings.embedQuery(query);
+				// Generate vector for the query
+				const query_embedding = await embeddings.embedQuery(query);
 
-			// Call the Supabase RPC match_workouts
-			const { data, error } = await client.rpc("match_workouts", {
-				p_athlete_id: userId,
-				query_embedding,
-				match_threshold: threshold,
-				match_count: limit,
-			});
+				// Call the Supabase RPC match_workouts
+				const { data, error } = await client.rpc("match_workouts", {
+					p_athlete_id: userId,
+					query_embedding,
+					match_threshold: threshold,
+					match_count: limit,
+				});
 
-			if (error) {
-				return `Error searching workouts: ${error.message}`;
+				if (error) {
+					return `Error searching workouts: ${error.message}`;
+				}
+
+				if (!data || data.length === 0) {
+					return "No matching workouts found for that query.";
+				}
+
+				return JSON.stringify(
+					data.map((w: any) => ({
+						id: w.id,
+						activityType: w.activity_type,
+						date: w.started_at,
+						distanceMeters: w.distance_m,
+						durationSeconds: w.duration_s,
+						notes: w.notes,
+						similarity: w.similarity,
+					})),
+				);
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : "Unknown error";
+				return `Error searching workouts: ${msg}. Please try again.`;
 			}
-
-			if (!data || data.length === 0) {
-				return "No matching workouts found for that query.";
-			}
-
-			return JSON.stringify(
-				data.map((w: any) => ({
-					id: w.id,
-					activityType: w.activity_type,
-					date: w.started_at,
-					distanceMeters: w.distance_m,
-					durationSeconds: w.duration_s,
-					notes: w.notes,
-					similarity: w.similarity,
-				})),
-			);
 		},
 		{
 			name: "search_workouts",

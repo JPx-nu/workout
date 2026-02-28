@@ -14,6 +14,7 @@ import { createGetSquadLeaderboardTool } from "./get-squad-leaderboard.js";
 import { createGetTrainingPlanTool } from "./get-training-plan.js";
 import { createGetWorkoutHistoryTool } from "./get-workout-history.js";
 import { createLogWorkoutTool } from "./log-workout.js";
+import { createLogInjuryTool } from "./log-injury.js";
 import { createMatchDocumentsTool } from "./match-documents.js";
 import { createModifyTrainingPlanTool } from "./modify-training-plan.js";
 import { createPassBatonTool } from "./pass-baton.js";
@@ -48,6 +49,7 @@ export function createAllTools(
 		// Write tools (require user confirmation via prompt)
 		createLogWorkoutTool(client, userId, clubId),
 		createUpdateSorenessTool(client, userId, clubId),
+		createLogInjuryTool(client, userId),
 		createModifyTrainingPlanTool(client, userId),
 		// Training plan & scheduling tools
 		createGenerateWorkoutPlanTool(client, userId, clubId),

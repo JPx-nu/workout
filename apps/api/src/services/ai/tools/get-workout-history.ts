@@ -21,63 +21,62 @@ export function createGetWorkoutHistoryTool(
 	userId: string,
 ) {
 	return tool(
-		async ({
-			activityType,
-			fromDate,
-			toDate,
-			limit,
-		}: Record<string, string | number | undefined>) => {
-			const workouts = await getWorkouts(client, userId, {
-				activityType: activityType as string | undefined,
-				fromDate: fromDate as string | undefined,
-				toDate: toDate as string | undefined,
-				limit: (limit as number | undefined) ?? 10,
-			});
+		async ({ activityType, fromDate, toDate, limit }) => {
+			try {
+				const workouts = await getWorkouts(client, userId, {
+					activityType,
+					fromDate,
+					toDate,
+					limit: limit ?? 10,
+				});
 
-			if (!workouts.length) return "No workouts found for the given filters.";
+				if (!workouts.length) return "No workouts found for the given filters.";
 
-			return JSON.stringify(
-				workouts.map((w) => {
-					const base = {
-						date: w.started_at,
-						activityType: w.activity_type,
-						durationMin: w.duration_s ? Math.round(w.duration_s / 60) : null,
-						notes: w.notes,
-					};
+				return JSON.stringify(
+					workouts.map((w) => {
+						const base = {
+							date: w.started_at,
+							activityType: w.activity_type,
+							durationMin: w.duration_s ? Math.round(w.duration_s / 60) : null,
+							notes: w.notes,
+						};
 
-					// For STRENGTH workouts: parse raw_data into exercise summaries
-					if (w.activity_type === "STRENGTH" && w.raw_data) {
-						const exerciseSummaries = summarizeStrengthWorkout(w.raw_data);
-						const rawExercises = (w.raw_data as Record<string, unknown>)
-							?.exercises as ExerciseData[] | undefined;
+						// For STRENGTH workouts: parse raw_data into exercise summaries
+						if (w.activity_type === "STRENGTH" && w.raw_data) {
+							const exerciseSummaries = summarizeStrengthWorkout(w.raw_data);
+							const rawExercises = (w.raw_data as Record<string, unknown>)
+								?.exercises as ExerciseData[] | undefined;
 
+							return {
+								...base,
+								exercises: exerciseSummaries,
+								sessionVolume_kg: rawExercises
+									? computeSessionVolume(rawExercises)
+									: null,
+								avgRPE: rawExercises ? computeAverageRPE(rawExercises) : null,
+							};
+						}
+
+						// For cardio/other workouts: return standard metrics
 						return {
 							...base,
-							exercises: exerciseSummaries,
-							sessionVolume_kg: rawExercises
-								? computeSessionVolume(rawExercises)
-								: null,
-							avgRPE: rawExercises ? computeAverageRPE(rawExercises) : null,
+							distanceKm: w.distance_m ? +(w.distance_m / 1000).toFixed(2) : null,
+							avgHr: w.avg_hr,
+							maxHr: w.max_hr,
+							avgPower: w.avg_power_w,
+							tss: w.tss,
 						};
-					}
-
-					// For cardio/other workouts: return standard metrics
-					return {
-						...base,
-						distanceKm: w.distance_m ? +(w.distance_m / 1000).toFixed(2) : null,
-						avgHr: w.avg_hr,
-						maxHr: w.max_hr,
-						avgPower: w.avg_power_w,
-						tss: w.tss,
-					};
-				}),
-			);
+					}),
+				);
+			} catch (error) {
+				const msg = error instanceof Error ? error.message : "Unknown error";
+				return `Error fetching workout history: ${msg}. Please check parameters and try again.`;
+			}
 		},
 		{
 			name: "get_workout_history",
 			description:
 				"Retrieves recent workouts for the athlete. For STRENGTH workouts returns exercise details including top sets, volume, and estimated 1RM. Use to compare sessions and track progressive overload.",
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			schema: z.object({
 				activityType: z
 					.string()
@@ -94,7 +93,7 @@ export function createGetWorkoutHistoryTool(
 					.number()
 					.optional()
 					.describe("Max workouts to return (default 10, max 50)"),
-			}) as any,
+			}),
 		},
 	);
 }
