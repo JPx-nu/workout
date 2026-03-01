@@ -259,62 +259,65 @@ export function useCoach() {
 	);
 
 	// ── Send message ─────────────────────────────────────────
-	const sendMessage = useCallback(async () => {
-		const text = input.trim();
-		if (!text) return;
+	const sendMessage = useCallback(
+		async (prefilledText?: string) => {
+			const text = (prefilledText ?? input).trim();
+			if (!text) return;
 
-		// Refresh auth token
-		const {
-			data: { session },
-		} = await supabase.auth.getSession();
-		if (!session?.access_token) {
-			setError("Not authenticated. Please sign in.");
-			return;
-		}
-		tokenRef.current = session.access_token;
+			// Refresh auth token
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			if (!session?.access_token) {
+				setError("Not authenticated. Please sign in.");
+				return;
+			}
+			tokenRef.current = session.access_token;
 
-		// Handle file uploads if any
-		const filesToUpload = [...attachedFiles];
-		// Revoke all preview blob URLs before clearing
-		for (const [, url] of previewUrlsRef.current) {
-			URL.revokeObjectURL(url);
-		}
-		previewUrlsRef.current.clear();
-		setAttachedFiles([]);
-		setInput("");
-		setError(null);
+			// Handle file uploads if any
+			const filesToUpload = [...attachedFiles];
+			// Revoke all preview blob URLs before clearing
+			for (const [, url] of previewUrlsRef.current) {
+				URL.revokeObjectURL(url);
+			}
+			previewUrlsRef.current.clear();
+			setAttachedFiles([]);
+			setInput("");
+			setError(null);
 
-		let imageUrls: string[] = [];
-		if (filesToUpload.length > 0) {
-			const tempConvId = conversationId || "pending";
-			imageUrls = await uploadImages(filesToUpload, tempConvId);
-		}
+			let imageUrls: string[] = [];
+			if (filesToUpload.length > 0) {
+				const tempConvId = conversationId || "pending";
+				imageUrls = await uploadImages(filesToUpload, tempConvId);
+			}
 
-		// Send via AI SDK useChat — handles streaming automatically
-		if (imageUrls.length > 0) {
-			aiSendMessage({
-				text,
-				files: imageUrls.map((url) => ({
-					type: "file" as const,
-					mediaType: "image/jpeg",
-					url,
-				})),
-			});
-		} else {
-			aiSendMessage({ text });
-		}
+			// Send via AI SDK useChat — handles streaming automatically
+			if (imageUrls.length > 0) {
+				aiSendMessage({
+					text,
+					files: imageUrls.map((url) => ({
+						type: "file" as const,
+						mediaType: "image/jpeg",
+						url,
+					})),
+				});
+			} else {
+				aiSendMessage({ text });
+			}
 
-		// Refresh conversations list after backend has had time to save
-		setTimeout(() => loadConversations(), 2000);
-	}, [
-		input,
-		attachedFiles,
-		conversationId,
-		supabase,
-		aiSendMessage,
-		uploadImages,
-		loadConversations,
-	]);
+			// Refresh conversations list after backend has had time to save
+			setTimeout(() => loadConversations(), 2000);
+		},
+		[
+			input,
+			attachedFiles,
+			conversationId,
+			supabase,
+			aiSendMessage,
+			uploadImages,
+			loadConversations,
+		],
+	);
 
 	// ── Stop streaming ───────────────────────────────────────
 	const stopStreaming = useCallback(() => {

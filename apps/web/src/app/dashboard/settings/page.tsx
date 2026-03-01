@@ -8,6 +8,7 @@ import {
 	Heart,
 	LayoutDashboard,
 	LogOut,
+	RefreshCcw,
 	Save,
 	Shield,
 	Smartphone,
@@ -15,6 +16,7 @@ import {
 	User,
 	Watch,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useProfile } from "@/hooks/use-profile";
 
@@ -46,6 +48,7 @@ const connectedDevices = [
 ];
 
 export default function SettingsPage() {
+	const router = useRouter();
 	const { profile, updateDefaultView, updateProfile } = useProfile();
 
 	const [displayName, setDisplayName] = useState<string | null>(null);
@@ -215,6 +218,22 @@ export default function SettingsPage() {
 					{saved ? <Check size={14} /> : <Save size={14} />}
 					{isSaving ? "Saving…" : saved ? "Saved!" : "Save Profile"}
 				</button>
+
+				<div className="mt-6 pt-4 border-t border-white/10">
+					<h4 className="text-sm font-semibold mb-1 flex items-center gap-2">
+						<RefreshCcw size={14} /> Onboarding
+					</h4>
+					<p className="text-xs mb-3" style={{ color: "var(--color-text-muted)" }}>
+						Rerun the setup wizard to update your level, goals, and coaching context.
+					</p>
+					<button
+						type="button"
+						className="px-3 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface"
+						onClick={() => router.push("/dashboard/onboarding?redo=1")}
+					>
+						Redo Onboarding
+					</button>
+				</div>
 			</div>
 
 			{/* Dashboard Preferences */}

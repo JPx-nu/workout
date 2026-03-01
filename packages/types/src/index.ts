@@ -55,6 +55,22 @@ export interface Profile {
 	updated_at: string;
 }
 
+export type OnboardingLevel = "beginner" | "intermediate" | "advanced";
+
+export type OnboardingData = {
+	displayName?: string;
+	defaultView?: "triathlon" | "strength";
+	level?: OnboardingLevel;
+	primaryGoal?: string;
+	onboardingCompleted?: boolean;
+};
+
+export type ProfilePreferences = Record<string, unknown> & {
+	onboarding_completed?: boolean;
+	level?: OnboardingLevel;
+	primary_goal?: string;
+};
+
 export type AppProfile = {
 	id: string;
 	displayName: string;
@@ -65,6 +81,7 @@ export type AppProfile = {
 	timezone: string;
 	email: string;
 	defaultView: "triathlon" | "strength";
+	preferences: ProfilePreferences;
 };
 
 export interface Workout {

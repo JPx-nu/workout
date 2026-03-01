@@ -71,6 +71,18 @@ export const ProfileUpdate = z.object({
 });
 export type ProfileUpdate = z.infer<typeof ProfileUpdate>;
 
+export const OnboardingLevel = z.enum(["beginner", "intermediate", "advanced"]);
+
+export const OnboardingSubmission = z.object({
+	displayName: sanitizedString.pipe(z.string().min(1).max(100)).optional(),
+	defaultView: z.enum(["triathlon", "strength"]).optional(),
+	level: OnboardingLevel.optional(),
+	primaryGoal: sanitizedString.pipe(z.string().min(1).max(200)).optional(),
+	onboardingCompleted: z.boolean().optional(),
+	saveMemories: z.boolean().optional(),
+});
+export type OnboardingSubmission = z.infer<typeof OnboardingSubmission>;
+
 // ── Daily Log Schemas ──────────────────────────────────────────
 
 export const DailyLogInput = z.object({

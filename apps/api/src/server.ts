@@ -13,6 +13,7 @@ import { RATE_LIMITS, rateLimit } from "./middleware/rate-limit.js";
 import { aiRoutes } from "./routes/ai/chat.js";
 import { aiStreamRoutes } from "./routes/ai/stream.js";
 import { integrationRoutes } from "./routes/integrations/index.js";
+import { onboardingRoutes } from "./routes/onboarding.js";
 import { plannedWorkoutsRoutes } from "./routes/planned-workouts/index.js";
 import { webhookRoutes } from "./routes/webhooks/index.js";
 import { stopPolling } from "./services/integrations/webhook-queue.js";
@@ -86,6 +87,7 @@ app.use("/api/ai/*", rateLimit(RATE_LIMITS.aiChat));
 const routes = app
 	.route("/api/ai", aiRoutes)
 	.route("/api/ai", aiStreamRoutes)
+	.route("/api/onboarding", onboardingRoutes)
 	.route("/api/planned-workouts", plannedWorkoutsRoutes)
 	.route("/api/integrations", integrationRoutes);
 

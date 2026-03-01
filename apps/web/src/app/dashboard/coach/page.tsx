@@ -344,7 +344,7 @@ export default function CoachPage() {
 					) : (
 						<button
 							type="button"
-							onClick={sendMessage}
+							onClick={() => void sendMessage()}
 							disabled={!input.trim()}
 							className="btn-primary px-4 disabled:opacity-40 disabled:cursor-not-allowed"
 							aria-label={isTyping ? "Send and interrupt" : "Send message"}

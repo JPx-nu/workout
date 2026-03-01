@@ -11,7 +11,7 @@ import {
 	Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { InstallPrompt } from "@/components/install-prompt";
@@ -31,10 +31,13 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname();
+	const searchParams = useSearchParams();
 	const router = useRouter();
 	const { user, isLoading: authLoading, signOut } = useAuth();
-	const { profile } = useProfile();
+	const { profile, isLoading: profileLoading, isOnboarded } = useProfile();
 	const [collapsed, setCollapsed] = useState(false);
+	const isOnboardingRoute = pathname.startsWith("/dashboard/onboarding");
+	const isRedoFlow = searchParams.get("redo") === "1";
 
 	// Auth guard: redirect to login if not authenticated
 	useEffect(() => {
@@ -43,8 +46,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 		}
 	}, [authLoading, user, router]);
 
+	// Onboarding guard: force first-time users into onboarding flow
+	useEffect(() => {
+		if (authLoading || profileLoading || !user) return;
+
+		if (!isOnboarded && !isOnboardingRoute) {
+			router.replace("/dashboard/onboarding");
+			return;
+		}
+
+		if (isOnboarded && isOnboardingRoute && !isRedoFlow) {
+			router.replace("/dashboard");
+		}
+	}, [authLoading, profileLoading, user, isOnboarded, isOnboardingRoute, isRedoFlow, router]);
+
 	// Show loading skeleton while checking auth
-	if (authLoading || !user) {
+	if (authLoading || profileLoading || !user) {
 		return (
 			<div
 				className="flex h-screen items-center justify-center"
@@ -57,6 +74,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 						borderTopColor: "var(--color-brand)",
 					}}
 				/>
+			</div>
+		);
+	}
+
+	if (isOnboardingRoute) {
+		return (
+			<div className="min-h-screen" style={{ background: "var(--color-bg-primary)" }}>
+				<ErrorBoundary>{children}</ErrorBoundary>
 			</div>
 		);
 	}
