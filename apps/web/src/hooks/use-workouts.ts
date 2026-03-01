@@ -17,9 +17,6 @@ import type { StrengthSessionData } from "@/lib/types";
 
 type ActivityFilter = "ALL" | "SWIM" | "BIKE" | "RUN" | "STRENGTH";
 
-// Re-export types from core for backward compat
-export type { ChartDataPoint, WeeklyStats } from "@triathlon/core";
-
 // ---- Compute Strength Metrics ----
 type StrengthMetrics = {
 	weeklyVolumeLoad: number;
@@ -121,6 +118,3 @@ export function useWorkouts() {
 		error,
 	};
 }
-
-// Re-export formatters from core for backward compat
-export { formatDuration, formatPace, mToKm, secToMin } from "@triathlon/core";

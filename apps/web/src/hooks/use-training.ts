@@ -110,7 +110,6 @@ export function useTraining() {
 
 	useEffect(() => {
 		fetchTraining();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [fetchTraining]);
 
 	const toggleSession = (index: number) => {

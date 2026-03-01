@@ -1,10 +1,10 @@
 "use client";
 
+import { formatDuration } from "@triathlon/core";
 import { Activity, ChevronRight, Dumbbell, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
-import { formatDuration } from "@/hooks/use-workouts";
 import type { StrengthSessionData, Workout } from "@/lib/types";
 
 // Reusing types from hook

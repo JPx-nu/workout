@@ -1,10 +1,11 @@
 "use client";
 
-import { Bike, Calendar, ChevronRight, Dumbbell, Footprints, Heart, Waves } from "lucide-react";
+import { formatDuration, mToKm } from "@triathlon/core";
+import { Calendar, ChevronRight, Heart } from "lucide-react";
 import Link from "next/link";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
-import { formatDuration, mToKm } from "@/hooks/use-workouts";
+import { getActivityConfig } from "@/lib/activity-config";
 import type { ChartDataPoint, HealthSnapshot, WeeklyStats, Workout } from "@/lib/types";
 
 type UpcomingEvent = {
@@ -12,20 +13,6 @@ type UpcomingEvent = {
 	name: string;
 	date: string;
 	daysUntil: number;
-};
-
-const activityIcons: Record<string, typeof Waves> = {
-	SWIM: Waves,
-	BIKE: Bike,
-	RUN: Footprints,
-	STRENGTH: Dumbbell,
-};
-
-const activityColors: Record<string, string> = {
-	SWIM: "var(--color-swim)",
-	BIKE: "var(--color-bike)",
-	RUN: "var(--color-run)",
-	STRENGTH: "var(--color-strength)",
 };
 
 function ReadinessGauge({ score }: { score: number }) {
@@ -90,33 +77,29 @@ export function TriathlonView({
 	const statCards = [
 		{
 			label: "Swim",
-			icon: Waves,
-			color: activityColors.SWIM,
-			badgeClass: "badge-swim",
+			icon: getActivityConfig("SWIM").icon,
+			badgeClass: getActivityConfig("SWIM").badge,
 			value: `${weeklyStats.swim.distanceKm} km`,
 			sub: `${weeklyStats.swim.sessions} sessions`,
 		},
 		{
 			label: "Bike",
-			icon: Bike,
-			color: activityColors.BIKE,
-			badgeClass: "badge-bike",
+			icon: getActivityConfig("BIKE").icon,
+			badgeClass: getActivityConfig("BIKE").badge,
 			value: `${weeklyStats.bike.distanceKm} km`,
 			sub: `${weeklyStats.bike.sessions} sessions`,
 		},
 		{
 			label: "Run",
-			icon: Footprints,
-			color: activityColors.RUN,
-			badgeClass: "badge-run",
+			icon: getActivityConfig("RUN").icon,
+			badgeClass: getActivityConfig("RUN").badge,
 			value: `${weeklyStats.run.distanceKm} km`,
 			sub: `${weeklyStats.run.sessions} sessions`,
 		},
 		{
 			label: "Strength",
-			icon: Dumbbell,
-			color: activityColors.STRENGTH,
-			badgeClass: "badge-strength",
+			icon: getActivityConfig("STRENGTH").icon,
+			badgeClass: getActivityConfig("STRENGTH").badge,
 			value: `${weeklyStats.strength.durationMin} min`,
 			sub: `${weeklyStats.strength.sessions} sessions`,
 		},
@@ -250,8 +233,9 @@ export function TriathlonView({
 				</div>
 				<div className="space-y-3">
 					{allWorkouts.slice(0, 4).map((w) => {
-						const Icon = activityIcons[w.activityType] ?? Dumbbell;
-						const color = activityColors[w.activityType] ?? "var(--color-text-muted)";
+						const cfg = getActivityConfig(w.activityType);
+						const Icon = cfg.icon;
+						const color = cfg.cssColor;
 						return (
 							<div
 								key={w.id}

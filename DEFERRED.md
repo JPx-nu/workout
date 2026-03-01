@@ -12,6 +12,7 @@ Items intentionally skipped during the major migration work. Address these after
   - Keep strength UI types (`StrengthSet`, `StrengthExercise`, `StrengthSessionData`) — decide if they belong in `@triathlon/types` or `@triathlon/core`
   - Remove `defaultFatigueData` demo constant (only used by body-map-3d page)
   - Update ~12 component imports from `@/lib/types` → `@triathlon/core`
+- **`StrengthMetrics` type duplication**: Defined locally in both `apps/web/src/hooks/use-workouts.ts` and `apps/web/src/app/dashboard/components/strength-view.tsx`. Extract to `@triathlon/core` alongside the `computeStrengthMetrics` function.
 
 ## Route Conversion to OpenAPI
 
@@ -20,6 +21,17 @@ Items intentionally skipped during the major migration work. Address these after
   - `apps/api/src/routes/integrations/*.ts` — OAuth + status endpoints
   - `apps/api/src/routes/ai/chat.ts` — SSE streaming endpoint
   - `apps/api/src/routes/webhooks/index.ts` — webhook endpoints
+
+## OAuth Callback Deduplication
+
+- **Near-identical OAuth callback implementations**: `strava.ts`, `polar.ts`, and `wahoo.ts` each have ~30 lines of nearly identical OAuth callback logic (extract code/state/error from query, call `verifyCallbackState`, look up `club_id`, call `handleOAuthCallback`, redirect). Extract into a shared `handleProviderCallback(provider, c)` helper in `services/integrations/oauth.ts` to reduce the 3 copies to 1.
+
+## Unused packages/api-client
+
+- **`packages/api-client/`**: Package exists with `hc<AppType>()` wrapper but is not imported by any consumer (`apps/web` still uses raw `fetch()`). Either:
+  - Wire it into the web app's data-fetching hooks (replacing manual fetch calls), or
+  - Wire it into the mobile app when Phase 5 begins, or
+  - Remove it if the RPC client approach is deferred
 
 ## Web Hook Adapter Pattern
 
@@ -36,10 +48,11 @@ Items intentionally skipped during the major migration work. Address these after
 ## Console Calls in Web
 
 - **`apps/web/src/hooks/use-profile.ts:100,129`**: Two `console.error` calls for profile update failures. Should use a proper error reporting mechanism (e.g., toast notification or error state). Not replaced with Pino since the web app doesn't use server-side logging.
+- **`apps/web/src/hooks/use-coach.ts`**: Contains `console.error` calls for SSE parsing failures. Will be resolved by Phase 6 (AI SDK migration).
 
 ## In-Memory Sync Cooldowns
 
-- **Provider-level cooldowns**: The plan mentioned removing in-memory sync cooldowns from `strava.ts:29`, `polar.ts:23`, `wahoo.ts:23`. These are separate from the webhook queue — they prevent rapid duplicate sync requests. Consider moving to a DB-backed cooldown mechanism or keeping as-is (they only affect the current instance).
+- **Provider-level cooldowns**: `strava.ts`, `polar.ts`, `wahoo.ts` each have in-memory `syncCooldown` Maps. These use the shared `INTEGRATION_CONFIG.syncCooldownMs` constant now, but still lose state on server restart. Consider moving to the DB-backed `check_rate_limit()` function (already exists from Phase 8) or keeping as-is (they only affect the current instance and are a minor concern).
 
 ## Database Cleanup Jobs
 
@@ -52,3 +65,24 @@ Items intentionally skipped during the major migration work. Address these after
 ## packages/shared
 
 - **`packages/shared/`**: Directory exists but appears to be empty or unused. Either add a proper `package.json` with `@triathlon/shared` name, or delete the directory entirely.
+
+## Demo Credentials in Login Page
+
+- **Hardcoded demo credentials**: The login page likely contains hardcoded demo email/password for development convenience. These should be gated behind `NODE_ENV === 'development'` or removed entirely before production deployment.
+
+---
+
+## Recently Resolved
+
+_Items moved here after being addressed._
+
+- ~~**Hardcoded Supabase URL fallback** in `auth.ts`~~ — Removed; now throws if `SUPABASE_URL` env var missing (2026-03-01)
+- ~~**`@azure/mcp` unused dependency**~~ — Removed from root `package.json` (2026-03-01)
+- ~~**`PlannedWorkoutStatus` enum mismatch**~~ — Added "cancelled" to match DB; deduplicated enums in `validation.ts` (2026-03-01)
+- ~~**Duplicated activity metadata** across 3 web views~~ — Consolidated into `apps/web/src/lib/activity-config.ts` (2026-03-01)
+- ~~**Duplicated API URL constants** across web hooks~~ — Consolidated into `apps/web/src/lib/constants.ts` (2026-03-01)
+- ~~**Duplicated sync cooldown / web URL constants** across 3 integration routes~~ — Consolidated into `INTEGRATION_CONFIG` (2026-03-01)
+- ~~**Stale eslint-disable comments**~~ — Removed from `use-health.ts`, `use-training.ts`, `Body3DViewer.tsx` (2026-03-01)
+- ~~**Backward-compat re-exports in `use-workouts.ts`**~~ — Removed; consumers import directly from `@triathlon/core` (2026-03-01)
+- ~~**Flutter references in deploy.yml**~~ — Removed Flutter SDK setup, build step, and bundling (2026-03-01)
+- ~~**Webpack `.js` extension resolution for workspace packages**~~ — Fixed with `transpilePackages` + `extensionAlias` in `next.config.ts` (2026-03-01)

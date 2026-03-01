@@ -8,8 +8,7 @@
 import { type MappedPlannedWorkout, mapPlannedWorkoutRow } from "@triathlon/core";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/supabase-provider";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
+import { API_URL } from "@/lib/constants";
 
 export type PlannedWorkout = MappedPlannedWorkout;
 

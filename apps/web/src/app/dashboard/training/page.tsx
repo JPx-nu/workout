@@ -14,87 +14,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import "temporal-polyfill/global";
 import "@schedule-x/theme-shadcn/dist/index.css";
 import {
-	Activity,
-	Bike,
 	Calendar,
 	CalendarDays,
 	CalendarRange,
 	ChevronLeft,
 	ChevronRight,
 	Clock,
-	Dumbbell,
 	Flame,
-	Footprints,
 	MapPin,
 	Trash2,
-	Waves,
 	X,
-	Zap,
 } from "lucide-react";
 import { type PlannedWorkout, usePlannedWorkouts } from "@/hooks/use-planned-workouts";
-
-// ── Activity meta ──────────────────────────────────────────────
-
-const ACTIVITY_CONFIG: Record<
-	string,
-	{
-		icon: typeof Waves;
-		color: string;
-		lightBg: string;
-		darkBg: string;
-		lightText: string;
-		darkText: string;
-	}
-> = {
-	SWIM: {
-		icon: Waves,
-		color: "#06b6d4",
-		lightBg: "#cffafe",
-		darkBg: "#155e75",
-		lightText: "#0e7490",
-		darkText: "#a5f3fc",
-	},
-	BIKE: {
-		icon: Bike,
-		color: "#f59e0b",
-		lightBg: "#fef3c7",
-		darkBg: "#78350f",
-		lightText: "#b45309",
-		darkText: "#fde68a",
-	},
-	RUN: {
-		icon: Footprints,
-		color: "#10b981",
-		lightBg: "#d1fae5",
-		darkBg: "#064e3b",
-		lightText: "#047857",
-		darkText: "#6ee7b7",
-	},
-	STRENGTH: {
-		icon: Dumbbell,
-		color: "#8b5cf6",
-		lightBg: "#ede9fe",
-		darkBg: "#4c1d95",
-		lightText: "#6d28d9",
-		darkText: "#c4b5fd",
-	},
-	YOGA: {
-		icon: Activity,
-		color: "#ec4899",
-		lightBg: "#fce7f3",
-		darkBg: "#831843",
-		lightText: "#be185d",
-		darkText: "#f9a8d4",
-	},
-	OTHER: {
-		icon: Zap,
-		color: "#6b7280",
-		lightBg: "#f3f4f6",
-		darkBg: "#374151",
-		lightText: "#4b5563",
-		darkText: "#d1d5db",
-	},
-};
+import { ACTIVITY_CONFIG, getActivityConfig } from "@/lib/activity-config";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
 	planned: { label: "Planned", color: "var(--color-text-muted)" },
@@ -399,7 +331,7 @@ function WorkoutDetailModal({
 	onDelete: () => void;
 	onStatusChange: (status: string) => void;
 }) {
-	const cfg = ACTIVITY_CONFIG[workout.activityType] || ACTIVITY_CONFIG.OTHER;
+	const cfg = getActivityConfig(workout.activityType);
 	const Icon = cfg.icon;
 	const statusInfo = STATUS_LABELS[workout.status] || STATUS_LABELS.planned;
 

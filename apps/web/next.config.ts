@@ -13,7 +13,16 @@ const nextConfig: NextConfig = {
 	output: "standalone",
 	basePath: "/workout",
 	outputFileTracingRoot: path.join(__dirname, "../../"),
+	transpilePackages: ["@triathlon/core", "@triathlon/types", "@triathlon/api-client"],
 	turbopack: {}, // Silence dev-mode warning about webpack config from withSerwist()
+
+	webpack(config) {
+		// Resolve .js imports → .ts source in workspace packages (NodeNext uses .js extensions)
+		config.resolve.extensionAlias = {
+			".js": [".ts", ".tsx", ".js"],
+		};
+		return config;
+	},
 
 	// ── Security Headers ─────────────────────────────────────────
 	async headers() {

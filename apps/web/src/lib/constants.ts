@@ -1,0 +1,2 @@
+/** API base URL — the Hono API server */
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";

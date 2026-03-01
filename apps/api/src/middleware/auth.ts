@@ -21,7 +21,10 @@ export interface AuthContext {
 
 // ── JWKS Setup ─────────────────────────────────────────────────
 
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://ykqoeprpbwxkoytaqngf.supabase.co";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+if (!SUPABASE_URL) {
+	throw new Error("SUPABASE_URL environment variable is required");
+}
 const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
 
 // ── JWT Verification ───────────────────────────────────────────

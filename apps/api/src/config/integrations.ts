@@ -12,6 +12,12 @@ export const INTEGRATION_CONFIG = {
 	/** Base URL for this API (used to build OAuth callback URLs) */
 	apiBaseUrl: env("API_URL", "http://localhost:8787"),
 
+	/** Base URL for the web frontend (used for OAuth redirects) */
+	webUrl: env("WEB_URL", "http://localhost:3000"),
+
+	/** Minimum interval between manual sync requests per athlete (ms) */
+	syncCooldownMs: 5 * 60 * 1000,
+
 	STRAVA: {
 		clientId: env("STRAVA_CLIENT_ID"),
 		clientSecret: env("STRAVA_CLIENT_SECRET"),

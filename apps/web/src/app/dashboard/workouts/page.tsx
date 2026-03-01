@@ -1,28 +1,9 @@
 "use client";
 
-import { Bike, Dumbbell, Filter, Footprints, Waves } from "lucide-react";
-import { formatDuration, formatPace, mToKm, useWorkouts } from "@/hooks/use-workouts";
-
-const activityIcons: Record<string, typeof Waves> = {
-	SWIM: Waves,
-	BIKE: Bike,
-	RUN: Footprints,
-	STRENGTH: Dumbbell,
-};
-
-const activityColors: Record<string, string> = {
-	SWIM: "var(--color-swim)",
-	BIKE: "var(--color-bike)",
-	RUN: "var(--color-run)",
-	STRENGTH: "var(--color-strength)",
-};
-
-const badgeClasses: Record<string, string> = {
-	SWIM: "badge-swim",
-	BIKE: "badge-bike",
-	RUN: "badge-run",
-	STRENGTH: "badge-strength",
-};
+import { formatDuration, formatPace, mToKm } from "@triathlon/core";
+import { Filter } from "lucide-react";
+import { useWorkouts } from "@/hooks/use-workouts";
+import { getActivityConfig } from "@/lib/activity-config";
 
 export default function WorkoutsPage() {
 	const { workouts, allWorkouts, filter, setFilter } = useWorkouts();
@@ -42,13 +23,14 @@ export default function WorkoutsPage() {
 			<div className="flex items-center gap-2 overflow-x-auto py-2 -mx-2 px-2 scrollbar-hide">
 				{(["ALL", "SWIM", "BIKE", "RUN", "STRENGTH"] as const).map((type) => {
 					const isActive = filter === type;
-					const Icon = type === "ALL" ? Filter : activityIcons[type];
+					const cfg = type === "ALL" ? null : getActivityConfig(type);
+					const Icon = cfg?.icon ?? Filter;
 					return (
 						<button
 							key={type}
 							type="button"
 							onClick={() => setFilter(type)}
-							className={`badge transition-all cursor-pointer ${type !== "ALL" ? badgeClasses[type] : ""}`}
+							className={`badge transition-all cursor-pointer ${cfg?.badge ?? ""}`}
 							style={
 								isActive
 									? {
@@ -73,8 +55,9 @@ export default function WorkoutsPage() {
 			{/* Workout list */}
 			<div className="space-y-3 stagger-children">
 				{workouts.map((w) => {
-					const Icon = activityIcons[w.activityType] ?? Dumbbell;
-					const color = activityColors[w.activityType];
+					const wCfg = getActivityConfig(w.activityType);
+					const Icon = wCfg.icon;
+					const color = wCfg.cssColor;
 
 					return (
 						<div key={w.id} className="glass-card p-4 lg:p-5">
@@ -89,9 +72,7 @@ export default function WorkoutsPage() {
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center gap-2 mb-1">
-										<span className={`badge ${badgeClasses[w.activityType]}`}>
-											{w.activityType}
-										</span>
+										<span className={`badge ${wCfg.badge}`}>{w.activityType}</span>
 										<span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 											via {w.source}
 										</span>

@@ -91,7 +91,6 @@ export function useHealth() {
 
 	useEffect(() => {
 		fetchHealth();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [fetchHealth]);
 
 	return {

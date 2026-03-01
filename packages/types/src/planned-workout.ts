@@ -19,6 +19,7 @@ export const PlannedWorkoutStatus = z.enum([
 	"skipped",
 	"modified",
 	"in_progress",
+	"cancelled",
 ]);
 
 export const WorkoutSource = z.enum(["AI", "COACH", "MANUAL"]);

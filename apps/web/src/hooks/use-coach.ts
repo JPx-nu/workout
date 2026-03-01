@@ -6,11 +6,9 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { API_URL } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { type Message, suggestedPrompts } from "@/lib/types";
-
-// API base URL — the Hono API server
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
 // ── Constants ────────────────────────────────────────────────
 const MAX_IMAGES = 3;
@@ -67,7 +65,7 @@ export function useCoach() {
 		stop,
 	} = useChat({
 		transport: new DefaultChatTransport({
-			api: `${API_BASE}/api/ai/stream`,
+			api: `${API_URL}/api/ai/stream`,
 			headers: () => ({
 				Authorization: `Bearer ${tokenRef.current}`,
 			}),
@@ -110,7 +108,7 @@ export function useCoach() {
 			} = await supabase.auth.getSession();
 			if (!session?.access_token) return;
 
-			const res = await fetch(`${API_BASE}/api/ai/conversations`, {
+			const res = await fetch(`${API_URL}/api/ai/conversations`, {
 				headers: { Authorization: `Bearer ${session.access_token}` },
 			});
 

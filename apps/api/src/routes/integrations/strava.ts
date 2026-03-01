@@ -14,6 +14,7 @@ import { getAuth } from "../../middleware/auth.js";
 
 const log = createLogger({ module: "strava-routes" });
 
+import { INTEGRATION_CONFIG } from "../../config/integrations.js";
 import { createAdminClient } from "../../services/ai/supabase.js";
 import { normalizeAndStore } from "../../services/integrations/normalizer.js";
 import {
@@ -31,7 +32,6 @@ const provider = getProvider("STRAVA");
 
 /** Rate limit manual syncs: track last sync per athlete */
 const syncCooldown = new Map<string, number>();
-const SYNC_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 // Redirect user to Strava's authorization page
 stravaRoutes.get("/connect", (c) => {
@@ -48,7 +48,7 @@ stravaRoutes.get("/callback", async (c) => {
 
 	if (error || !code || !state) {
 		log.error({ error }, "OAuth callback error");
-		const webUrl = process.env.WEB_URL || "http://localhost:3000";
+		const webUrl = INTEGRATION_CONFIG.webUrl;
 		return c.redirect(`${webUrl}/workout/settings?integration=strava&error=denied`);
 	}
 
@@ -70,11 +70,11 @@ stravaRoutes.get("/callback", async (c) => {
 
 		await handleOAuthCallback(provider, code, athleteId, profile.club_id, client);
 
-		const webUrl = process.env.WEB_URL || "http://localhost:3000";
+		const webUrl = INTEGRATION_CONFIG.webUrl;
 		return c.redirect(`${webUrl}/workout/settings?integration=strava&status=connected`);
 	} catch (err) {
 		log.error({ err }, "OAuth callback failed");
-		const webUrl = process.env.WEB_URL || "http://localhost:3000";
+		const webUrl = INTEGRATION_CONFIG.webUrl;
 		return c.redirect(`${webUrl}/workout/settings?integration=strava&error=failed`);
 	}
 });
@@ -93,8 +93,8 @@ stravaRoutes.post("/sync", async (c) => {
 
 	// Rate limit: 1 sync per 5 minutes
 	const lastSync = syncCooldown.get(auth.userId) || 0;
-	if (Date.now() - lastSync < SYNC_COOLDOWN_MS) {
-		const waitSec = Math.ceil((SYNC_COOLDOWN_MS - (Date.now() - lastSync)) / 1000);
+	if (Date.now() - lastSync < INTEGRATION_CONFIG.syncCooldownMs) {
+		const waitSec = Math.ceil((INTEGRATION_CONFIG.syncCooldownMs - (Date.now() - lastSync)) / 1000);
 		return c.json({ error: `Please wait ${waitSec}s before syncing again` }, 429);
 	}
 

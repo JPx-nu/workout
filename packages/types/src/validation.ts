@@ -10,6 +10,7 @@
  */
 
 import { z } from "zod/v4";
+import { ActivityType, Intensity, PlannedWorkoutStatus, WorkoutSource } from "./planned-workout.js";
 
 // ── String Sanitizers ──────────────────────────────────────────
 
@@ -31,8 +32,6 @@ export const ChatMessageInput = z.object({
 export type ChatMessageInput = z.infer<typeof ChatMessageInput>;
 
 // ── Workout Schemas ────────────────────────────────────────────
-
-const ActivityType = z.enum(["SWIM", "BIKE", "RUN", "STRENGTH", "YOGA", "OTHER"]);
 const DataSource = z.enum([
 	"GARMIN",
 	"POLAR",
@@ -95,9 +94,6 @@ export type InjuryInput = z.infer<typeof InjuryInput>;
 
 // ── Planned Workout Schemas ────────────────────────────────────
 
-const Intensity = z.enum(["RECOVERY", "EASY", "MODERATE", "HARD", "MAX"]);
-const PlannedWorkoutStatus = z.enum(["planned", "completed", "skipped", "cancelled"]);
-
 export const PlannedWorkoutInput = z.object({
 	plannedDate: z.iso.date({ message: "plannedDate must be ISO date (YYYY-MM-DD)" }),
 	plannedTime: z.string().max(5).optional(),
@@ -113,7 +109,7 @@ export const PlannedWorkoutInput = z.object({
 	sortOrder: z.number().int().nonnegative().optional(),
 	notes: sanitizedString.pipe(z.string().max(2000)).optional(),
 	coachNotes: sanitizedString.pipe(z.string().max(2000)).optional(),
-	source: z.enum(["MANUAL", "AI", "COACH"]).optional(),
+	source: WorkoutSource.optional(),
 	planId: z.uuid().optional(),
 });
 export type PlannedWorkoutInput = z.infer<typeof PlannedWorkoutInput>;

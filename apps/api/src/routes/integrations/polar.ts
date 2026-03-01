@@ -9,6 +9,7 @@ import { getAuth } from "../../middleware/auth.js";
 
 const log = createLogger({ module: "polar-routes" });
 
+import { INTEGRATION_CONFIG } from "../../config/integrations.js";
 import { createAdminClient } from "../../services/ai/supabase.js";
 import { normalizeAndStore } from "../../services/integrations/normalizer.js";
 import {
@@ -25,7 +26,6 @@ export const polarRoutes = new Hono();
 const provider = getProvider("POLAR");
 
 const syncCooldown = new Map<string, number>();
-const SYNC_COOLDOWN_MS = 5 * 60 * 1000;
 
 polarRoutes.get("/connect", (c) => {
 	const auth = getAuth(c);
@@ -39,7 +39,7 @@ polarRoutes.get("/callback", async (c) => {
 	const error = c.req.query("error");
 
 	if (error || !code || !state) {
-		const webUrl = process.env.WEB_URL || "http://localhost:3000";
+		const webUrl = INTEGRATION_CONFIG.webUrl;
 		return c.redirect(`${webUrl}/workout/settings?integration=polar&error=denied`);
 	}
 
@@ -56,11 +56,11 @@ polarRoutes.get("/callback", async (c) => {
 
 		await handleOAuthCallback(provider, code, athleteId, profile.club_id, client);
 
-		const webUrl = process.env.WEB_URL || "http://localhost:3000";
+		const webUrl = INTEGRATION_CONFIG.webUrl;
 		return c.redirect(`${webUrl}/workout/settings?integration=polar&status=connected`);
 	} catch (err) {
 		log.error({ err }, "OAuth callback failed");
-		const webUrl = process.env.WEB_URL || "http://localhost:3000";
+		const webUrl = INTEGRATION_CONFIG.webUrl;
 		return c.redirect(`${webUrl}/workout/settings?integration=polar&error=failed`);
 	}
 });
@@ -76,8 +76,8 @@ polarRoutes.post("/sync", async (c) => {
 	const auth = getAuth(c);
 
 	const lastSync = syncCooldown.get(auth.userId) || 0;
-	if (Date.now() - lastSync < SYNC_COOLDOWN_MS) {
-		const waitSec = Math.ceil((SYNC_COOLDOWN_MS - (Date.now() - lastSync)) / 1000);
+	if (Date.now() - lastSync < INTEGRATION_CONFIG.syncCooldownMs) {
+		const waitSec = Math.ceil((INTEGRATION_CONFIG.syncCooldownMs - (Date.now() - lastSync)) / 1000);
 		return c.json({ error: `Please wait ${waitSec}s before syncing again` }, 429);
 	}
 
