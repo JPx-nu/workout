@@ -1,21 +1,15 @@
 "use client";
 
+import type { MappedWorkout, StrengthMetrics } from "@triathlon/core";
 import { formatDuration } from "@triathlon/core";
+import type { StrengthSessionData } from "@triathlon/types";
 import { Activity, ChevronRight, Dumbbell, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
-import type { StrengthSessionData, Workout } from "@/lib/types";
-
-// Reusing types from hook
-type StrengthMetrics = {
-	weeklyVolumeLoad: number;
-	avgDensity: number;
-	muscleSplit: Record<string, number>;
-};
 
 interface StrengthViewProps {
-	workouts: Workout[];
+	workouts: MappedWorkout[];
 	metrics: StrengthMetrics;
 }
 

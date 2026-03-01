@@ -6,11 +6,14 @@ export type {
 	ExerciseData,
 	ExerciseSummary,
 	SetData,
+	StrengthMetrics,
+	StrengthWorkoutLike,
 } from "./strength/index.js";
 // Strength training
 export {
 	computeAverageRPE,
 	computeSessionVolume,
+	computeStrengthMetrics,
 	computeVolume,
 	estimate1RM,
 	findTopSet,

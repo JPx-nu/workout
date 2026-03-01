@@ -5,6 +5,7 @@
 
 import {
 	computeChartData,
+	computeStrengthMetrics,
 	computeWeeklyStats,
 	type MappedWorkout,
 	mapWorkoutRow,
@@ -13,52 +14,8 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/supabase-provider";
 import { createClient } from "@/lib/supabase/client";
-import type { StrengthSessionData } from "@/lib/types";
 
 type ActivityFilter = "ALL" | "SWIM" | "BIKE" | "RUN" | "STRENGTH";
-
-// ---- Compute Strength Metrics ----
-type StrengthMetrics = {
-	weeklyVolumeLoad: number;
-	avgDensity: number;
-	muscleSplit: Record<string, number>;
-};
-
-function computeStrengthMetrics(workouts: MappedWorkout[]): StrengthMetrics {
-	const now = Date.now();
-	const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-	const thisWeek = workouts
-		.filter((w) => new Date(w.startedAt).getTime() >= weekAgo)
-		.filter((w) => w.activityType === "STRENGTH");
-
-	let totalVolume = 0;
-	let totalDensity = 0;
-	const muscleSplit: Record<string, number> = {};
-
-	for (const w of thisWeek) {
-		const data = w.rawData as unknown as StrengthSessionData;
-		if (!data) continue;
-
-		let sessionVolume = 0;
-		for (const ex of data.exercises) {
-			muscleSplit[ex.muscleGroup] = (muscleSplit[ex.muscleGroup] || 0) + ex.sets.length;
-			for (const set of ex.sets) {
-				sessionVolume += set.weightKg * set.reps;
-			}
-		}
-
-		totalVolume += sessionVolume;
-		if (w.durationSec > 0) {
-			totalDensity += sessionVolume / (w.durationSec / 60);
-		}
-	}
-
-	return {
-		weeklyVolumeLoad: totalVolume,
-		avgDensity: thisWeek.length > 0 ? Math.round(totalDensity / thisWeek.length) : 0,
-		muscleSplit,
-	};
-}
 
 export function useWorkouts() {
 	const { user } = useAuth();

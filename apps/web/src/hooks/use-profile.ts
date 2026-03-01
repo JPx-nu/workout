@@ -97,8 +97,6 @@ export function useProfile(): {
 			.eq("id", user.id);
 
 		if (updateError) {
-			console.error("Failed to update default view:", updateError);
-			// Revert on error
 			fetchProfile();
 			throw updateError;
 		}
@@ -126,8 +124,7 @@ export function useProfile(): {
 			.eq("id", user.id);
 
 		if (updateError) {
-			console.error("Failed to update profile:", updateError);
-			setProfile(prev); // revert
+			setProfile(prev);
 			throw updateError;
 		}
 	};

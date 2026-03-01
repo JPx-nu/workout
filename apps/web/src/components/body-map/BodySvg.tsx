@@ -1,8 +1,8 @@
 "use client";
 
+import type { MuscleFatigue } from "@triathlon/core";
 import { useCallback, useMemo, useState } from "react";
 import Model, { type IExerciseData, type IMuscleStats } from "react-body-highlighter";
-import type { MuscleFatigue } from "@/lib/types";
 import MuscleDetail from "./MuscleDetail";
 import { fatigueToLibMuscles, libMuscleLabels, libMuscleToBodyPart } from "./muscle-paths";
 

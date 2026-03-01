@@ -194,5 +194,8 @@ export interface StandardWorkout {
 // ── Planned Workout Types ──────────────────────────────────────
 export * from "./planned-workout.js";
 
+// ── Strength Training Types ──────────────────────────────────
+export * from "./strength.js";
+
 // ── Validation Schemas ────────────────────────────────────────
 export * from "./validation.js";

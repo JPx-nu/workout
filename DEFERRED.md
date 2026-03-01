@@ -2,18 +2,6 @@
 
 Items intentionally skipped during the major migration work. Address these after all phases are complete.
 
-## Type Consolidation
-
-- **`apps/web/src/lib/types.ts` duplication**: This file defines camelCase frontend types (`Workout`, `DailyLog`, `HealthSnapshot`, `MuscleFatigue`, etc.) that overlap with `@triathlon/types` (snake_case DB types) and `@triathlon/core` (mappers + stats types). Currently both are used — web components import from `@/lib/types`, hooks now import from `@triathlon/core`. Consolidate into a single source of truth:
-  - Move `Workout` (camelCase) type to `@triathlon/core` as `MappedWorkout` (already done)
-  - Move `HealthSnapshot`, `MuscleFatigue`, `FatigueLevel`, `DailyLog` to `@triathlon/core` (already exported, but web's `types.ts` still has its own copies)
-  - Move `ChartDataPoint`, `WeeklyStats` to `@triathlon/core` (already exported)
-  - Keep AI-specific types (`Message`, `Conversation`, `suggestedPrompts`) in web or move to `@triathlon/types`
-  - Keep strength UI types (`StrengthSet`, `StrengthExercise`, `StrengthSessionData`) — decide if they belong in `@triathlon/types` or `@triathlon/core`
-  - Remove `defaultFatigueData` demo constant (only used by body-map-3d page)
-  - Update ~12 component imports from `@/lib/types` → `@triathlon/core`
-- **`StrengthMetrics` type duplication**: Defined locally in both `apps/web/src/hooks/use-workouts.ts` and `apps/web/src/app/dashboard/components/strength-view.tsx`. Extract to `@triathlon/core` alongside the `computeStrengthMetrics` function.
-
 ## Route Conversion to OpenAPI
 
 - **Incremental `createRoute()` migration**: Phase 3 migrated the server to `OpenAPIHono` and added `/api/doc` + `/api/reference`, but individual route files still use plain handler functions (not `createRoute()` definitions). Converting each route to `createRoute()` with request/response schemas would produce a richer OpenAPI spec. Do this incrementally:
@@ -21,10 +9,6 @@ Items intentionally skipped during the major migration work. Address these after
   - `apps/api/src/routes/integrations/*.ts` — OAuth + status endpoints
   - `apps/api/src/routes/ai/chat.ts` — SSE streaming endpoint
   - `apps/api/src/routes/webhooks/index.ts` — webhook endpoints
-
-## OAuth Callback Deduplication
-
-- **Near-identical OAuth callback implementations**: `strava.ts`, `polar.ts`, and `wahoo.ts` each have ~30 lines of nearly identical OAuth callback logic (extract code/state/error from query, call `verifyCallbackState`, look up `club_id`, call `handleOAuthCallback`, redirect). Extract into a shared `handleProviderCallback(provider, c)` helper in `services/integrations/oauth.ts` to reduce the 3 copies to 1.
 
 ## Unused packages/api-client
 
@@ -47,28 +31,7 @@ Items intentionally skipped during the major migration work. Address these after
 
 ## Console Calls in Web
 
-- **`apps/web/src/hooks/use-profile.ts:100,129`**: Two `console.error` calls for profile update failures. Should use a proper error reporting mechanism (e.g., toast notification or error state). Not replaced with Pino since the web app doesn't use server-side logging.
 - **`apps/web/src/hooks/use-coach.ts`**: Contains `console.error` calls for SSE parsing failures. Will be resolved by Phase 6 (AI SDK migration).
-
-## In-Memory Sync Cooldowns
-
-- **Provider-level cooldowns**: `strava.ts`, `polar.ts`, `wahoo.ts` each have in-memory `syncCooldown` Maps. These use the shared `INTEGRATION_CONFIG.syncCooldownMs` constant now, but still lose state on server restart. Consider moving to the DB-backed `check_rate_limit()` function (already exists from Phase 8) or keeping as-is (they only affect the current instance and are a minor concern).
-
-## Database Cleanup Jobs
-
-- **Periodic cleanup**: The migration `00016_add_queue_and_rate_limit.sql` created `cleanup_webhook_queue()` and `cleanup_rate_limits()` PostgreSQL functions but no pg_cron schedule. When pg_cron is available in production, add:
-  ```sql
-  SELECT cron.schedule('cleanup-webhook-queue', '0 3 * * *', 'SELECT public.cleanup_webhook_queue()');
-  SELECT cron.schedule('cleanup-rate-limits', '*/5 * * * *', 'SELECT public.cleanup_rate_limits()');
-  ```
-
-## packages/shared
-
-- **`packages/shared/`**: Directory exists but appears to be empty or unused. Either add a proper `package.json` with `@triathlon/shared` name, or delete the directory entirely.
-
-## Demo Credentials in Login Page
-
-- **Hardcoded demo credentials**: The login page likely contains hardcoded demo email/password for development convenience. These should be gated behind `NODE_ENV === 'development'` or removed entirely before production deployment.
 
 ---
 
@@ -76,6 +39,14 @@ Items intentionally skipped during the major migration work. Address these after
 
 _Items moved here after being addressed._
 
+- ~~**Type consolidation (`@/lib/types` → `@triathlon/core` + `@triathlon/types`)**~~ — Moved `Workout`, `DailyLog`, `HealthSnapshot`, `MuscleFatigue`, `ChartDataPoint`, `WeeklyStats` imports to `@triathlon/core`; moved `StrengthSet`, `StrengthExercise`, `StrengthSessionData`, `MuscleGroup` to `@triathlon/types/strength`; slimmed `types.ts` from 183 → ~85 lines; updated 10 consumer files (2026-03-01)
+- ~~**`StrengthMetrics` type duplication**~~ — Extracted `StrengthMetrics` type + `computeStrengthMetrics()` function to `@triathlon/core/strength`; removed local copies from `use-workouts.ts` and `strength-view.tsx` (2026-03-01)
+- ~~**OAuth callback deduplication**~~ — Extracted `handleProviderOAuthCallback()` to `oauth.ts`; strava/polar/wahoo routes now call shared handler (128→42, 114→38, 109→38 lines) (2026-03-01)
+- ~~**In-memory sync cooldowns**~~ — Extracted `handleProviderSync()` to `oauth.ts` using DB-backed `check_rate_limit()` RPC; removed in-memory `syncCooldown` Maps from all 3 provider routes (2026-03-01)
+- ~~**Database cleanup jobs**~~ — Added `00017_add_cleanup_cron_schedules.sql` migration scheduling `cleanup_webhook_queue()` daily at 03:00 UTC and `cleanup_rate_limits()` every 5 minutes via pg_cron (2026-03-01)
+- ~~**Demo credentials in login page**~~ — Gated behind `NEXT_PUBLIC_ENABLE_DEMO` env var; demo button and handler only active when explicitly enabled (2026-03-01)
+- ~~**Console.error in use-profile.ts**~~ — Removed 2 redundant `console.error` calls (throws already bubble to caller) (2026-03-01)
+- ~~**packages/shared reference**~~ — Removed stale DEFERRED.md entry (directory doesn't exist) (2026-03-01)
 - ~~**Hardcoded Supabase URL fallback** in `auth.ts`~~ — Removed; now throws if `SUPABASE_URL` env var missing (2026-03-01)
 - ~~**`@azure/mcp` unused dependency**~~ — Removed from root `package.json` (2026-03-01)
 - ~~**`PlannedWorkoutStatus` enum mismatch**~~ — Added "cancelled" to match DB; deduplicated enums in `validation.ts` (2026-03-01)

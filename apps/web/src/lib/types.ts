@@ -1,80 +1,10 @@
 // ============================================================
-// Frontend Domain Types
-// Shared types used by hooks, components, and pages.
-// Types here mirror the Supabase schema with camelCase fields.
+// Frontend Domain Types — Web-only
+// Types specific to the web app's UI layer.
+// Shared domain types live in @triathlon/core and @triathlon/types.
 // ============================================================
 
-// ── Workouts ──────────────────────────────────────────────────
-
-export type Workout = {
-	id: string;
-	athleteId: string;
-	clubId: string;
-	activityType: "SWIM" | "BIKE" | "RUN" | "STRENGTH" | "YOGA" | "OTHER";
-	source: "GARMIN" | "POLAR" | "WAHOO" | "FORM" | "MANUAL" | "HEALTHKIT" | "HEALTH_CONNECT";
-	startedAt: string;
-	durationSec: number;
-	distanceM: number | null;
-	avgHr: number | null;
-	maxHr: number | null;
-	avgPaceSecKm: number | null;
-	avgPowerW: number | null;
-	calories: number | null;
-	tss: number | null;
-	notes: string | null;
-	rawData?: Record<string, unknown>;
-};
-
-export type WeeklyStats = {
-	swim: { sessions: number; distanceKm: number; durationMin: number };
-	bike: { sessions: number; distanceKm: number; durationMin: number };
-	run: { sessions: number; distanceKm: number; durationMin: number };
-	strength: { sessions: number; durationMin: number };
-	totalTSS: number;
-	readinessScore: number;
-};
-
-export type ChartDataPoint = {
-	day: string;
-	swim: number;
-	bike: number;
-	run: number;
-	strength: number;
-};
-
-// ── Health & Body Map ─────────────────────────────────────────
-
-export type FatigueLevel = "low" | "moderate" | "high";
-
-export type MuscleFatigue = {
-	muscle: string;
-	bodyPart: string; // Maps to injuries.body_part in Supabase
-	level: number; // 0-100
-	status: FatigueLevel;
-};
-
-export type DailyLog = {
-	id: string;
-	date: string;
-	sleepHours: number;
-	sleepQuality: number; // 1-10
-	rpe: number; // 1-10
-	mood: number; // 1-10
-	hrv: number;
-	restingHr: number;
-	weightKg: number;
-	notes: string | null;
-};
-
-export type HealthSnapshot = {
-	hrv: number;
-	restingHr: number;
-	sleepHours: number;
-	sleepQuality: number;
-	vo2max: number;
-	weightKg: number;
-	readinessScore: number;
-};
+import type { MuscleFatigue } from "@triathlon/core";
 
 // ── Training ──────────────────────────────────────────────────
 
@@ -134,31 +64,6 @@ export const suggestedPrompts = [
 	"What should I eat before a long ride?",
 	"Compare my run pace this month vs last",
 ];
-
-// ── Strength Training ─────────────────────────────────────────
-
-export type MuscleGroup = "chest" | "back" | "legs" | "shoulders" | "arms" | "core" | "full";
-
-export interface StrengthSet {
-	id: string;
-	weightKg: number;
-	reps: number;
-	rpe?: number; // 1-10
-	type: "warmup" | "working" | "failure" | "drop";
-}
-
-export interface StrengthExercise {
-	id: string;
-	name: string;
-	muscleGroup: MuscleGroup;
-	sets: StrengthSet[];
-	notes?: string;
-}
-
-export interface StrengthSessionData {
-	focus: string; // e.g., "Legs & Core"
-	exercises: StrengthExercise[];
-}
 
 // ── Demo / Fallback Data ──────────────────────────────────────
 

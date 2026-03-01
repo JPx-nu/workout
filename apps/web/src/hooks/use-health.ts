@@ -3,6 +3,7 @@
 // Fetches from Supabase daily_logs + injuries tables
 // ============================================================
 
+import type { HealthSnapshot, MappedDailyLog, MuscleFatigue } from "@triathlon/core";
 import {
 	computeReadinessScore,
 	DEFAULT_HEALTH_SNAPSHOT,
@@ -13,12 +14,11 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/supabase-provider";
 import { createClient } from "@/lib/supabase/client";
-import type { DailyLog, HealthSnapshot, MuscleFatigue } from "@/lib/types";
 
 export function useHealth() {
 	const { user } = useAuth();
 	const [fatigueData, setFatigueData] = useState<MuscleFatigue[]>(DEFAULT_MUSCLE_GROUPS);
-	const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
+	const [dailyLogs, setDailyLogs] = useState<MappedDailyLog[]>([]);
 	const [healthSnapshot, setHealthSnapshot] = useState<HealthSnapshot>(DEFAULT_HEALTH_SNAPSHOT);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);

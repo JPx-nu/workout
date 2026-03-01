@@ -2,9 +2,9 @@
 
 import { Html, OrbitControls, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import type { MuscleFatigue } from "@triathlon/core";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import type { MuscleFatigue } from "@/lib/types";
 
 /* ─── Map muscle names from GLB userData → fatigue bodyPart keys ─── */
 const MUSCLE_NAME_MAP: Record<string, string> = {

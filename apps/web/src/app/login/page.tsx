@@ -5,6 +5,7 @@ import { type FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const showGoogleAuth = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH === "true";
+const showDemo = process.env.NEXT_PUBLIC_ENABLE_DEMO === "true";
 
 export default function LoginPage() {
 	const router = useRouter();
@@ -76,6 +77,7 @@ export default function LoginPage() {
 	};
 
 	const handleDemoLogin = async () => {
+		if (!showDemo) return;
 		setError(null);
 		setLoading(true);
 
@@ -154,26 +156,36 @@ export default function LoginPage() {
 				{!signUpSuccess && (
 					<>
 						{/* Demo login */}
-						<button
-							type="button"
-							onClick={handleDemoLogin}
-							disabled={loading}
-							className="w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
-							style={{
-								background: "linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))",
-							}}
-						>
-							🚀 Try Demo — No account needed
-						</button>
+						{showDemo && (
+							<>
+								<button
+									type="button"
+									onClick={handleDemoLogin}
+									disabled={loading}
+									className="w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+									style={{
+										background:
+											"linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))",
+									}}
+								>
+									🚀 Try Demo — No account needed
+								</button>
 
-						{/* Divider */}
-						<div className="flex items-center gap-3">
-							<div className="flex-1 h-px" style={{ background: "var(--color-glass-border)" }} />
-							<span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-								or sign in
-							</span>
-							<div className="flex-1 h-px" style={{ background: "var(--color-glass-border)" }} />
-						</div>
+								<div className="flex items-center gap-3">
+									<div
+										className="flex-1 h-px"
+										style={{ background: "var(--color-glass-border)" }}
+									/>
+									<span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+										or sign in
+									</span>
+									<div
+										className="flex-1 h-px"
+										style={{ background: "var(--color-glass-border)" }}
+									/>
+								</div>
+							</>
+						)}
 
 						{/* Google OAuth — hidden until provider is approved */}
 						{showGoogleAuth && (

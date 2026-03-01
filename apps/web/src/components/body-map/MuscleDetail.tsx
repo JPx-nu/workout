@@ -1,8 +1,8 @@
 "use client";
 
+import type { MuscleFatigue } from "@triathlon/core";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-import type { MuscleFatigue } from "@/lib/types";
 
 /* ─── Recovery recommendation based on fatigue level ─── */
 function getRecovery(level: number): {

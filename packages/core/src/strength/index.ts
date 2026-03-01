@@ -143,3 +143,58 @@ export function computeAverageRPE(exercises: ExerciseData[]): number | null {
 export function computeSessionVolume(exercises: ExerciseData[]): number {
 	return exercises.reduce((sum, ex) => sum + computeVolume(ex.sets), 0);
 }
+
+// ── Frontend Strength Metrics ────────────────────────────────
+
+import type { StrengthSessionData } from "@triathlon/types";
+
+export type StrengthMetrics = {
+	weeklyVolumeLoad: number;
+	avgDensity: number;
+	muscleSplit: Record<string, number>;
+};
+
+/** Minimal workout shape for strength metric computation. */
+export type StrengthWorkoutLike = {
+	activityType: string;
+	startedAt: string;
+	durationSec: number;
+	rawData?: unknown;
+};
+
+/** Compute aggregate strength metrics for the last 7 days. */
+export function computeStrengthMetrics(workouts: StrengthWorkoutLike[]): StrengthMetrics {
+	const now = Date.now();
+	const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+	const thisWeek = workouts
+		.filter((w) => new Date(w.startedAt).getTime() >= weekAgo)
+		.filter((w) => w.activityType === "STRENGTH");
+
+	let totalVolume = 0;
+	let totalDensity = 0;
+	const muscleSplit: Record<string, number> = {};
+
+	for (const w of thisWeek) {
+		const data = w.rawData as StrengthSessionData | undefined;
+		if (!data?.exercises) continue;
+
+		let sessionVolume = 0;
+		for (const ex of data.exercises) {
+			muscleSplit[ex.muscleGroup] = (muscleSplit[ex.muscleGroup] || 0) + ex.sets.length;
+			for (const set of ex.sets) {
+				sessionVolume += set.weightKg * set.reps;
+			}
+		}
+
+		totalVolume += sessionVolume;
+		if (w.durationSec > 0) {
+			totalDensity += sessionVolume / (w.durationSec / 60);
+		}
+	}
+
+	return {
+		weeklyVolumeLoad: totalVolume,
+		avgDensity: thisWeek.length > 0 ? Math.round(totalDensity / thisWeek.length) : 0,
+		muscleSplit,
+	};
+}

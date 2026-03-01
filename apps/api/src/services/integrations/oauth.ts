@@ -8,12 +8,17 @@
 // ============================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Context } from "hono";
+import { INTEGRATION_CONFIG } from "../../config/integrations.js";
 import { createLogger } from "../../lib/logger.js";
+import { getAuth } from "../../middleware/auth.js";
+import { createAdminClient } from "../ai/supabase.js";
 import { decryptToken, encryptToken, isEncrypted } from "./crypto.js";
 import { IntegrationError, OAuthStateError } from "./errors.js";
 import { normalizeAndStore } from "./normalizer.js";
 import { createOAuthState, verifyOAuthState } from "./oauth-state.js";
-import type { IntegrationProvider } from "./types.js";
+import { getActiveConnection } from "./token-manager.js";
+import type { IntegrationProvider, ProviderName } from "./types.js";
 
 const log = createLogger({ module: "oauth" });
 
@@ -128,6 +133,106 @@ async function backfillActivities(
 	}
 
 	return normalizeAndStore(activities, metrics, athleteId, clubId, client);
+}
+
+// ── Shared Route Handlers ────────────────────────────────────
+// Extracted from the near-identical strava/polar/wahoo route files.
+
+/**
+ * Shared OAuth callback handler for all providers.
+ * Verifies HMAC state, looks up club_id, exchanges code, redirects.
+ */
+export async function handleProviderOAuthCallback(
+	provider: IntegrationProvider,
+	providerSlug: string,
+	c: Context,
+): Promise<Response> {
+	const code = c.req.query("code");
+	const state = c.req.query("state");
+	const error = c.req.query("error");
+	const webUrl = INTEGRATION_CONFIG.webUrl;
+
+	if (error || !code || !state) {
+		log.error({ error, provider: providerSlug }, "OAuth callback error");
+		return c.redirect(`${webUrl}/workout/settings?integration=${providerSlug}&error=denied`);
+	}
+
+	try {
+		const athleteId = verifyCallbackState(provider, state);
+		const client = createAdminClient();
+		const { data: profile } = await client
+			.from("profiles")
+			.select("club_id")
+			.eq("id", athleteId)
+			.single();
+
+		if (!profile) {
+			return c.json({ error: "Athlete not found" }, 404);
+		}
+
+		await handleOAuthCallback(provider, code, athleteId, profile.club_id, client);
+		return c.redirect(`${webUrl}/workout/settings?integration=${providerSlug}&status=connected`);
+	} catch (err) {
+		log.error({ err, provider: providerSlug }, "OAuth callback failed");
+		return c.redirect(`${webUrl}/workout/settings?integration=${providerSlug}&error=failed`);
+	}
+}
+
+/**
+ * Shared manual sync handler for all providers.
+ * Rate-limited via PostgreSQL `check_rate_limit()` (survives restarts).
+ * Fetches activities (and health data if the provider supports it).
+ */
+export async function handleProviderSync(
+	provider: IntegrationProvider,
+	providerName: ProviderName,
+	c: Context,
+): Promise<Response> {
+	const auth = getAuth(c);
+	const client = createAdminClient();
+
+	// DB-backed rate limit: 1 sync per cooldown window per user+provider
+	const cooldownSec = Math.ceil(INTEGRATION_CONFIG.syncCooldownMs / 1000);
+	try {
+		const { data: remaining, error } = await client.rpc("check_rate_limit", {
+			rate_key: `sync:${providerName}:${auth.userId}`,
+			max_requests: 1,
+			window_seconds: cooldownSec,
+		});
+
+		if (!error && (remaining as number) < 0) {
+			return c.json({ error: `Please wait before syncing again` }, 429);
+		}
+	} catch {
+		// Fail open — allow sync if rate limit check fails
+	}
+
+	const connection = await getActiveConnection(providerName, auth.userId, client);
+
+	if (!connection) {
+		return c.json({ error: `${providerName} not connected` }, 400);
+	}
+
+	const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+	const activities = await provider.fetchActivities(connection.accessToken, since);
+
+	const healthData = provider.fetchHealthData
+		? await provider.fetchHealthData(connection.accessToken, new Date())
+		: [];
+
+	const result = await normalizeAndStore(activities, healthData, auth.userId, auth.clubId, client);
+
+	await client
+		.from("connected_accounts")
+		.update({ last_sync_at: new Date().toISOString() })
+		.eq("id", connection.account.id);
+
+	return c.json({
+		status: "synced",
+		workoutsInserted: result.workoutsInserted,
+		workoutsSkipped: result.workoutsSkipped,
+		metricsInserted: result.metricsInserted,
+	});
 }
 
 /**

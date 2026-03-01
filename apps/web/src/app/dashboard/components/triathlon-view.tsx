@@ -1,12 +1,12 @@
 "use client";
 
+import type { ChartDataPoint, HealthSnapshot, MappedWorkout, WeeklyStats } from "@triathlon/core";
 import { formatDuration, mToKm } from "@triathlon/core";
 import { Calendar, ChevronRight, Heart } from "lucide-react";
 import Link from "next/link";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { getActivityConfig } from "@/lib/activity-config";
-import type { ChartDataPoint, HealthSnapshot, WeeklyStats, Workout } from "@/lib/types";
 
 type UpcomingEvent = {
 	id: string;
@@ -64,7 +64,7 @@ interface TriathlonViewProps {
 	chartData: ChartDataPoint[];
 	healthSnapshot: HealthSnapshot;
 	events: UpcomingEvent[];
-	allWorkouts: Workout[];
+	allWorkouts: MappedWorkout[];
 }
 
 export function TriathlonView({
