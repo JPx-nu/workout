@@ -64,7 +64,6 @@ describe("processOutput", () => {
 		const result = processOutput("Great job on your 5k run today!");
 		expect(result.content).toBe("Great job on your 5k run today!");
 		expect(result.disclaimerAdded).toBe(false);
-		expect(result.piiRedacted).toBe(false);
 		expect(result.lowConfidence).toBe(false);
 	});
 

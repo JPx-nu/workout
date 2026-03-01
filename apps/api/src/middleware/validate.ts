@@ -14,7 +14,9 @@ export async function parseBody<T extends z.ZodType>(
 	c: Context,
 	schema: T,
 ): Promise<z.infer<T> | Response> {
-	const body = await c.req.json().catch(() => null);
+	const body = await c.req
+		.json()
+		.catch((err: unknown) => (err instanceof SyntaxError ? null : Promise.reject(err)));
 
 	if (body === null) {
 		return c.json({ error: "Invalid JSON body" }, 400);

@@ -224,7 +224,6 @@ aiRoutes.post("/chat", async (c) => {
 						model: AI_CONFIG.azure.deploymentName,
 						intent,
 						disclaimerAdded: processed.disclaimerAdded,
-						piiRedacted: processed.piiRedacted,
 					},
 				},
 			]);

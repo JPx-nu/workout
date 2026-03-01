@@ -21,7 +21,7 @@ export const INTEGRATION_CONFIG = {
 	STRAVA: {
 		clientId: env("STRAVA_CLIENT_ID"),
 		clientSecret: env("STRAVA_CLIENT_SECRET"),
-		verifyToken: env("STRAVA_VERIFY_TOKEN", "jpx-triathlon-strava"),
+		verifyToken: env("STRAVA_VERIFY_TOKEN"),
 	},
 
 	GARMIN: {

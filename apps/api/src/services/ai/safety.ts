@@ -86,7 +86,6 @@ export interface SafetyCheckResult {
 export interface SafetyProcessedOutput {
 	content: string;
 	disclaimerAdded: boolean;
-	piiRedacted: boolean;
 	lowConfidence: boolean;
 }
 
@@ -147,7 +146,6 @@ export function processOutput(
 ): SafetyProcessedOutput {
 	let processed = content;
 	let disclaimerAdded = false;
-	const piiRedacted = false;
 
 	// Detect medical content in output
 	const outputLower = processed.toLowerCase();
@@ -169,7 +167,6 @@ export function processOutput(
 	return {
 		content: processed,
 		disclaimerAdded,
-		piiRedacted,
 		lowConfidence,
 	};
 }

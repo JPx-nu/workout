@@ -8,9 +8,6 @@ importers:
 
   .:
     devDependencies:
-      '@azure/mcp':
-        specifier: 2.0.0-beta.22
-        version: 2.0.0-beta.22
       '@biomejs/biome':
         specifier: ^2.4.4
         version: 2.4.4
@@ -99,9 +96,6 @@ importers:
       '@types/node':
         specifier: ^22.19.12
         version: 22.19.12
-      pg:
-        specifier: ^8.19.0
-        version: 8.19.0
       tsx:
         specifier: ^4.21.0
         version: 4.21.0
@@ -293,55 +287,6 @@ packages:
     resolution: {integrity: sha512-WmJUsFINbnWxGvHSd16aOjgKf+5GsfdxruO2YDLcgplsidakCauik1lhlk83YDH06265Yd1XtUyF24o09uygpw==}
     peerDependencies:
       zod: ^4.0.0
-
-  '@azure/mcp-darwin-arm64@2.0.0-beta.22':
-    resolution: {integrity: sha512-d/qoaeECIRDYrlRso6bxXZJ3S6/sOxahP4zreITwpJZjOAJtHNiQYeVQZ/UeRDM8VHoTpY4dfUS4B8YMQSBFjw==}
-    engines: {node: '>=20.0.0'}
-    cpu: [arm64]
-    os: [darwin]
-    hasBin: true
-
-  '@azure/mcp-darwin-x64@2.0.0-beta.22':
-    resolution: {integrity: sha512-gvGm9ubK9uBn4b7t7z8fqH9jOavFulOFNdXI3Rv3WtNtIFf1y6SKDJmpaW9PGEXCD7I/d7wYkg7hlyeU4Q3FuQ==}
-    engines: {node: '>=20.0.0'}
-    cpu: [x64]
-    os: [darwin]
-    hasBin: true
-
-  '@azure/mcp-linux-arm64@2.0.0-beta.22':
-    resolution: {integrity: sha512-N8syI9MQ8W37+9kIkAAQ8idBNi3Qs24vqEx+pT1lJOQdn5QryNxhEhyxn2wLcJpKiLX0rZHBLN0ytDJ6V1uXpA==}
-    engines: {node: '>=20.0.0'}
-    cpu: [arm64]
-    os: [linux]
-    hasBin: true
-
-  '@azure/mcp-linux-x64@2.0.0-beta.22':
-    resolution: {integrity: sha512-t3xYKhuynoaSZmJWSW4Xzhk+4snKZbIFr2miDPX3HsSbwoH1IqmDymsHEX/kpAY5N4UJ4QqASbTjnFOH+lBplQ==}
-    engines: {node: '>=20.0.0'}
-    cpu: [x64]
-    os: [linux]
-    hasBin: true
-
-  '@azure/mcp-win32-arm64@2.0.0-beta.22':
-    resolution: {integrity: sha512-I4yEjIYDgvlpkjgHgpbugVYid1sqotW7ZOea9NMnhy8TpHFXhgjlEoIcJU3GspOBgohX6K75eMK0aTnjf8xUVw==}
-    engines: {node: '>=20.0.0'}
-    cpu: [arm64]
-    os: [win32]
-    hasBin: true
-
-  '@azure/mcp-win32-x64@2.0.0-beta.22':
-    resolution: {integrity: sha512-OlYZMrzrMfS7Zgp8uca8HMRcdPtuOcc90VuaQ+8Z13scLjFOrNZNmCgv3whVZKsB36W9gWfcahlmEi2ViuIdSw==}
-    engines: {node: '>=20.0.0'}
-    cpu: [x64]
-    os: [win32]
-    hasBin: true
-
-  '@azure/mcp@2.0.0-beta.22':
-    resolution: {integrity: sha512-c3aWgwJPYXJfItPIVWSxeVMILKaeLGp0fia+KjBU4MeFvy95aJca2qzOkOJEv5UQktT2VtWg4I5D7Q3L6dYl2w==}
-    engines: {node: '>=20.0.0'}
-    cpu: [x64, arm64]
-    os: [linux, darwin, win32]
-    hasBin: true
 
   '@babel/helper-string-parser@7.27.1':
     resolution: {integrity: sha512-qMlSxKbpRlAridDExk92nSobyDdpPijUq2DW6oDnUqd0iOGxmQjyqhMIihI9+zv4LPyZdRje2cavWPbCbWm3eA==}
@@ -2191,40 +2136,6 @@ packages:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
 
-  pg-cloudflare@1.3.0:
-    resolution: {integrity: sha512-6lswVVSztmHiRtD6I8hw4qP/nDm1EJbKMRhf3HCYaqud7frGysPv7FYJ5noZQdhQtN2xJnimfMtvQq21pdbzyQ==}
-
-  pg-connection-string@2.11.0:
-    resolution: {integrity: sha512-kecgoJwhOpxYU21rZjULrmrBJ698U2RxXofKVzOn5UDj61BPj/qMb7diYUR1nLScCDbrztQFl1TaQZT0t1EtzQ==}
-
-  pg-int8@1.0.1:
-    resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
-    engines: {node: '>=4.0.0'}
-
-  pg-pool@3.12.0:
-    resolution: {integrity: sha512-eIJ0DES8BLaziFHW7VgJEBPi5hg3Nyng5iKpYtj3wbcAUV9A1wLgWiY7ajf/f/oO1wfxt83phXPY8Emztg7ITg==}
-    peerDependencies:
-      pg: '>=8.0'
-
-  pg-protocol@1.12.0:
-    resolution: {integrity: sha512-uOANXNRACNdElMXJ0tPz6RBM0XQ61nONGAwlt8da5zs/iUOOCLBQOHSXnrC6fMsvtjxbOJrZZl5IScGv+7mpbg==}
-
-  pg-types@2.2.0:
-    resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
-    engines: {node: '>=4'}
-
-  pg@8.19.0:
-    resolution: {integrity: sha512-QIcLGi508BAHkQ3pJNptsFz5WQMlpGbuBGBaIaXsWK8mel2kQ/rThYI+DbgjUvZrIr7MiuEuc9LcChJoEZK1xQ==}
-    engines: {node: '>= 16.0.0'}
-    peerDependencies:
-      pg-native: '>=3.0.1'
-    peerDependenciesMeta:
-      pg-native:
-        optional: true
-
-  pgpass@1.0.5:
-    resolution: {integrity: sha512-FdW9r/jQZhSeohs1Z3sI1yxFQNFvMcnmfuj4WBMUTxOrAyLMaTcE1aAMBiTlbMNaXvBCQuVi0R7hd8udDSP7ug==}
-
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -2249,22 +2160,6 @@ packages:
   postcss@8.5.6:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
-
-  postgres-array@2.0.0:
-    resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
-    engines: {node: '>=4'}
-
-  postgres-bytea@1.0.1:
-    resolution: {integrity: sha512-5+5HqXnsZPE65IJZSMkZtURARZelel2oXUEO8rH83VS/hxH5vv1uHquPg5wZs8yMAfdv971IU+kcPUczi7NVBQ==}
-    engines: {node: '>=0.10.0'}
-
-  postgres-date@1.0.7:
-    resolution: {integrity: sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q==}
-    engines: {node: '>=0.10.0'}
-
-  postgres-interval@1.2.0:
-    resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
-    engines: {node: '>=0.10.0'}
 
   potpack@1.0.2:
     resolution: {integrity: sha512-choctRBIV9EMT9WGAZHn3V7t0Z2pMQyl0EZE6pFc/6ml3ssw7Dlf/oAOvFwjm1HVsqfQN8GfeFyJ+d8tRzqueQ==}
@@ -2760,10 +2655,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  xtend@4.0.2:
-    resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
-    engines: {node: '>=0.4'}
-
   yaml@2.8.2:
     resolution: {integrity: sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A==}
     engines: {node: '>= 14.6'}
@@ -2855,33 +2746,6 @@ snapshots:
     dependencies:
       openapi3-ts: 4.5.0
       zod: 4.3.6
-
-  '@azure/mcp-darwin-arm64@2.0.0-beta.22':
-    optional: true
-
-  '@azure/mcp-darwin-x64@2.0.0-beta.22':
-    optional: true
-
-  '@azure/mcp-linux-arm64@2.0.0-beta.22':
-    optional: true
-
-  '@azure/mcp-linux-x64@2.0.0-beta.22':
-    optional: true
-
-  '@azure/mcp-win32-arm64@2.0.0-beta.22':
-    optional: true
-
-  '@azure/mcp-win32-x64@2.0.0-beta.22':
-    optional: true
-
-  '@azure/mcp@2.0.0-beta.22':
-    optionalDependencies:
-      '@azure/mcp-darwin-arm64': 2.0.0-beta.22
-      '@azure/mcp-darwin-x64': 2.0.0-beta.22
-      '@azure/mcp-linux-arm64': 2.0.0-beta.22
-      '@azure/mcp-linux-x64': 2.0.0-beta.22
-      '@azure/mcp-win32-arm64': 2.0.0-beta.22
-      '@azure/mcp-win32-x64': 2.0.0-beta.22
 
   '@babel/helper-string-parser@7.27.1':
     optional: true
@@ -4403,41 +4267,6 @@ snapshots:
 
   pathval@2.0.1: {}
 
-  pg-cloudflare@1.3.0:
-    optional: true
-
-  pg-connection-string@2.11.0: {}
-
-  pg-int8@1.0.1: {}
-
-  pg-pool@3.12.0(pg@8.19.0):
-    dependencies:
-      pg: 8.19.0
-
-  pg-protocol@1.12.0: {}
-
-  pg-types@2.2.0:
-    dependencies:
-      pg-int8: 1.0.1
-      postgres-array: 2.0.0
-      postgres-bytea: 1.0.1
-      postgres-date: 1.0.7
-      postgres-interval: 1.2.0
-
-  pg@8.19.0:
-    dependencies:
-      pg-connection-string: 2.11.0
-      pg-pool: 3.12.0(pg@8.19.0)
-      pg-protocol: 1.12.0
-      pg-types: 2.2.0
-      pgpass: 1.0.5
-    optionalDependencies:
-      pg-cloudflare: 1.3.0
-
-  pgpass@1.0.5:
-    dependencies:
-      split2: 4.2.0
-
   picocolors@1.1.1: {}
 
   picomatch@4.0.3: {}
@@ -4473,16 +4302,6 @@ snapshots:
       nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
-
-  postgres-array@2.0.0: {}
-
-  postgres-bytea@1.0.1: {}
-
-  postgres-date@1.0.7: {}
-
-  postgres-interval@1.2.0:
-    dependencies:
-      xtend: 4.0.2
 
   potpack@1.0.2: {}
 
@@ -4999,8 +4818,6 @@ snapshots:
       strip-ansi: 7.2.0
 
   ws@8.19.0: {}
-
-  xtend@4.0.2: {}
 
   yaml@2.8.2: {}
 

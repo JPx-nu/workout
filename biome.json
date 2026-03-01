@@ -15,7 +15,8 @@
 			"apps/**/*.mjs",
 			"packages/**/*.ts",
 			"**/*.json",
-			"**/*.css"
+			"**/*.css",
+			"!.claude"
 		]
 	},
 	"formatter": {
