@@ -10,7 +10,9 @@
 			"cache": false,
 			"persistent": true
 		},
-		"lint": {},
+		"lint": {
+			"inputs": ["src/**", "biome.json", "tsconfig.json"]
+		},
 		"test": {
 			"cache": false
 		},
@@ -19,7 +21,8 @@
 			"dependsOn": ["build"]
 		},
 		"type-check": {
-			"dependsOn": ["^build"]
+			"dependsOn": ["^build"],
+			"inputs": ["src/**", "tsconfig.json"]
 		}
 	}
 }

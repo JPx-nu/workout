@@ -233,6 +233,7 @@ export default function TrainingCalendarPage() {
 					<div className="flex items-center glass-card rounded-xl overflow-hidden">
 						<button
 							type="button"
+							aria-label="Previous period"
 							onClick={() => navigate(-1)}
 							className="p-2 hover-surface transition-colors"
 						>
@@ -241,6 +242,7 @@ export default function TrainingCalendarPage() {
 						<span className="px-3 text-sm font-medium min-w-[140px] text-center">{dateLabel}</span>
 						<button
 							type="button"
+							aria-label="Next period"
 							onClick={() => navigate(1)}
 							className="p-2 hover-surface transition-colors"
 						>
@@ -258,6 +260,8 @@ export default function TrainingCalendarPage() {
 							<button
 								type="button"
 								key={key}
+								aria-label={`${label} view`}
+								aria-pressed={activeView === key}
 								onClick={() => setActiveView(key)}
 								className={`p-2 px-3 text-xs flex items-center gap-1.5 transition-colors
                                     ${activeView === key ? "text-white" : "hover-surface"}`}

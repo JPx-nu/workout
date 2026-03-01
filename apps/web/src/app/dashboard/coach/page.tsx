@@ -32,6 +32,7 @@ export default function CoachPage() {
 		attachedFiles,
 		attachFile,
 		removeFile,
+		getPreviewUrl,
 	} = useCoach();
 	const promptsRef = useRef<HTMLDivElement>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -245,7 +246,7 @@ export default function CoachPage() {
 							<div key={`${file.name}-${file.lastModified}`} className="relative group">
 								{/* biome-ignore lint/performance/noImgElement: blob URL from user file, not a static asset */}
 								<img
-									src={URL.createObjectURL(file)}
+									src={getPreviewUrl(file)}
 									alt={file.name}
 									className="w-16 h-16 rounded-lg object-cover"
 									style={{ border: "2px solid var(--color-glass-border)" }}

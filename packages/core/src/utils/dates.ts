@@ -27,7 +27,7 @@ export function getWeekStart(date: Date = new Date()): Date {
 
 /** Compute a lookback date (ISO date string) N days ago from now. */
 export function lookbackDate(days: number): string {
-	return new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
+	return toIsoDate(new Date(Date.now() - days * 86400000));
 }
 
 /** Progress percentage (clamped 0–100). */

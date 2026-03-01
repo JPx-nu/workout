@@ -5,6 +5,7 @@
 
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { z } from "zod";
 import { upsertDailyLog } from "../supabase.js";
 
@@ -14,7 +15,7 @@ export function createUpdateSorenessTool(client: SupabaseClient, userId: string,
 			try {
 				const { date, rpe, mood, sleepHours, sleepQuality, hrv, restingHr, weightKg, notes } =
 					input;
-				const logDate = date ?? new Date().toISOString().split("T")[0];
+				const logDate = date ?? toIsoDate();
 
 				const log = await upsertDailyLog(client, {
 					athlete_id: userId,

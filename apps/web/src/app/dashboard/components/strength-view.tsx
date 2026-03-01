@@ -5,6 +5,7 @@ import { formatDuration } from "@triathlon/core";
 import type { StrengthSessionData } from "@triathlon/types";
 import { Activity, ChevronRight, Dumbbell, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import { useMemo } from "react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
 
@@ -17,28 +18,31 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 	const recentWorkouts = workouts.slice(0, 5);
 
 	// Calculate chart data (Volume per day)
-	const chartData = [1, 2, 3, 4, 5, 6, 0].map((offset) => {
-		const d = new Date();
-		d.setDate(d.getDate() - (6 - offset));
-		const dayStr = d.toISOString().split("T")[0];
-		const dayWorkouts = workouts.filter((w) => w.startedAt.startsWith(dayStr));
+	const chartData = useMemo(
+		() =>
+			[1, 2, 3, 4, 5, 6, 0].map((offset) => {
+				const d = new Date();
+				d.setDate(d.getDate() - (6 - offset));
+				const dayStr = d.toISOString().split("T")[0];
+				const dayWorkouts = workouts.filter((w) => w.startedAt.startsWith(dayStr));
 
-		// Calculate daily volume
-		const volume = dayWorkouts.reduce((acc, w) => {
-			const data = w.rawData as StrengthSessionData | undefined;
-			if (!data) return acc;
-			const sessionVol = data.exercises.reduce(
-				(sAcc, ex) => sAcc + ex.sets.reduce((setAcc, s) => setAcc + s.weightKg * s.reps, 0),
-				0,
-			);
-			return acc + sessionVol;
-		}, 0);
+				const volume = dayWorkouts.reduce((acc, w) => {
+					const data = w.rawData as StrengthSessionData | undefined;
+					if (!data) return acc;
+					const sessionVol = data.exercises.reduce(
+						(sAcc, ex) => sAcc + ex.sets.reduce((setAcc, s) => setAcc + s.weightKg * s.reps, 0),
+						0,
+					);
+					return acc + sessionVol;
+				}, 0);
 
-		return {
-			day: d.toLocaleDateString("en-US", { weekday: "short" }),
-			volume,
-		};
-	});
+				return {
+					day: d.toLocaleDateString("en-US", { weekday: "short" }),
+					volume,
+				};
+			}),
+		[workouts],
+	);
 
 	const stats = [
 		{

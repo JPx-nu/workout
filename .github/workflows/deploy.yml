@@ -70,15 +70,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build API
-        run: pnpm --filter @triathlon/api build
+      - name: Build API (bundled for deployment)
+        run: pnpm --filter @triathlon/api build:deploy
 
       - name: Prepare API Deployment Package
         run: |
           mkdir deploy-api
-          cp -r apps/api/dist deploy-api/
-          cp apps/api/package.json deploy-api/
+          cp -r apps/api/dist-deploy/* deploy-api/
           cp apps/api/web.config deploy-api/ 2>/dev/null || true
+
+          # Create package.json without workspace deps for npm install
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('apps/api/package.json', 'utf8'));
+            for (const [name, ver] of Object.entries(pkg.dependencies || {})) {
+              if (String(ver).startsWith('workspace:')) delete pkg.dependencies[name];
+            }
+            fs.writeFileSync('deploy-api/package.json', JSON.stringify(pkg, null, 2));
+          "
+
           cd deploy-api && npm install --omit=dev
 
       - name: Login to Azure
@@ -117,7 +127,7 @@ jobs:
           az webapp config set \
             --resource-group "$RG" \
             --name jpx-workout-api \
-            --startup-file "node dist/server.js"
+            --startup-file "node server.js"
 
       - name: Deploy Backend to Azure
         uses: azure/webapps-deploy@v3

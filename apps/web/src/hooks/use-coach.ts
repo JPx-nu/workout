@@ -35,6 +35,7 @@ export function useCoach() {
 		}>
 	>([]);
 	const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+	const previewUrlsRef = useRef<Map<File, string>>(new Map());
 	const [error, setError] = useState<string | null>(null);
 	const [input, setInput] = useState("");
 
@@ -197,8 +198,27 @@ export function useCoach() {
 		setError(null);
 	}, []);
 
+	/** Get or create a stable blob URL for a file (avoids creating new URLs on every render) */
+	const getPreviewUrl = useCallback((file: File): string => {
+		const existing = previewUrlsRef.current.get(file);
+		if (existing) return existing;
+		const url = URL.createObjectURL(file);
+		previewUrlsRef.current.set(file, url);
+		return url;
+	}, []);
+
 	const removeFile = useCallback((index: number) => {
-		setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+		setAttachedFiles((prev) => {
+			const removed = prev[index];
+			if (removed) {
+				const url = previewUrlsRef.current.get(removed);
+				if (url) {
+					URL.revokeObjectURL(url);
+					previewUrlsRef.current.delete(removed);
+				}
+			}
+			return prev.filter((_, i) => i !== index);
+		});
 	}, []);
 
 	/** Upload files to Supabase Storage, returns signed URLs */
@@ -255,6 +275,11 @@ export function useCoach() {
 
 		// Handle file uploads if any
 		const filesToUpload = [...attachedFiles];
+		// Revoke all preview blob URLs before clearing
+		for (const [, url] of previewUrlsRef.current) {
+			URL.revokeObjectURL(url);
+		}
+		previewUrlsRef.current.clear();
 		setAttachedFiles([]);
 		setInput("");
 		setError(null);
@@ -317,5 +342,6 @@ export function useCoach() {
 		newConversation,
 		attachFile,
 		removeFile,
+		getPreviewUrl,
 	};
 }

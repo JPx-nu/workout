@@ -1,5 +1,6 @@
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { z } from "zod";
 import { insertInjury } from "../supabase.js";
 
@@ -7,7 +8,7 @@ export function createLogInjuryTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ bodyPart, severity, date, notes }) => {
 			try {
-				const reportedAt = date ?? new Date().toISOString().split("T")[0];
+				const reportedAt = date ?? toIsoDate();
 
 				const injury = await insertInjury(client, {
 					athlete_id: userId,

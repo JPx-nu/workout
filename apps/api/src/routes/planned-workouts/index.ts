@@ -44,7 +44,8 @@ plannedWorkoutsRoutes.get("/", async (c) => {
 		.gte("planned_date", from)
 		.lte("planned_date", to)
 		.order("planned_date", { ascending: true })
-		.order("sort_order", { ascending: true });
+		.order("sort_order", { ascending: true })
+		.limit(200);
 
 	if (status) {
 		query = query.eq("status", status);

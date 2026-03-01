@@ -8,8 +8,10 @@ import { END, MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { AI_CONFIG } from "../../config/ai.js";
 import { createLogger } from "../../lib/logger.js";
+import { createEmbeddings } from "./utils/embeddings.js";
 
 const log = createLogger({ module: "langgraph-agent" });
 
@@ -43,7 +45,7 @@ export async function createAgent(
 	userMessage?: string,
 ) {
 	// Load profile + today's readiness data + pinned memories concurrently for faster initialization
-	const today = new Date().toISOString().split("T")[0];
+	const today = toIsoDate();
 
 	const [profile, pinnedMemories, dailyLogs] = await Promise.all([
 		getProfile(client, userId),
@@ -62,13 +64,7 @@ export async function createAgent(
 
 	if (userMessage) {
 		try {
-			const { AzureOpenAIEmbeddings } = await import("@langchain/openai");
-			const embeddingsModel = new AzureOpenAIEmbeddings({
-				azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-				azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint.split(".")[0].replace("https://", ""),
-				azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-				azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-			});
+			const embeddingsModel = createEmbeddings();
 
 			const queryEmbedding = await embeddingsModel.embedQuery(userMessage);
 			const semanticResults = await searchMemoriesBySimilarity(client, userId, queryEmbedding, {
@@ -105,6 +101,8 @@ export async function createAgent(
 		azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
 		temperature: AI_CONFIG.model.temperature,
 		streaming: AI_CONFIG.features.streaming,
+		maxRetries: 3,
+		timeout: 60_000,
 		// gpt-5-mini requires max_completion_tokens instead of max_tokens
 		modelKwargs: { max_completion_tokens: AI_CONFIG.model.maxCompletionTokens },
 	});
@@ -153,8 +151,8 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 
 		const critique = typeof response.content === "string" ? response.content.trim() : "";
 
-		// If accepted, route to END
-		if (critique.toUpperCase() === "ACCEPT" || critique.includes("ACCEPT")) {
+		// If accepted, route to END — use strict match to avoid "NOT ACCEPT" false positives
+		if (/^\s*ACCEPT\s*$/i.test(critique)) {
 			return { messages: [] };
 		}
 

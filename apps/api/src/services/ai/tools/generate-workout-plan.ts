@@ -8,7 +8,9 @@
 import { tool } from "@langchain/core/tools";
 import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { z } from "zod";
+import { AI_CONFIG } from "../../../config/ai.js";
 import { createLogger } from "../../../lib/logger.js";
 
 const log = createLogger({ module: "tool-generate-workout-plan" });
@@ -105,8 +107,10 @@ export function createGenerateWorkoutPlanTool(
 
 				// 2. Generate structured plan using withStructuredOutput
 				const llm = new AzureChatOpenAI({
-					azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o",
-					azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION || "2024-12-01-preview",
+					azureOpenAIEndpoint: AI_CONFIG.azure.endpoint,
+					azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+					azureOpenAIApiDeploymentName: AI_CONFIG.azure.deploymentName,
+					azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
 					temperature: 0.7,
 				});
 
@@ -180,7 +184,7 @@ GUIDELINES:
 							athlete_id: userId,
 							club_id: clubId,
 							plan_id: planRow.id,
-							planned_date: sessionDate.toISOString().split("T")[0],
+							planned_date: toIsoDate(sessionDate),
 							activity_type: session.activityType,
 							title: session.title,
 							description: session.description,
@@ -210,7 +214,7 @@ GUIDELINES:
 				return `✅ Created "${plan.name}" — ${input.durationWeeks}-week plan with ${totalSessions} sessions.
 
 Goal: ${plan.goal}
-Starts: ${startDate.toISOString().split("T")[0]} (coming Monday)
+Starts: ${toIsoDate(startDate)} (coming Monday)
 
 ${weekSummaries.join("\n")}
 

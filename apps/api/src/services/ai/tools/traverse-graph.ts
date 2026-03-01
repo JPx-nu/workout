@@ -7,6 +7,14 @@ import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+interface GraphNodeRow {
+	node_id: string;
+	node_label: string;
+	node_type: string;
+	path_names: string[];
+	depth: number;
+}
+
 export function createTraverseGraphTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ maxDepth = 2, edgeTypes }) => {
@@ -28,7 +36,7 @@ export function createTraverseGraphTool(client: SupabaseClient, userId: string) 
 				}
 
 				return JSON.stringify(
-					data.map((d: any) => ({
+					(data as GraphNodeRow[]).map((d) => ({
 						id: d.node_id,
 						label: d.node_label,
 						type: d.node_type,

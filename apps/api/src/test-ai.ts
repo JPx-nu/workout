@@ -1,3 +1,4 @@
+import type { BaseMessage } from "@langchain/core/messages";
 import { HumanMessage } from "@langchain/core/messages";
 import { createClient } from "@supabase/supabase-js";
 import { createAgent } from "./services/ai/graph.js";
@@ -19,9 +20,17 @@ async function runTest() {
 	// 2. Fetch or Create a valid athlete profile to test with
 	console.log("Logging in as test user...");
 
+	const testEmail = process.env.TEST_EMAIL;
+	const testPassword = process.env.TEST_PASSWORD;
+
+	if (!testEmail || !testPassword) {
+		console.error("❌ Missing TEST_EMAIL or TEST_PASSWORD in environment variables.");
+		process.exit(1);
+	}
+
 	const { data: authData, error: authErr } = await client.auth.signInWithPassword({
-		email: "tester@jpx.com",
-		password: "password123",
+		email: testEmail,
+		password: testPassword,
 	});
 
 	if (authErr || !authData.user) {
@@ -71,7 +80,7 @@ async function runTest() {
 		"Can you generate a 3-week 10k running plan for me? I can run 4 times a week.",
 	];
 
-	const messageHistory: any[] = [];
+	const messageHistory: BaseMessage[] = [];
 
 	for (let i = 0; i < prompts.length; i++) {
 		const prompt = prompts[i];
@@ -89,15 +98,15 @@ async function runTest() {
 			console.log(`🤖 AI: ${aiMessage.content}\n`);
 
 			// Log tool calls if any
-			if (
-				"tool_calls" in aiMessage &&
-				Array.isArray((aiMessage as any).tool_calls) &&
-				(aiMessage as any).tool_calls.length > 0
-			) {
-				console.log(`🛠️ Tools Called:`);
-				(aiMessage as any).tool_calls.forEach((tc: any) => {
+			const toolCalls =
+				"tool_calls" in aiMessage
+					? (aiMessage.tool_calls as Array<{ name: string; args: Record<string, unknown> }>)
+					: [];
+			if (toolCalls.length > 0) {
+				console.log("🛠️ Tools Called:");
+				for (const tc of toolCalls) {
 					console.log(`   - ${tc.name} (${JSON.stringify(tc.args)})`);
-				});
+				}
 			}
 
 			// keep AI message in history

@@ -11,9 +11,11 @@
  * @see LangGraph v1.1+ content moderation middleware for deeper integration
  */
 
+import { AI_CONFIG } from "../../config/ai.js";
+
 // ── Constants ──────────────────────────────────────────────────
 
-const MAX_INPUT_LENGTH = 4000;
+const MAX_INPUT_LENGTH = AI_CONFIG.safety.maxInputLength;
 
 const EMERGENCY_KEYWORDS = [
 	"suicide",
@@ -158,7 +160,7 @@ export function processOutput(
 	}
 
 	// Low confidence warning
-	const lowConfidence = (options.confidence ?? 1.0) < 0.6;
+	const lowConfidence = (options.confidence ?? 1.0) < AI_CONFIG.safety.lowConfidenceThreshold;
 	if (lowConfidence) {
 		processed += LOW_CONFIDENCE_DISCLAIMER;
 		disclaimerAdded = true;

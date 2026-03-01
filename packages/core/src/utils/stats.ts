@@ -4,6 +4,8 @@
 // and health data arrays.
 // ============================================================
 
+import { toIsoDate } from "./dates.js";
+
 // ── Types ─────────────────────────────────────────────────────
 
 export type ActivityStats = {
@@ -82,7 +84,7 @@ export function computeChartData(workouts: WorkoutLike[]): ChartDataPoint[] {
 	return days.map((day, i) => {
 		const date = new Date(startOfWeek);
 		date.setDate(startOfWeek.getDate() + i);
-		const dayStr = date.toISOString().split("T")[0];
+		const dayStr = toIsoDate(date);
 		const dayWorkouts = workouts.filter((w) => w.startedAt.startsWith(dayStr));
 
 		const minutesByType = (type: string) =>

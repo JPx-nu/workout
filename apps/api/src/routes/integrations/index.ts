@@ -56,7 +56,7 @@ integrationRoutes.get("/status", async (c) => {
 // ── Sync history endpoint ──
 integrationRoutes.get("/sync-history", async (c) => {
 	const auth = getAuth(c);
-	const limit = parseInt(c.req.query("limit") || "20", 10);
+	const limit = Math.min(Math.max(parseInt(c.req.query("limit") || "20", 10) || 20, 1), 100);
 	const provider = c.req.query("provider");
 
 	const client = createAdminClient();

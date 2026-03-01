@@ -112,7 +112,31 @@ export function mapDailyLogRow(row: DailyLogRow): MappedDailyLog {
 
 // ── Planned Workout Mapper ────────────────────────────────────
 
-export type PlannedWorkoutRow = Record<string, unknown>;
+export interface PlannedWorkoutRow {
+	id: string;
+	athlete_id: string;
+	club_id: string;
+	plan_id: string | null;
+	planned_date: string;
+	planned_time: string | null;
+	activity_type: string;
+	title: string;
+	description: string | null;
+	duration_min: number | null;
+	distance_km: number | null;
+	target_tss: number | null;
+	target_rpe: number | null;
+	intensity: string | null;
+	session_data: Record<string, unknown> | null;
+	status: string;
+	sort_order: number;
+	notes: string | null;
+	coach_notes: string | null;
+	source: string;
+	workout_id: string | null;
+	created_at: string;
+	updated_at: string;
+}
 
 export type MappedPlannedWorkout = {
 	id: string;
@@ -141,27 +165,27 @@ export type MappedPlannedWorkout = {
 
 export function mapPlannedWorkoutRow(row: PlannedWorkoutRow): MappedPlannedWorkout {
 	return {
-		id: row.id as string,
-		athleteId: row.athlete_id as string,
-		planId: row.plan_id as string | null,
-		plannedDate: row.planned_date as string,
-		plannedTime: row.planned_time as string | null,
-		activityType: row.activity_type as string,
-		title: row.title as string,
-		description: row.description as string | null,
-		durationMin: row.duration_min as number | null,
-		distanceKm: row.distance_km as number | null,
-		targetTss: row.target_tss as number | null,
-		targetRpe: row.target_rpe as number | null,
-		intensity: row.intensity as string | null,
-		sessionData: (row.session_data as Record<string, unknown>) || {},
-		status: row.status as string,
-		sortOrder: row.sort_order as number,
-		notes: row.notes as string | null,
-		coachNotes: row.coach_notes as string | null,
-		source: row.source as string,
-		workoutId: row.workout_id as string | null,
-		createdAt: row.created_at as string,
-		updatedAt: row.updated_at as string,
+		id: row.id,
+		athleteId: row.athlete_id,
+		planId: row.plan_id,
+		plannedDate: row.planned_date,
+		plannedTime: row.planned_time,
+		activityType: row.activity_type,
+		title: row.title,
+		description: row.description,
+		durationMin: row.duration_min,
+		distanceKm: row.distance_km,
+		targetTss: row.target_tss,
+		targetRpe: row.target_rpe,
+		intensity: row.intensity,
+		sessionData: row.session_data || {},
+		status: row.status,
+		sortOrder: row.sort_order,
+		notes: row.notes,
+		coachNotes: row.coach_notes,
+		source: row.source,
+		workoutId: row.workout_id,
+		createdAt: row.created_at,
+		updatedAt: row.updated_at,
 	};
 }

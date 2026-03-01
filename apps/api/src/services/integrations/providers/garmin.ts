@@ -5,6 +5,7 @@
 // Docs: https://developer.garmin.com/gc-developer-program/
 // ============================================================
 
+import { toIsoDate } from "@triathlon/core";
 import { INTEGRATION_CONFIG } from "../../../config/integrations.js";
 import { createLogger } from "../../../lib/logger.js";
 import { ProviderApiError, ProviderUnavailableError } from "../errors.js";
@@ -145,7 +146,7 @@ export class GarminProvider implements IntegrationProvider {
 	}
 
 	async fetchHealthData(accessToken: string, date: Date): Promise<NormalizedMetric[]> {
-		const dateStr = date.toISOString().split("T")[0];
+		const dateStr = toIsoDate(date);
 		const metrics: NormalizedMetric[] = [];
 
 		try {

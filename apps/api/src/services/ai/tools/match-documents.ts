@@ -4,24 +4,21 @@
 // ============================================================
 
 import { tool } from "@langchain/core/tools";
-import { AzureOpenAIEmbeddings } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { AI_CONFIG } from "../../../config/ai.js";
+import { createEmbeddings } from "../utils/embeddings.js";
+
+interface MatchDocumentRow {
+	title: string;
+	content: string;
+	similarity: number;
+}
 
 export function createMatchDocumentsTool(client: SupabaseClient, clubId: string) {
 	return tool(
 		async ({ query, threshold = 0.7, limit = 5 }) => {
 			try {
-				// Initialize embeddings
-				const embeddings = new AzureOpenAIEmbeddings({
-					azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-					azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-						.split(".")[0]
-						.replace("https://", ""),
-					azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-					azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-				});
+				const embeddings = createEmbeddings();
 
 				// Generate vector for the query
 				const query_embedding = await embeddings.embedQuery(query);
@@ -43,7 +40,7 @@ export function createMatchDocumentsTool(client: SupabaseClient, clubId: string)
 				}
 
 				return JSON.stringify(
-					data.map((d: any) => ({
+					(data as MatchDocumentRow[]).map((d) => ({
 						title: d.title,
 						content: d.content,
 						similarity: d.similarity,

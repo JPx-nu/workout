@@ -6,12 +6,11 @@
 // ============================================================
 
 import { tool } from "@langchain/core/tools";
-import { AzureOpenAIEmbeddings } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { AI_CONFIG } from "../../../config/ai.js";
 import { createLogger } from "../../../lib/logger.js";
 import { insertWorkout } from "../supabase.js";
+import { createEmbeddings } from "../utils/embeddings.js";
 
 const log = createLogger({ module: "tool-log-workout" });
 
@@ -97,14 +96,7 @@ export function createLogWorkoutTool(client: SupabaseClient, userId: string, clu
 						const textToEmbed = `Activity: ${input.activityType}. Notes: ${input.notes ?? "None"}. Ex: ${
 							rawData?.exercises ? JSON.stringify(rawData.exercises) : "None"
 						}`;
-						const embeddingsModel = new AzureOpenAIEmbeddings({
-							azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-							azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-								.split(".")[0]
-								.replace("https://", ""),
-							azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-							azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-						});
+						const embeddingsModel = createEmbeddings();
 						embedding = await embeddingsModel.embedQuery(textToEmbed);
 					} catch (err) {
 						log.error({ err }, "Failed to generate embedding for workout");

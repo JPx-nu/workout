@@ -6,6 +6,7 @@
 // ============================================================
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { createLogger } from "../../lib/logger.js";
 
 const log = createLogger({ module: "ai-supabase" });
@@ -232,7 +233,7 @@ export async function getUpcomingEvents(
 		distance_type: string | null;
 	}>
 > {
-	const today = new Date().toISOString().split("T")[0];
+	const today = toIsoDate();
 	// Events are club-scoped, not athlete-scoped. Query via the athlete's club.
 	const profile = await getProfile(client, userId);
 	if (!profile) return [];

@@ -7,6 +7,20 @@
 import type { AthleteMemory, AthleteProfile, DailyLog } from "./supabase.js";
 
 /**
+ * Sanitizes user-controlled strings before injecting into the system prompt.
+ * Strips control characters, HTML, and template-like patterns to prevent prompt injection.
+ */
+function sanitizeForPrompt(input: string, maxLength = 200): string {
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: intentionally stripping control chars
+	const controlChars = /[\x00-\x1f\x7f]/g;
+	return input
+		.replace(controlChars, "") // strip control chars
+		.replace(/\{\{.*?\}\}/g, "") // strip template patterns
+		.replace(/<\/?[^>]+(>|$)/g, "") // strip HTML tags
+		.slice(0, maxLength);
+}
+
+/**
  * Builds the system prompt for the AI coaching agent.
  * Injects user context and daily readiness data so the LLM
  * has immediate awareness before the athlete speaks.
@@ -19,8 +33,8 @@ export function buildSystemPrompt(
 	const userContext = profile
 		? `
 ## Current Athlete Context
-- **Name**: ${profile.display_name || "Athlete"}
-- **Timezone**: ${profile.timezone || "UTC"}
+- **Name**: ${sanitizeForPrompt(profile.display_name || "Athlete", 100)}
+- **Timezone**: ${sanitizeForPrompt(profile.timezone || "UTC", 50)}
 - **Role**: ${profile.role}
 `
 		: `\n## Current Athlete Context\nNo profile data loaded yet. Ask the athlete about their goals and background.\n`;
@@ -42,7 +56,7 @@ If sleep is poor (<6h) or HRV is noticeably low, **proactively** mention it in y
 			? `
 ## Athlete Memory & Context
 Here is what you know about this athlete from past conversations:
-${memories.map((m) => `- ${m.content}`).join("\n")}
+${memories.map((m) => `- ${sanitizeForPrompt(m.content, 500)}`).join("\n")}
 
 Use these facts to personalize your responses, remember their preferences, and avoid asking them things they've already told you. Do not list these facts back to them, just act on them naturally.`
 			: "";

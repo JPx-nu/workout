@@ -31,8 +31,8 @@ export const ChatMessageInput = z.object({
 });
 export type ChatMessageInput = z.infer<typeof ChatMessageInput>;
 
-// ── Workout Schemas ────────────────────────────────────────────
-const DataSource = z.enum([
+// ── Data Source (single source of truth) ──────────────────────
+export const DataSourceSchema = z.enum([
 	"GARMIN",
 	"POLAR",
 	"WAHOO",
@@ -41,10 +41,13 @@ const DataSource = z.enum([
 	"HEALTHKIT",
 	"HEALTH_CONNECT",
 ]);
+export type DataSource = z.infer<typeof DataSourceSchema>;
+
+// ── Workout Schemas ────────────────────────────────────────────
 
 export const WorkoutInput = z.object({
 	activity_type: ActivityType,
-	source: DataSource,
+	source: DataSourceSchema,
 	started_at: z.iso.datetime({ message: "started_at must be ISO 8601 datetime" }),
 	duration_s: z.number().int().positive(),
 	distance_m: z.number().nonnegative(),
@@ -136,7 +139,7 @@ export type PlannedWorkoutUpdate = z.infer<typeof PlannedWorkoutUpdate>;
 // ── Webhook Schemas ────────────────────────────────────────────
 
 export const WebhookPayload = z.object({
-	source: DataSource,
+	source: DataSourceSchema,
 	payload: z.record(z.string(), z.unknown()),
 	timestamp: z.iso.datetime().optional(),
 });

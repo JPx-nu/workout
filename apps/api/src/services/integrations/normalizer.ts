@@ -6,6 +6,7 @@
 // ============================================================
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { createLogger } from "../../lib/logger.js";
 import type { NormalizedMetric, NormalizedWorkout, SyncResult } from "./types.js";
 
@@ -142,7 +143,7 @@ async function autoPopulateDailyLogs(
 	const byDate = new Map<string, { hrv?: number; restingHr?: number; sleepHours?: number }>();
 
 	for (const m of metrics) {
-		const date = m.recordedAt.toISOString().split("T")[0];
+		const date = toIsoDate(m.recordedAt);
 		const existing = byDate.get(date) || {};
 
 		switch (m.metricType) {

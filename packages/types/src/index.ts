@@ -5,21 +5,13 @@
 // Activity types
 export type ActivityType = "SWIM" | "BIKE" | "RUN" | "STRENGTH" | "YOGA" | "OTHER";
 
-// Data sources
-export type DataSource =
-	| "GARMIN"
-	| "POLAR"
-	| "WAHOO"
-	| "FORM"
-	| "MANUAL"
-	| "HEALTHKIT"
-	| "HEALTH_CONNECT";
+// DataSource — derived from Zod schema in validation.ts (single source of truth)
+import type { DataSource } from "./validation.js";
+
+export type { DataSource } from "./validation.js";
 
 // User roles
 export type UserRole = "athlete" | "coach" | "admin" | "owner";
-
-// Race distance types
-export type RaceDistanceType = "SPRINT" | "OLYMPIC" | "HALF_IRONMAN" | "IRONMAN" | "CUSTOM";
 
 // Health metric types
 export type HealthMetricType =
@@ -31,28 +23,6 @@ export type HealthMetricType =
 	| "STEPS"
 	| "ACTIVE_CALORIES"
 	| "VO2MAX";
-
-// Knowledge graph entity types
-export type KGEntityType =
-	| "ATHLETE"
-	| "WORKOUT"
-	| "INJURY"
-	| "EQUIPMENT"
-	| "CLUB_RULE"
-	| "DOCUMENT_CHUNK"
-	| "EVENT"
-	| "FATIGUE_STATE";
-
-// Knowledge graph relationship types
-export type KGRelationship =
-	| "PERFORMED"
-	| "CAUSED"
-	| "RECOMMENDS"
-	| "RESTRICTS"
-	| "HAS_INJURY"
-	| "USES_EQUIPMENT"
-	| "LINKED_TO"
-	| "REFERS_TO";
 
 // AI chat intent
 export type ChatIntent = "training" | "medical" | "general" | "emergency";

@@ -4,12 +4,11 @@
 // ============================================================
 
 import { tool } from "@langchain/core/tools";
-import { AzureOpenAIEmbeddings } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { AI_CONFIG } from "../../../config/ai.js";
 import { createLogger } from "../../../lib/logger.js";
 import { insertMemory } from "../supabase.js";
+import { createEmbeddings } from "../utils/embeddings.js";
 
 const log = createLogger({ module: "tool-save-memory" });
 
@@ -20,14 +19,7 @@ export function createSaveMemoryTool(client: SupabaseClient, userId: string) {
 				// Generate embedding for natural language search scaling later
 				let embedding: number[] | undefined;
 				try {
-					const embeddingsModel = new AzureOpenAIEmbeddings({
-						azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-						azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-							.split(".")[0]
-							.replace("https://", ""),
-						azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-						azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-					});
+					const embeddingsModel = createEmbeddings();
 					embedding = await embeddingsModel.embedQuery(content);
 				} catch (err) {
 					log.error({ err }, "Failed to generate embedding for athlete memory");

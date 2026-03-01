@@ -36,8 +36,18 @@ export const AI_CONFIG = {
 	safety: {
 		/** Minimum confidence to skip disclaimer */
 		confidenceThreshold: 0.7,
+		/** Below this confidence, add a low-confidence disclaimer */
+		lowConfidenceThreshold: 0.6,
 		/** Max user message length (chars) */
 		maxInputLength: 4000,
+	},
+
+	/** AI thresholds for memory and training analysis */
+	thresholds: {
+		/** Cosine similarity above which a memory is considered a duplicate */
+		memorySimilarity: 0.88,
+		/** ACWR zones: undertraining | optimal | caution | danger */
+		acwr: { low: 0.8, optimal: 1.3, high: 1.5 },
 	},
 
 	/** Feature flags */

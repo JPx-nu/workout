@@ -76,41 +76,22 @@ webhookRoutes.get("/strava", (c) => {
 	return c.text("Forbidden", 403);
 });
 
-// ── Garmin Webhooks ──
-webhookRoutes.post("/garmin", async (c) => {
-	try {
-		const body = await c.req.text();
-		const headers = Object.fromEntries(c.req.raw.headers.entries());
-		const result = await handleWebhook("GARMIN", headers, body);
-		return c.json({ status: result.status }, result.code as 200);
-	} catch (err) {
-		log.error({ err, provider: "GARMIN" }, "Webhook processing error");
-		return c.json({ status: "error" }, 200);
-	}
-});
+// ── Simple webhook routes (Garmin, Polar, Wahoo) ──
+// All follow the same pattern: read body → verify signature → enqueue
+function registerSimpleWebhook(path: string, provider: ProviderName) {
+	webhookRoutes.post(path, async (c) => {
+		try {
+			const body = await c.req.text();
+			const headers = Object.fromEntries(c.req.raw.headers.entries());
+			const result = await handleWebhook(provider, headers, body);
+			return c.json({ status: result.status }, result.code as 200);
+		} catch (err) {
+			log.error({ err, provider }, "Webhook processing error");
+			return c.json({ status: "error" }, 200);
+		}
+	});
+}
 
-// ── Polar Webhooks ──
-webhookRoutes.post("/polar", async (c) => {
-	try {
-		const body = await c.req.text();
-		const headers = Object.fromEntries(c.req.raw.headers.entries());
-		const result = await handleWebhook("POLAR", headers, body);
-		return c.json({ status: result.status }, result.code as 200);
-	} catch (err) {
-		log.error({ err, provider: "POLAR" }, "Webhook processing error");
-		return c.json({ status: "error" }, 200);
-	}
-});
-
-// ── Wahoo Webhooks ──
-webhookRoutes.post("/wahoo", async (c) => {
-	try {
-		const body = await c.req.text();
-		const headers = Object.fromEntries(c.req.raw.headers.entries());
-		const result = await handleWebhook("WAHOO", headers, body);
-		return c.json({ status: result.status }, result.code as 200);
-	} catch (err) {
-		log.error({ err, provider: "WAHOO" }, "Webhook processing error");
-		return c.json({ status: "error" }, 200);
-	}
-});
+registerSimpleWebhook("/garmin", "GARMIN");
+registerSimpleWebhook("/polar", "POLAR");
+registerSimpleWebhook("/wahoo", "WAHOO");

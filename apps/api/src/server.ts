@@ -37,8 +37,8 @@ app.use(
 	"*",
 	cors({
 		origin: (origin) => {
-			// Allow any localhost origin in development (Next.js, Flutter web, etc.)
-			if (origin && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
+			// Allow known dev ports in development
+			if (origin && /^https?:\/\/localhost:(3000|3001|8787)$/.test(origin)) {
 				return origin;
 			}
 			// Allow configured WEB_URL and Azure production domain

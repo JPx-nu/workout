@@ -4,6 +4,7 @@ import type { ChartDataPoint, HealthSnapshot, MappedWorkout, WeeklyStats } from 
 import { formatDuration, mToKm } from "@triathlon/core";
 import { Calendar, ChevronRight, Heart } from "lucide-react";
 import Link from "next/link";
+import { useMemo } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { getActivityConfig } from "@/lib/activity-config";
@@ -74,36 +75,39 @@ export function TriathlonView({
 	events,
 	allWorkouts,
 }: TriathlonViewProps) {
-	const statCards = [
-		{
-			label: "Swim",
-			icon: getActivityConfig("SWIM").icon,
-			badgeClass: getActivityConfig("SWIM").badge,
-			value: `${weeklyStats.swim.distanceKm} km`,
-			sub: `${weeklyStats.swim.sessions} sessions`,
-		},
-		{
-			label: "Bike",
-			icon: getActivityConfig("BIKE").icon,
-			badgeClass: getActivityConfig("BIKE").badge,
-			value: `${weeklyStats.bike.distanceKm} km`,
-			sub: `${weeklyStats.bike.sessions} sessions`,
-		},
-		{
-			label: "Run",
-			icon: getActivityConfig("RUN").icon,
-			badgeClass: getActivityConfig("RUN").badge,
-			value: `${weeklyStats.run.distanceKm} km`,
-			sub: `${weeklyStats.run.sessions} sessions`,
-		},
-		{
-			label: "Strength",
-			icon: getActivityConfig("STRENGTH").icon,
-			badgeClass: getActivityConfig("STRENGTH").badge,
-			value: `${weeklyStats.strength.durationMin} min`,
-			sub: `${weeklyStats.strength.sessions} sessions`,
-		},
-	];
+	const statCards = useMemo(
+		() => [
+			{
+				label: "Swim",
+				icon: getActivityConfig("SWIM").icon,
+				badgeClass: getActivityConfig("SWIM").badge,
+				value: `${weeklyStats.swim.distanceKm} km`,
+				sub: `${weeklyStats.swim.sessions} sessions`,
+			},
+			{
+				label: "Bike",
+				icon: getActivityConfig("BIKE").icon,
+				badgeClass: getActivityConfig("BIKE").badge,
+				value: `${weeklyStats.bike.distanceKm} km`,
+				sub: `${weeklyStats.bike.sessions} sessions`,
+			},
+			{
+				label: "Run",
+				icon: getActivityConfig("RUN").icon,
+				badgeClass: getActivityConfig("RUN").badge,
+				value: `${weeklyStats.run.distanceKm} km`,
+				sub: `${weeklyStats.run.sessions} sessions`,
+			},
+			{
+				label: "Strength",
+				icon: getActivityConfig("STRENGTH").icon,
+				badgeClass: getActivityConfig("STRENGTH").badge,
+				value: `${weeklyStats.strength.durationMin} min`,
+				sub: `${weeklyStats.strength.sessions} sessions`,
+			},
+		],
+		[weeklyStats],
+	);
 
 	return (
 		<div className="space-y-8 animate-fade-in">

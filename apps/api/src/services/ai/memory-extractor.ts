@@ -5,11 +5,12 @@
 // Runs fire-and-forget after each AI response.
 // ============================================================
 
-import { AzureChatOpenAI, AzureOpenAIEmbeddings } from "@langchain/openai";
+import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AI_CONFIG } from "../../config/ai.js";
 import { createLogger } from "../../lib/logger.js";
 import { getRecentMemories, insertMemory } from "./supabase.js";
+import { createEmbeddings } from "./utils/embeddings.js";
 
 const log = createLogger({ module: "memory-extractor" });
 
@@ -104,12 +105,7 @@ export async function extractMemories(
 		if (candidates.length === 0) return;
 
 		// Deduplicate via embeddings — skip if too similar to existing memories
-		const embeddingsModel = new AzureOpenAIEmbeddings({
-			azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-			azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint.split(".")[0].replace("https://", ""),
-			azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-			azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-		});
+		const embeddingsModel = createEmbeddings();
 
 		// Get embeddings for existing memories that have them
 		const existingEmbeddings = existingMemories
@@ -123,7 +119,7 @@ export async function extractMemories(
 				// Check cosine similarity against existing memories
 				const isDuplicate = existingEmbeddings.some((existing) => {
 					const similarity = cosineSimilarity(candidateEmbedding, existing.embedding);
-					return similarity > 0.88; // High threshold — only skip near-duplicates
+					return similarity > AI_CONFIG.thresholds.memorySimilarity;
 				});
 
 				if (isDuplicate) {

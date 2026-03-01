@@ -76,6 +76,8 @@ export default function BodySvg({ fatigueData }: { fatigueData: MuscleFatigue[] 
 						<button
 							key={key}
 							type="button"
+							aria-label={`Show ${label.toLowerCase()} view`}
+							aria-pressed={side === key}
 							onClick={() => {
 								setSide(key);
 								setSelectedMuscle(null);

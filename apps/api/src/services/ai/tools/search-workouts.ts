@@ -4,24 +4,25 @@
 // ============================================================
 
 import { tool } from "@langchain/core/tools";
-import { AzureOpenAIEmbeddings } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { AI_CONFIG } from "../../../config/ai.js";
+import { createEmbeddings } from "../utils/embeddings.js";
+
+interface MatchWorkoutRow {
+	id: string;
+	activity_type: string;
+	started_at: string;
+	distance_m: number | null;
+	duration_s: number | null;
+	notes: string | null;
+	similarity: number;
+}
 
 export function createSearchWorkoutsTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ query, threshold = 0.6, limit = 5 }) => {
 			try {
-				// Initialize embeddings
-				const embeddings = new AzureOpenAIEmbeddings({
-					azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-					azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-						.split(".")[0]
-						.replace("https://", ""),
-					azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-					azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-				});
+				const embeddings = createEmbeddings();
 
 				// Generate vector for the query
 				const query_embedding = await embeddings.embedQuery(query);
@@ -43,7 +44,7 @@ export function createSearchWorkoutsTool(client: SupabaseClient, userId: string)
 				}
 
 				return JSON.stringify(
-					data.map((w: any) => ({
+					(data as MatchWorkoutRow[]).map((w) => ({
 						id: w.id,
 						activityType: w.activity_type,
 						date: w.started_at,

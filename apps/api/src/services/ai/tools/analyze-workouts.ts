@@ -6,6 +6,7 @@
 
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { z } from "zod";
 import { getWorkouts } from "../supabase.js";
 
@@ -17,8 +18,8 @@ export function createAnalyzeWorkoutsTool(client: SupabaseClient, userId: string
 			fromDate.setDate(toDate.getDate() - days);
 
 			const workouts = await getWorkouts(client, userId, {
-				fromDate: fromDate.toISOString().split("T")[0],
-				toDate: toDate.toISOString().split("T")[0],
+				fromDate: toIsoDate(fromDate),
+				toDate: toIsoDate(toDate),
 			});
 
 			if (workouts.length === 0) {

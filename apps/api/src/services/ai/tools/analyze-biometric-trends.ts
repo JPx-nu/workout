@@ -6,6 +6,7 @@
 
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { z } from "zod";
 import { getDailyLogs } from "../supabase.js";
 
@@ -17,8 +18,8 @@ export function createAnalyzeBiometricTrendsTool(client: SupabaseClient, userId:
 			fromDate.setDate(toDate.getDate() - days);
 
 			const logs = await getDailyLogs(client, userId, {
-				fromDate: fromDate.toISOString().split("T")[0],
-				toDate: toDate.toISOString().split("T")[0],
+				fromDate: toIsoDate(fromDate),
+				toDate: toIsoDate(toDate),
 				limit: days, // limit to max requested days just in case
 			});
 

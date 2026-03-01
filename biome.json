@@ -16,7 +16,9 @@
 			"packages/**/*.ts",
 			"**/*.json",
 			"**/*.css",
-			"!.claude"
+			"!.claude",
+			"!**/dist",
+			"!**/dist-deploy"
 		]
 	},
 	"formatter": {

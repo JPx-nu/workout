@@ -5,6 +5,7 @@
 
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lookbackDate } from "@triathlon/core";
 import { z } from "zod";
 import { getDailyLogs, getWorkouts } from "../supabase.js";
 
@@ -12,7 +13,7 @@ export function createGetProgressReportTool(client: SupabaseClient, userId: stri
 	return tool(
 		async ({ days }) => {
 			const lookbackDays = days ?? 14;
-			const fromDate = new Date(Date.now() - lookbackDays * 86400000).toISOString().split("T")[0];
+			const fromDate = lookbackDate(lookbackDays);
 
 			const [workouts, dailyLogs] = await Promise.all([
 				getWorkouts(client, userId, { fromDate, limit: 200 }),

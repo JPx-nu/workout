@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { InstallPrompt } from "@/components/install-prompt";
 import { MobileNav } from "@/components/mobile-nav";
 import { useAuth } from "@/components/supabase-provider";
@@ -191,7 +192,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 					<span className="font-semibold text-sm">Triathlon AI</span>
 				</div>
 
-				<div className="p-4 lg:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto">{children}</div>
+				<ErrorBoundary>
+					<div className="p-4 lg:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto">{children}</div>
+				</ErrorBoundary>
 			</main>
 
 			{/* PWA install prompt */}

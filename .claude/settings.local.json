@@ -7,7 +7,9 @@
       "Bash(gh run view 22541661936 --log-failed)",
       "Bash(pnpm install)",
       "Bash(npx @biomejs/biome check . --max-diagnostics=50)",
-      "Bash(npx @biomejs/biome check . --max-diagnostics=100)"
+      "Bash(npx @biomejs/biome check . --max-diagnostics=100)",
+      "Bash(grep -r \"basePath\\\\|NEXT_PUBLIC_API_URL\" apps/web/next.config.ts apps/web/.env* apps/web/src/lib/constants.ts)",
+      "Bash(xargs grep -l \"deploy\\\\|azure\")"
     ]
   }
 }

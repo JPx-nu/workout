@@ -5,7 +5,9 @@
 
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toIsoDate } from "@triathlon/core";
 import { z } from "zod";
+import { AI_CONFIG } from "../../../config/ai.js";
 import { getWorkouts } from "../supabase.js";
 
 export function createPredictInjuryRiskTool(client: SupabaseClient, userId: string) {
@@ -17,8 +19,8 @@ export function createPredictInjuryRiskTool(client: SupabaseClient, userId: stri
 
 			// Fetch last 28 days of workouts
 			const workouts = await getWorkouts(client, userId, {
-				fromDate: fourWeeksAgo.toISOString().split("T")[0],
-				toDate: today.toISOString().split("T")[0],
+				fromDate: toIsoDate(fourWeeksAgo),
+				toDate: toIsoDate(today),
 			});
 
 			if (workouts.length === 0) {
@@ -49,7 +51,7 @@ export function createPredictInjuryRiskTool(client: SupabaseClient, userId: stri
 
 			const sevenDaysAgo = new Date();
 			sevenDaysAgo.setDate(today.getDate() - 7);
-			const sevenDaysStr = sevenDaysAgo.toISOString().split("T")[0];
+			const sevenDaysStr = toIsoDate(sevenDaysAgo);
 
 			for (const [date, load] of Object.entries(dailyLoads)) {
 				chronicLoad += load;
@@ -70,15 +72,17 @@ export function createPredictInjuryRiskTool(client: SupabaseClient, userId: stri
 			let riskAssessment = "";
 			let recommendations = "";
 
-			if (acwr < 0.8) {
+			const { low, optimal, high } = AI_CONFIG.thresholds.acwr;
+
+			if (acwr < low) {
 				riskAssessment = "LOW (Undertraining)";
 				recommendations =
 					"Athlete is losing fitness. Safe to increase training volume and intensity.";
-			} else if (acwr >= 0.8 && acwr <= 1.3) {
+			} else if (acwr >= low && acwr <= optimal) {
 				riskAssessment = "OPTIMAL (Sweet Spot)";
 				recommendations =
 					"Excellent training progression. Injury risk is minimized. Maintain current progressive overload.";
-			} else if (acwr > 1.3 && acwr <= 1.5) {
+			} else if (acwr > optimal && acwr <= high) {
 				riskAssessment = "CAUTION (Zone of Danger)";
 				recommendations =
 					"Training load is ramping up quickly. Monitor biometrics closely. Consider a recovery day.";

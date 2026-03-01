@@ -5,14 +5,9 @@ import { useEffect } from "react";
 export function ServiceWorkerRegister() {
 	useEffect(() => {
 		if ("serviceWorker" in navigator) {
-			navigator.serviceWorker
-				.register("/workout/sw.js")
-				.then((reg) => {
-					console.log("[SW] registered, scope:", reg.scope);
-				})
-				.catch((err) => {
-					console.warn("[SW] registration failed:", err);
-				});
+			navigator.serviceWorker.register("/workout/sw.js").catch(() => {
+				// Service worker registration is best-effort
+			});
 		}
 	}, []);
 
