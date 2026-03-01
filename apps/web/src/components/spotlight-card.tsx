@@ -37,6 +37,8 @@ export function SpotlightCard({ children, className = "", style }: SpotlightCard
 			style={style}
 			onMouseMove={handleMouseMove}
 			onMouseLeave={handleMouseLeave}
+			role="presentation"
+			aria-hidden="true"
 		>
 			{children}
 		</div>

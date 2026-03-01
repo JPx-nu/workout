@@ -303,6 +303,7 @@ function BodyModel({
 
 	return (
 		<group ref={modelRef} position={[0, -0.3, 0]}>
+			{/* biome-ignore lint/a11y/noStaticElementInteractions: Three.js R3F element, not DOM */}
 			<primitive
 				object={scene}
 				scale={1}
@@ -329,6 +330,7 @@ function ErrorFallback() {
 					Your browser may not support WebGL, or the model failed to load.
 				</p>
 				<button
+					type="button"
 					onClick={() => window.location.reload()}
 					className="mt-4 px-4 py-2 rounded-lg text-xs font-medium"
 					style={{
@@ -544,7 +546,7 @@ export default function Body3DViewer({ fatigueData }: { fatigueData: MuscleFatig
 
 							<div className="flex items-center gap-5">
 								<div className="relative w-20 h-20 flex-shrink-0">
-									<svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+									<svg viewBox="0 0 36 36" className="w-full h-full -rotate-90" aria-hidden="true">
 										<circle
 											cx="18"
 											cy="18"

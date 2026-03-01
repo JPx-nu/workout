@@ -75,6 +75,7 @@ export default function BodySvg({ fatigueData }: { fatigueData: MuscleFatigue[] 
 					].map(({ key, label }) => (
 						<button
 							key={key}
+							type="button"
 							onClick={() => {
 								setSide(key);
 								setSelectedMuscle(null);

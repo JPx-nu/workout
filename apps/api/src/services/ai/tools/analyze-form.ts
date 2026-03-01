@@ -6,7 +6,7 @@ import { z } from "zod";
  * This instructs the AI to query the underlying multimodal model for geometric insights.
  */
 export const analyzeForm = tool(
-	async ({ activityType, specificFocus, userNotes }, { configurable }) => {
+	async ({ activityType, specificFocus, userNotes }, _config) => {
 		// Note: The actual image data is injected into the LLM context automatically via the chat handler when uploaded.
 		// This tool simply triggers the analytical pathway within the agent's logic.
 

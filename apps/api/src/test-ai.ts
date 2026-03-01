@@ -46,7 +46,7 @@ async function runTest() {
 
 	// 3. Initialize Agent
 	console.log("\nInitializing AI Agent...");
-	let agent;
+	let agent: Awaited<ReturnType<typeof createAgent>> | undefined;
 	try {
 		agent = await createAgent(client, userId, clubId);
 		console.log("✅ Agent initialized successfully.\n");

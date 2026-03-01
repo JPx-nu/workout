@@ -175,7 +175,7 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 			lastMessage &&
 			"tool_calls" in lastMessage &&
 			(lastMessage as AIMessage).tool_calls &&
-			(lastMessage as AIMessage).tool_calls?.length > 0
+			((lastMessage as AIMessage).tool_calls?.length ?? 0) > 0
 		) {
 			return "tools";
 		}

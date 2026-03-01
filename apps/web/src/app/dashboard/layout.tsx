@@ -149,6 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 						)}
 						{!collapsed && (
 							<button
+								type="button"
 								onClick={signOut}
 								className="shrink-0 p-1.5 rounded-lg transition-colors hover-surface"
 								style={{ color: "var(--color-text-muted)" }}
@@ -162,6 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 				{/* Collapse button (desktop only) */}
 				<button
+					type="button"
 					onClick={() => setCollapsed(!collapsed)}
 					className="hidden lg:flex items-center justify-center h-10 border-t transition-colors hover-surface"
 					style={{

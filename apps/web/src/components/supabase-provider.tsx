@@ -1,7 +1,15 @@
 "use client";
 
 import type { Session, User } from "@supabase/supabase-js";
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import {
+	createContext,
+	type ReactNode,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthContext = {
@@ -39,13 +47,12 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
 		return () => subscription.unsubscribe();
 	}, [supabase]);
 
-	const signOut = async () => {
+	const signOut = useCallback(async () => {
 		await supabase.auth.signOut();
-	};
+	}, [supabase]);
 
 	const value = useMemo(
 		() => ({ user, session, isLoading, signOut }),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[user, session, isLoading, signOut],
 	);
 

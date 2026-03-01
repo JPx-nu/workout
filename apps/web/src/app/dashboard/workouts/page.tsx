@@ -46,6 +46,7 @@ export default function WorkoutsPage() {
 					return (
 						<button
 							key={type}
+							type="button"
 							onClick={() => setFilter(type)}
 							className={`badge transition-all cursor-pointer ${type !== "ALL" ? badgeClasses[type] : ""}`}
 							style={

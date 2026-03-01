@@ -124,12 +124,14 @@ export default function SettingsPage() {
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					<div>
 						<label
+							htmlFor="settings-display-name"
 							className="text-xs font-medium block mb-1.5"
 							style={{ color: "var(--color-text-muted)" }}
 						>
 							Display Name
 						</label>
 						<input
+							id="settings-display-name"
 							type="text"
 							defaultValue={profile.displayName}
 							onChange={(e) => setDisplayName(e.target.value)}
@@ -138,12 +140,14 @@ export default function SettingsPage() {
 					</div>
 					<div>
 						<label
+							htmlFor="settings-email"
 							className="text-xs font-medium block mb-1.5"
 							style={{ color: "var(--color-text-muted)" }}
 						>
 							Email
 						</label>
 						<input
+							id="settings-email"
 							type="email"
 							defaultValue={profile.email}
 							className="glass-input w-full"
@@ -153,12 +157,14 @@ export default function SettingsPage() {
 					</div>
 					<div>
 						<label
+							htmlFor="settings-club"
 							className="text-xs font-medium block mb-1.5"
 							style={{ color: "var(--color-text-muted)" }}
 						>
 							Club
 						</label>
 						<input
+							id="settings-club"
 							type="text"
 							defaultValue={profile.clubName}
 							className="glass-input w-full"
@@ -168,12 +174,14 @@ export default function SettingsPage() {
 					</div>
 					<div>
 						<label
+							htmlFor="settings-role"
 							className="text-xs font-medium block mb-1.5"
 							style={{ color: "var(--color-text-muted)" }}
 						>
 							Role
 						</label>
 						<input
+							id="settings-role"
 							type="text"
 							defaultValue={profile.role}
 							className="glass-input w-full"
@@ -183,12 +191,14 @@ export default function SettingsPage() {
 					</div>
 					<div>
 						<label
+							htmlFor="settings-timezone"
 							className="text-xs font-medium block mb-1.5"
 							style={{ color: "var(--color-text-muted)" }}
 						>
 							Timezone
 						</label>
 						<input
+							id="settings-timezone"
 							type="text"
 							defaultValue={profile.timezone}
 							onChange={(e) => setTimezone(e.target.value)}
@@ -197,6 +207,7 @@ export default function SettingsPage() {
 					</div>
 				</div>
 				<button
+					type="button"
 					onClick={handleSaveProfile}
 					disabled={isSaving}
 					className="btn-primary mt-5 flex items-center justify-center gap-2 text-sm w-full sm:w-auto disabled:opacity-50"
@@ -216,6 +227,7 @@ export default function SettingsPage() {
 				</h3>
 				<div className="flex items-center gap-4">
 					<button
+						type="button"
 						onClick={() => updateDefaultView("triathlon")}
 						className={`flex-1 p-3 rounded-xl border text-left transition-all ${
 							profile.defaultView === "triathlon"
@@ -230,6 +242,7 @@ export default function SettingsPage() {
 						<div className="text-xs text-muted">Swim, Bike, Run focus</div>
 					</button>
 					<button
+						type="button"
 						onClick={() => updateDefaultView("strength")}
 						className={`flex-1 p-3 rounded-xl border text-left transition-all ${
 							profile.defaultView === "strength"
@@ -279,6 +292,7 @@ export default function SettingsPage() {
 
 							{device.status === "Connected" ? (
 								<button
+									type="button"
 									className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors hover-surface shrink-0 self-start sm:self-auto"
 									style={{
 										borderColor: "var(--color-danger)",
@@ -290,6 +304,7 @@ export default function SettingsPage() {
 								</button>
 							) : (
 								<button
+									type="button"
 									className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors hover-surface shrink-0 self-start sm:self-auto"
 									onClick={() => {
 										const consent = confirm(
@@ -321,6 +336,7 @@ export default function SettingsPage() {
 				<div className="space-y-4">
 					{notificationPrefs.map((pref) => (
 						<button
+							type="button"
 							key={pref.key}
 							onClick={() => toggleNotification(pref.key)}
 							className="flex items-center justify-between cursor-pointer w-full text-left"
@@ -371,7 +387,10 @@ export default function SettingsPage() {
 								Portability).
 							</div>
 						</div>
-						<button className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface flex items-center gap-2">
+						<button
+							type="button"
+							className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface flex items-center gap-2"
+						>
 							<Download size={14} />
 							Export Data
 						</button>
@@ -385,6 +404,7 @@ export default function SettingsPage() {
 							</div>
 						</div>
 						<button
+							type="button"
 							className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface flex items-center gap-2"
 							style={{
 								borderColor: "var(--color-danger)",

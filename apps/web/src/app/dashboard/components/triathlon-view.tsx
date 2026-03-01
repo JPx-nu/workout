@@ -34,7 +34,7 @@ function ReadinessGauge({ score }: { score: number }) {
 
 	return (
 		<div className="relative w-36 h-36">
-			<svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+			<svg className="w-full h-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
 				<circle
 					cx="60"
 					cy="60"

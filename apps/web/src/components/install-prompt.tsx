@@ -78,10 +78,15 @@ export function InstallPrompt() {
 					Add to your home screen for the best experience
 				</div>
 			</div>
-			<button onClick={handleInstall} className="btn-primary text-xs px-3 py-1.5 shrink-0">
+			<button
+				type="button"
+				onClick={handleInstall}
+				className="btn-primary text-xs px-3 py-1.5 shrink-0"
+			>
 				Install
 			</button>
 			<button
+				type="button"
 				onClick={handleDismiss}
 				className="shrink-0 p-1 rounded-lg hover-surface transition-colors"
 				style={{ color: "var(--color-text-muted)" }}

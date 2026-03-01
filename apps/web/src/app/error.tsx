@@ -40,7 +40,7 @@ export default function GlobalError({
 					</p>
 				)}
 				<div className="flex gap-2">
-					<button onClick={reset} className="btn-primary flex-1 text-sm">
+					<button type="button" onClick={reset} className="btn-primary flex-1 text-sm">
 						Try Again
 					</button>
 					<a

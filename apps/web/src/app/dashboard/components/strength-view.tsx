@@ -146,9 +146,9 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 									formatter={(val: number | undefined) => [val ? `${val} kg` : "0 kg", "Volume"]}
 								/>
 								<Bar dataKey="volume" radius={[4, 4, 0, 0]}>
-									{chartData.map((entry, index) => (
+									{chartData.map((entry) => (
 										<Cell
-											key={`cell-${index}`}
+											key={`cell-${entry.day}`}
 											fill="var(--color-strength)"
 											opacity={entry.volume > 0 ? 0.8 : 0.1}
 										/>

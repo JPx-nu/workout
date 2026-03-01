@@ -295,15 +295,23 @@ export default function TrainingCalendarPage() {
 				</div>
 
 				<div className="flex items-center gap-2">
-					<button onClick={goToToday} className="btn-glass text-xs px-3 py-1.5">
+					<button type="button" onClick={goToToday} className="btn-glass text-xs px-3 py-1.5">
 						Today
 					</button>
 					<div className="flex items-center glass-card rounded-xl overflow-hidden">
-						<button onClick={() => navigate(-1)} className="p-2 hover-surface transition-colors">
+						<button
+							type="button"
+							onClick={() => navigate(-1)}
+							className="p-2 hover-surface transition-colors"
+						>
 							<ChevronLeft size={16} />
 						</button>
 						<span className="px-3 text-sm font-medium min-w-[140px] text-center">{dateLabel}</span>
-						<button onClick={() => navigate(1)} className="p-2 hover-surface transition-colors">
+						<button
+							type="button"
+							onClick={() => navigate(1)}
+							className="p-2 hover-surface transition-colors"
+						>
 							<ChevronRight size={16} />
 						</button>
 					</div>
@@ -316,6 +324,7 @@ export default function TrainingCalendarPage() {
 							{ key: "month-grid" as const, icon: Calendar, label: "Month" },
 						].map(({ key, icon: Icon, label }) => (
 							<button
+								type="button"
 								key={key}
 								onClick={() => setActiveView(key)}
 								className={`p-2 px-3 text-xs flex items-center gap-1.5 transition-colors
@@ -402,6 +411,8 @@ function WorkoutDetailModal({
 			<div
 				className="glass-card rounded-2xl w-full max-w-md p-6 animate-scale-in"
 				onClick={(e) => e.stopPropagation()}
+				role="presentation"
+				aria-hidden="true"
 			>
 				{/* Header */}
 				<div className="flex items-start justify-between mb-4">
@@ -422,7 +433,11 @@ function WorkoutDetailModal({
 							</p>
 						</div>
 					</div>
-					<button onClick={onClose} className="p-1.5 rounded-lg hover-surface transition-colors">
+					<button
+						type="button"
+						onClick={onClose}
+						className="p-1.5 rounded-lg hover-surface transition-colors"
+					>
 						<X size={18} />
 					</button>
 				</div>
@@ -555,6 +570,7 @@ function WorkoutDetailModal({
 				<div className="flex gap-2">
 					{workout.status === "planned" && (
 						<button
+							type="button"
 							onClick={() => onStatusChange("completed")}
 							className="flex-1 btn-glass text-sm py-2 flex items-center justify-center gap-1.5"
 							style={{ color: "var(--color-success)" }}
@@ -564,6 +580,7 @@ function WorkoutDetailModal({
 					)}
 					{workout.status === "planned" && (
 						<button
+							type="button"
 							onClick={() => onStatusChange("skipped")}
 							className="btn-glass text-sm py-2 px-3"
 							style={{ color: "var(--color-warning)" }}
@@ -572,6 +589,7 @@ function WorkoutDetailModal({
 						</button>
 					)}
 					<button
+						type="button"
 						onClick={onDelete}
 						className="btn-glass text-sm py-2 px-3"
 						style={{ color: "var(--color-error, #ef4444)" }}

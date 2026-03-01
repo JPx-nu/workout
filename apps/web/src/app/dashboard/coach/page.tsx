@@ -100,20 +100,25 @@ export default function CoachPage() {
 									{/* Image thumbnails */}
 									{msg.metadata?.imageUrls && msg.metadata.imageUrls.length > 0 && (
 										<div className="flex flex-wrap gap-2 mb-2">
-											{msg.metadata.imageUrls.map((url, i) => (
-												// eslint-disable-next-line @next/next/no-img-element
-												<img
-													key={i}
-													src={url}
-													alt={`Attached image ${i + 1}`}
-													className="rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
-													style={{
-														width: msg.metadata?.imageUrls?.length === 1 ? "240px" : "120px",
-														height: msg.metadata?.imageUrls?.length === 1 ? "180px" : "90px",
-														border: "1px solid var(--color-glass-border)",
-													}}
+											{msg.metadata.imageUrls.map((url) => (
+												<button
+													key={url}
+													type="button"
+													className="p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-105"
 													onClick={() => window.open(url, "_blank")}
-												/>
+												>
+													{/* biome-ignore lint/performance/noImgElement: user-uploaded signed URLs, not static assets */}
+													<img
+														src={url}
+														alt="Attachment"
+														className="rounded-lg object-cover"
+														style={{
+															width: msg.metadata?.imageUrls?.length === 1 ? "240px" : "120px",
+															height: msg.metadata?.imageUrls?.length === 1 ? "180px" : "90px",
+															border: "1px solid var(--color-glass-border)",
+														}}
+													/>
+												</button>
 											))}
 										</div>
 									)}
@@ -200,6 +205,7 @@ export default function CoachPage() {
 					>
 						{suggestedPrompts.map((prompt) => (
 							<button
+								type="button"
 								key={prompt}
 								onClick={() => setInput(prompt)}
 								className="shrink-0 snap-start text-xs px-3 py-2 rounded-xl border transition-colors hover-surface cursor-pointer"
@@ -236,8 +242,8 @@ export default function CoachPage() {
 				{attachedFiles.length > 0 && (
 					<div className="flex gap-2 pt-2 max-w-4xl mx-auto w-full shrink-0">
 						{attachedFiles.map((file, i) => (
-							<div key={i} className="relative group">
-								{/* eslint-disable-next-line @next/next/no-img-element */}
+							<div key={`${file.name}-${file.lastModified}`} className="relative group">
+								{/* biome-ignore lint/performance/noImgElement: blob URL from user file, not a static asset */}
 								<img
 									src={URL.createObjectURL(file)}
 									alt={file.name}
@@ -245,6 +251,7 @@ export default function CoachPage() {
 									style={{ border: "2px solid var(--color-glass-border)" }}
 								/>
 								<button
+									type="button"
 									onClick={() => removeFile(i)}
 									className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
 									style={{
@@ -281,7 +288,9 @@ export default function CoachPage() {
 						onChange={(e) => {
 							const files = e.target.files;
 							if (files) {
-								Array.from(files).forEach((f) => attachFile(f));
+								Array.from(files).forEach((f) => {
+									attachFile(f);
+								});
 							}
 							e.target.value = ""; // Reset so same file can be re-selected
 						}}
@@ -323,6 +332,7 @@ export default function CoachPage() {
 					{/* Context-aware send/stop button */}
 					{isTyping && !input.trim() ? (
 						<button
+							type="button"
 							onClick={stopStreaming}
 							className="btn-primary px-4 animate-pulse"
 							style={{ background: "var(--color-error, #ef4444)" }}
@@ -332,6 +342,7 @@ export default function CoachPage() {
 						</button>
 					) : (
 						<button
+							type="button"
 							onClick={sendMessage}
 							disabled={!input.trim()}
 							className="btn-primary px-4 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -371,6 +382,7 @@ export default function CoachPage() {
 						const isActive = conv.id === conversationId;
 						return (
 							<button
+								type="button"
 								key={conv.id}
 								onClick={() => loadConversation(conv.id)}
 								className={`w-full text-left p-3 rounded-xl text-xs transition-all cursor-pointer group
@@ -431,6 +443,7 @@ export default function CoachPage() {
 					style={{ borderColor: "var(--color-glass-border)" }}
 				>
 					<button
+						type="button"
 						onClick={newConversation}
 						className="w-full text-xs py-2 rounded-lg transition-colors hover-surface cursor-pointer font-medium"
 						style={{

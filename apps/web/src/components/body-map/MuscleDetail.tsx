@@ -194,7 +194,7 @@ export default function MuscleDetail({
 			{/* Fatigue ring */}
 			<div className="flex items-center gap-5">
 				<div className="relative w-20 h-20 flex-shrink-0">
-					<svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+					<svg viewBox="0 0 36 36" className="w-full h-full -rotate-90" aria-hidden="true">
 						<circle
 							cx="18"
 							cy="18"
