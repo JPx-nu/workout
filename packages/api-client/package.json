@@ -1,0 +1,14 @@
+{
+	"name": "@triathlon/api-client",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"dependencies": {
+		"hono": "^4.12.3"
+	},
+	"devDependencies": {
+		"@triathlon/api": "workspace:*"
+	}
+}

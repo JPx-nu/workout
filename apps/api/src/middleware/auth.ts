@@ -9,6 +9,7 @@
 import type { Context, MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { logger } from "../lib/logger.js";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -20,11 +21,8 @@ export interface AuthContext {
 
 // ── JWKS Setup ─────────────────────────────────────────────────
 
-const SUPABASE_URL =
-	process.env.SUPABASE_URL || "https://ykqoeprpbwxkoytaqngf.supabase.co";
-const JWKS = createRemoteJWKSet(
-	new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`),
-);
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://ykqoeprpbwxkoytaqngf.supabase.co";
+const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
 
 // ── JWT Verification ───────────────────────────────────────────
 
@@ -50,9 +48,8 @@ export function jwtAuth(): MiddlewareHandler {
 			// Store the payload for downstream middleware
 			c.set("jwtPayload", payload);
 		} catch (err) {
-			const message =
-				err instanceof Error ? err.message : "Token verification failed";
-			console.error("JWT verification failed:", message);
+			const message = err instanceof Error ? err.message : "Token verification failed";
+			logger.warn({ reason: message }, "JWT verification failed");
 			return c.json({ error: "Invalid or expired token" }, 401);
 		}
 
@@ -79,9 +76,7 @@ export const extractClaims = createMiddleware(async (c, next) => {
 		return c.json({ error: "Missing user ID in token" }, 401);
 	}
 
-	const appMetadata = payload.app_metadata as
-		| Record<string, string>
-		| undefined;
+	const appMetadata = payload.app_metadata as Record<string, string> | undefined;
 
 	const auth: AuthContext = {
 		userId: payload.sub as string,
@@ -102,9 +97,7 @@ export const extractClaims = createMiddleware(async (c, next) => {
 export function getAuth(c: Context): AuthContext {
 	const auth = c.get("auth") as AuthContext | undefined;
 	if (!auth) {
-		throw new Error(
-			"getAuth() called without auth middleware — check route middleware stack",
-		);
+		throw new Error("getAuth() called without auth middleware — check route middleware stack");
 	}
 	return auth;
 }

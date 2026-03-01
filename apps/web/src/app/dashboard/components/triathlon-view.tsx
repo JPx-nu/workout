@@ -1,27 +1,11 @@
 "use client";
 
-import {
-	Bike,
-	Calendar,
-	ChevronRight,
-	Dumbbell,
-	Footprints,
-	Heart,
-	Waves,
-} from "lucide-react";
+import { Bike, Calendar, ChevronRight, Dumbbell, Footprints, Heart, Waves } from "lucide-react";
 import Link from "next/link";
-import {
-	Bar,
-	BarChart,
-	ResponsiveContainer,
-	Tooltip,
-	XAxis,
-	YAxis,
-} from "recharts";
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { formatDuration, mToKm } from "@/hooks/use-workouts";
-import type { HealthSnapshot } from "@/lib/types";
-import type { ChartDataPoint, WeeklyStats, Workout } from "@/lib/types";
+import type { ChartDataPoint, HealthSnapshot, WeeklyStats, Workout } from "@/lib/types";
 
 type UpcomingEvent = {
 	id: string;
@@ -72,13 +56,7 @@ function ReadinessGauge({ score }: { score: number }) {
 					className="transition-all duration-1000 ease-out"
 				/>
 				<defs>
-					<linearGradient
-						id="readinessGradient"
-						x1="0%"
-						y1="0%"
-						x2="100%"
-						y2="0%"
-					>
+					<linearGradient id="readinessGradient" x1="0%" y1="0%" x2="100%" y2="0%">
 						<stop offset="0%" stopColor="oklch(0.65 0.18 170)" />
 						<stop offset="100%" stopColor="oklch(0.65 0.15 220)" />
 					</linearGradient>
@@ -156,10 +134,7 @@ export function TriathlonView({
 							</span>
 						</div>
 						<div className="text-xl lg:text-2xl font-bold">{value}</div>
-						<div
-							className="text-xs mt-1"
-							style={{ color: "var(--color-text-muted)" }}
-						>
+						<div className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
 							{sub}
 						</div>
 					</SpotlightCard>
@@ -236,16 +211,10 @@ export function TriathlonView({
 						</h3>
 						<div className="space-y-3">
 							{events.map((event) => (
-								<div
-									key={event.id}
-									className="flex items-center justify-between"
-								>
+								<div key={event.id} className="flex items-center justify-between">
 									<div>
 										<div className="text-sm font-medium">{event.name}</div>
-										<div
-											className="text-xs"
-											style={{ color: "var(--color-text-muted)" }}
-										>
+										<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 											{event.date}
 										</div>
 									</div>
@@ -268,10 +237,7 @@ export function TriathlonView({
 			{/* Recent workouts */}
 			<div className="glass-card p-4 lg:p-6">
 				<div className="flex items-center justify-between mb-4">
-					<h3
-						className="text-sm font-semibold"
-						style={{ color: "var(--color-text-secondary)" }}
-					>
+					<h3 className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>
 						Recent Workouts
 					</h3>
 					<Link
@@ -285,8 +251,7 @@ export function TriathlonView({
 				<div className="space-y-3">
 					{allWorkouts.slice(0, 4).map((w) => {
 						const Icon = activityIcons[w.activityType] ?? Dumbbell;
-						const color =
-							activityColors[w.activityType] ?? "var(--color-text-muted)";
+						const color = activityColors[w.activityType] ?? "var(--color-text-muted)";
 						return (
 							<div
 								key={w.id}
@@ -302,10 +267,7 @@ export function TriathlonView({
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="text-sm font-medium">{w.notes}</div>
-									<div
-										className="text-xs"
-										style={{ color: "var(--color-text-muted)" }}
-									>
+									<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 										{new Date(w.startedAt).toLocaleDateString("en-US", {
 											weekday: "short",
 											month: "short",
@@ -316,14 +278,9 @@ export function TriathlonView({
 									</div>
 								</div>
 								<div className="text-right shrink-0">
-									<div className="text-sm font-medium">
-										{formatDuration(w.durationSec)}
-									</div>
+									<div className="text-sm font-medium">{formatDuration(w.durationSec)}</div>
 									{w.distanceM && (
-										<div
-											className="text-xs"
-											style={{ color: "var(--color-text-muted)" }}
-										>
+										<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 											{mToKm(w.distanceM)}km
 										</div>
 									)}

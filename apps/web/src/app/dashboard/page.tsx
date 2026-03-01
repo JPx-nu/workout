@@ -9,8 +9,7 @@ import { TriathlonView } from "./components/triathlon-view";
 
 export default function DashboardPage() {
 	const { profile } = useProfile();
-	const { weeklyStats, chartData, allWorkouts, strengthMetrics } =
-		useWorkouts();
+	const { weeklyStats, chartData, allWorkouts, strengthMetrics } = useWorkouts();
 	const { events } = useTraining();
 	const { healthSnapshot } = useHealth();
 

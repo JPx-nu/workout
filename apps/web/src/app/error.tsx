@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
+import { useEffect } from "react";
 
 export default function GlobalError({
 	error,
@@ -9,6 +10,11 @@ export default function GlobalError({
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
+	useEffect(() => {
+		// Log to external error tracking service in production
+		console.error("Unhandled error:", error);
+	}, [error]);
+
 	return (
 		<div
 			className="flex min-h-screen items-center justify-center p-4"
@@ -25,9 +31,29 @@ export default function GlobalError({
 				<p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
 					{error.message || "An unexpected error occurred. Please try again."}
 				</p>
-				<button onClick={reset} className="btn-primary w-full text-sm">
-					Try Again
-				</button>
+				{error.digest && (
+					<p
+						className="text-xs font-mono"
+						style={{ color: "var(--color-text-muted)", opacity: 0.6 }}
+					>
+						Error ID: {error.digest}
+					</p>
+				)}
+				<div className="flex gap-2">
+					<button onClick={reset} className="btn-primary flex-1 text-sm">
+						Try Again
+					</button>
+					<a
+						href="/workout"
+						className="btn-primary flex-1 text-sm inline-flex items-center justify-center"
+						style={{
+							background: "var(--color-bg-secondary)",
+							color: "var(--color-text-primary)",
+						}}
+					>
+						Go Home
+					</a>
+				</div>
 			</div>
 		</div>
 	);

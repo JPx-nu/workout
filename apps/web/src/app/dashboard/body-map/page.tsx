@@ -14,10 +14,7 @@ export default function BodyMapPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold">Body Map</h1>
-					<p
-						className="mt-1 text-sm"
-						style={{ color: "var(--color-text-secondary)" }}
-					>
+					<p className="mt-1 text-sm" style={{ color: "var(--color-text-secondary)" }}>
 						Muscle fatigue & recovery tracking
 					</p>
 				</div>
@@ -65,10 +62,7 @@ export default function BodyMapPage() {
 					<div key={label} className="glass-card p-4 text-center">
 						<Icon size={16} style={{ color }} className="mx-auto mb-2" />
 						<div className="text-xl font-bold">{value}</div>
-						<div
-							className="text-xs mt-0.5"
-							style={{ color: "var(--color-text-muted)" }}
-						>
+						<div className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
 							{label}
 						</div>
 					</div>
@@ -82,10 +76,7 @@ export default function BodyMapPage() {
 
 			{/* Daily logs */}
 			<div className="glass-card p-6">
-				<h3
-					className="text-sm font-semibold mb-4"
-					style={{ color: "var(--color-text-secondary)" }}
-				>
+				<h3 className="text-sm font-semibold mb-4" style={{ color: "var(--color-text-secondary)" }}>
 					Daily Wellness Log
 				</h3>
 				<div className="overflow-x-auto">
@@ -132,10 +123,7 @@ export default function BodyMapPage() {
 									<td className="py-2.5 text-center">{log.restingHr}</td>
 									<td className="py-2.5 text-center">{log.rpe}/10</td>
 									<td className="py-2.5 text-center">{log.mood}/10</td>
-									<td
-										className="py-2.5"
-										style={{ color: "var(--color-text-muted)" }}
-									>
+									<td className="py-2.5" style={{ color: "var(--color-text-muted)" }}>
 										{log.notes ?? "—"}
 									</td>
 								</tr>

@@ -7,10 +7,7 @@ import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-export function createTraverseGraphTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createTraverseGraphTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ maxDepth = 2, edgeTypes }) => {
 			try {
@@ -49,16 +46,11 @@ export function createTraverseGraphTool(
 			description:
 				"Traverses the knowledge graph to find relationships for the athlete, such as their coach, teammates, preferred gear (bikes, shoes), and historic achievements.",
 			schema: z.object({
-				maxDepth: z
-					.number()
-					.optional()
-					.describe("How many hops to traverse (default 2)"),
+				maxDepth: z.number().optional().describe("How many hops to traverse (default 2)"),
 				edgeTypes: z
 					.array(z.string())
 					.optional()
-					.describe(
-						'Optional array of edge labels to follow (e.g. ["uses_gear", "coached_by"])',
-					),
+					.describe('Optional array of edge labels to follow (e.g. ["uses_gear", "coached_by"])'),
 			}),
 		},
 	);

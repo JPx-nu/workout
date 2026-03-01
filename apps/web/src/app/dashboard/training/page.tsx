@@ -7,11 +7,7 @@
  * Drag-and-drop uses @dnd-kit for free-tier compatibility.
  */
 
-import {
-	createViewDay,
-	createViewMonthGrid,
-	createViewWeek,
-} from "@schedule-x/calendar";
+import { createViewDay, createViewMonthGrid, createViewWeek } from "@schedule-x/calendar";
 import { createEventsServicePlugin } from "@schedule-x/events-service";
 import { ScheduleXCalendar, useNextCalendarApp } from "@schedule-x/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -35,10 +31,7 @@ import {
 	X,
 	Zap,
 } from "lucide-react";
-import {
-	type PlannedWorkout,
-	usePlannedWorkouts,
-} from "@/hooks/use-planned-workouts";
+import { type PlannedWorkout, usePlannedWorkouts } from "@/hooks/use-planned-workouts";
 
 // ── Activity meta ──────────────────────────────────────────────
 
@@ -143,9 +136,7 @@ function toCalendarEvents(workouts: PlannedWorkout[]) {
 
 		// Build Temporal.ZonedDateTime for start + end (Schedule-X requires PlainDate | ZonedDateTime)
 		const tz = Temporal.Now.timeZoneId();
-		const startDt = Temporal.ZonedDateTime.from(
-			`${w.plannedDate}T${startTime}[${tz}]`,
-		);
+		const startDt = Temporal.ZonedDateTime.from(`${w.plannedDate}T${startTime}[${tz}]`);
 		const endDt = startDt.add({ minutes: durationMin });
 
 		return {
@@ -168,20 +159,18 @@ function toCalendarEvents(workouts: PlannedWorkout[]) {
 
 export default function TrainingCalendarPage() {
 	const [selectedDate, setSelectedDate] = useState(() => new Date());
-	const [activeView, setActiveView] = useState<"day" | "week" | "month-grid">(
-		"week",
-	);
-	const [selectedWorkout, setSelectedWorkout] = useState<PlannedWorkout | null>(
-		null,
-	);
+	const [activeView, setActiveView] = useState<"day" | "week" | "month-grid">("week");
+	const [selectedWorkout, setSelectedWorkout] = useState<PlannedWorkout | null>(null);
 
 	const { from, to } = useMemo(
 		() => getDateRange(selectedDate, activeView),
 		[selectedDate, activeView],
 	);
 
-	const { workouts, isLoading, refetch, updateWorkout, deleteWorkout } =
-		usePlannedWorkouts(from, to);
+	const { workouts, isLoading, refetch, updateWorkout, deleteWorkout } = usePlannedWorkouts(
+		from,
+		to,
+	);
 
 	const eventsService = useMemo(() => createEventsServicePlugin(), []);
 
@@ -231,9 +220,7 @@ export default function TrainingCalendarPage() {
 			onEventUpdate: async (event) => {
 				// Drag/resize → update date/time
 				const startStr = String(event.start);
-				const [date, time] = startStr.includes(" ")
-					? startStr.split(" ")
-					: [startStr, undefined];
+				const [date, time] = startStr.includes(" ") ? startStr.split(" ") : [startStr, undefined];
 				await updateWorkout(event.id as string, {
 					plannedDate: date,
 					...(time ? { plannedTime: time } : {}),
@@ -302,10 +289,7 @@ export default function TrainingCalendarPage() {
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<h1 className="text-2xl font-bold">Training Calendar</h1>
-					<p
-						className="text-sm mt-0.5"
-						style={{ color: "var(--color-text-secondary)" }}
-					>
+					<p className="text-sm mt-0.5" style={{ color: "var(--color-text-secondary)" }}>
 						Plan and track your workouts
 					</p>
 				</div>
@@ -315,19 +299,11 @@ export default function TrainingCalendarPage() {
 						Today
 					</button>
 					<div className="flex items-center glass-card rounded-xl overflow-hidden">
-						<button
-							onClick={() => navigate(-1)}
-							className="p-2 hover-surface transition-colors"
-						>
+						<button onClick={() => navigate(-1)} className="p-2 hover-surface transition-colors">
 							<ChevronLeft size={16} />
 						</button>
-						<span className="px-3 text-sm font-medium min-w-[140px] text-center">
-							{dateLabel}
-						</span>
-						<button
-							onClick={() => navigate(1)}
-							className="p-2 hover-surface transition-colors"
-						>
+						<span className="px-3 text-sm font-medium min-w-[140px] text-center">{dateLabel}</span>
+						<button onClick={() => navigate(1)} className="p-2 hover-surface transition-colors">
 							<ChevronRight size={16} />
 						</button>
 					</div>
@@ -343,15 +319,8 @@ export default function TrainingCalendarPage() {
 								key={key}
 								onClick={() => setActiveView(key)}
 								className={`p-2 px-3 text-xs flex items-center gap-1.5 transition-colors
-                                    ${activeView === key
-										? "text-white"
-										: "hover-surface"
-									}`}
-								style={
-									activeView === key
-										? { background: "var(--color-brand)" }
-										: undefined
-								}
+                                    ${activeView === key ? "text-white" : "hover-surface"}`}
+								style={activeView === key ? { background: "var(--color-brand)" } : undefined}
 							>
 								<Icon size={14} />
 								<span className="hidden sm:inline">{label}</span>
@@ -383,10 +352,7 @@ export default function TrainingCalendarPage() {
 			</div>
 
 			{/* ── Calendar ────────────────────────────────── */}
-			<div
-				className="glass-card rounded-2xl overflow-hidden"
-				style={{ minHeight: 600 }}
-			>
+			<div className="glass-card rounded-2xl overflow-hidden" style={{ minHeight: 600 }}>
 				{isLoading && (
 					<div className="flex items-center justify-center py-8">
 						<div
@@ -450,19 +416,13 @@ function WorkoutDetailModal({
 						</div>
 						<div>
 							<h2 className="text-lg font-bold">{workout.title}</h2>
-							<p
-								className="text-xs capitalize"
-								style={{ color: "var(--color-text-muted)" }}
-							>
+							<p className="text-xs capitalize" style={{ color: "var(--color-text-muted)" }}>
 								{workout.activityType.toLowerCase()}
 								{workout.intensity && ` · ${workout.intensity.toLowerCase()}`}
 							</p>
 						</div>
 					</div>
-					<button
-						onClick={onClose}
-						className="p-1.5 rounded-lg hover-surface transition-colors"
-					>
+					<button onClick={onClose} className="p-1.5 rounded-lg hover-surface transition-colors">
 						<X size={18} />
 					</button>
 				</div>
@@ -540,9 +500,14 @@ function WorkoutDetailModal({
 							{workout.source === "AI" && (
 								<div
 									className="text-[10px] mt-1 pt-2 border-t"
-									style={{ borderColor: "var(--color-glass-border)", color: "var(--color-text-muted)" }}
+									style={{
+										borderColor: "var(--color-glass-border)",
+										color: "var(--color-text-muted)",
+									}}
 								>
-									<strong>Human Oversight Required:</strong> This session was generated or adjusted by the JPx AI Coach based on your telemetry (e.g., HRV, recovery score). Please review and adjust if it does not match your perceived readiness.
+									<strong>Human Oversight Required:</strong> This session was generated or adjusted
+									by the JPx AI Coach based on your telemetry (e.g., HRV, recovery score). Please
+									review and adjust if it does not match your perceived readiness.
 								</div>
 							)}
 						</div>
@@ -555,7 +520,9 @@ function WorkoutDetailModal({
 								color: "var(--color-text-muted)",
 							}}
 						>
-							<strong>Human Oversight Required:</strong> This session was generated or adjusted by the JPx AI Coach based on your telemetry. Please review and adjust if it does not match your perceived readiness.
+							<strong>Human Oversight Required:</strong> This session was generated or adjusted by
+							the JPx AI Coach based on your telemetry. Please review and adjust if it does not
+							match your perceived readiness.
 						</div>
 					)}
 				</div>

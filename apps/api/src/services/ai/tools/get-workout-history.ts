@@ -16,10 +16,7 @@ import {
 	summarizeStrengthWorkout,
 } from "../utils/strength-utils.js";
 
-export function createGetWorkoutHistoryTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createGetWorkoutHistoryTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ activityType, fromDate, toDate, limit }) => {
 			try {
@@ -44,15 +41,14 @@ export function createGetWorkoutHistoryTool(
 						// For STRENGTH workouts: parse raw_data into exercise summaries
 						if (w.activity_type === "STRENGTH" && w.raw_data) {
 							const exerciseSummaries = summarizeStrengthWorkout(w.raw_data);
-							const rawExercises = (w.raw_data as Record<string, unknown>)
-								?.exercises as ExerciseData[] | undefined;
+							const rawExercises = (w.raw_data as Record<string, unknown>)?.exercises as
+								| ExerciseData[]
+								| undefined;
 
 							return {
 								...base,
 								exercises: exerciseSummaries,
-								sessionVolume_kg: rawExercises
-									? computeSessionVolume(rawExercises)
-									: null,
+								sessionVolume_kg: rawExercises ? computeSessionVolume(rawExercises) : null,
 								avgRPE: rawExercises ? computeAverageRPE(rawExercises) : null,
 							};
 						}
@@ -81,18 +77,10 @@ export function createGetWorkoutHistoryTool(
 				activityType: z
 					.string()
 					.optional()
-					.describe(
-						"Filter by activity type: SWIM, BIKE, RUN, STRENGTH, YOGA, OTHER",
-					),
-				fromDate: z
-					.string()
-					.optional()
-					.describe("Start date filter (YYYY-MM-DD)"),
+					.describe("Filter by activity type: SWIM, BIKE, RUN, STRENGTH, YOGA, OTHER"),
+				fromDate: z.string().optional().describe("Start date filter (YYYY-MM-DD)"),
 				toDate: z.string().optional().describe("End date filter (YYYY-MM-DD)"),
-				limit: z
-					.number()
-					.optional()
-					.describe("Max workouts to return (default 10, max 50)"),
+				limit: z.number().optional().describe("Max workouts to return (default 10, max 50)"),
 			}),
 		},
 	);

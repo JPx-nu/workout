@@ -8,6 +8,9 @@
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { createLogger } from "../../../lib/logger.js";
+
+const log = createLogger({ module: "tool-schedule-workout" });
 
 const scheduleWorkoutSchema = z.object({
 	plannedDate: z.string().describe("ISO date (YYYY-MM-DD) for the workout"),
@@ -17,32 +20,17 @@ const scheduleWorkoutSchema = z.object({
 		.describe("Type of workout"),
 	title: z.string().describe('Short title, e.g. "Easy Zone 2 Run"'),
 	description: z.string().optional().describe("Detailed session instructions"),
-	durationMin: z
-		.number()
-		.int()
-		.min(5)
-		.optional()
-		.describe("Duration in minutes"),
+	durationMin: z.number().int().min(5).optional().describe("Duration in minutes"),
 	distanceKm: z.number().optional().describe("Target distance in km"),
 	intensity: z
 		.enum(["RECOVERY", "EASY", "MODERATE", "HARD", "MAX"])
 		.optional()
 		.describe("Target intensity level"),
-	targetRpe: z
-		.number()
-		.int()
-		.min(1)
-		.max(10)
-		.optional()
-		.describe("Target RPE (1-10)"),
+	targetRpe: z.number().int().min(1).max(10).optional().describe("Target RPE (1-10)"),
 	notes: z.string().optional().describe("Any additional notes"),
 });
 
-export function createScheduleWorkoutTool(
-	client: SupabaseClient,
-	userId: string,
-	clubId: string,
-) {
+export function createScheduleWorkoutTool(client: SupabaseClient, userId: string, clubId: string) {
 	return tool(
 		async (input) => {
 			try {
@@ -56,16 +44,7 @@ export function createScheduleWorkoutTool(
 					.limit(1)
 					.maybeSingle();
 
-				console.log(
-					"[schedule_workout] Active plan:",
-					activePlan?.id || "none",
-				);
-				console.log(
-					"[schedule_workout] Inserting into planned_workouts for user:",
-					userId,
-					"club:",
-					clubId,
-				);
+				log.debug({ activePlanId: activePlan?.id ?? null, userId, clubId }, "Scheduling workout");
 
 				const { data, error } = await client
 					.from("planned_workouts")
@@ -89,7 +68,7 @@ export function createScheduleWorkoutTool(
 					.select()
 					.single();
 
-				console.log("[schedule_workout] Insert result:", { data, error });
+				log.debug({ workoutId: data?.id, error }, "Insert result");
 				if (error) throw new Error(error.message);
 
 				const emoji = {
@@ -103,7 +82,7 @@ export function createScheduleWorkoutTool(
 
 				return `${emoji} Scheduled "${input.title}" on ${input.plannedDate}${input.plannedTime ? ` at ${input.plannedTime}` : ""}${input.durationMin ? ` (${input.durationMin} min)` : ""}${input.intensity ? ` — ${input.intensity}` : ""}. Check your training calendar!`;
 			} catch (error) {
-				console.error("[schedule_workout] Error:", error);
+				log.error({ err: error }, "Failed to schedule workout");
 				const msg = error instanceof Error ? error.message : "Unknown error";
 				return `❌ Failed to schedule workout: ${msg}`;
 			}

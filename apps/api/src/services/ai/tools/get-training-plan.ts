@@ -8,10 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getTrainingPlan, getUpcomingEvents } from "../supabase.js";
 
-export function createGetTrainingPlanTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createGetTrainingPlanTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async () => {
 			try {
@@ -23,11 +20,11 @@ export function createGetTrainingPlanTool(
 				return JSON.stringify({
 					plan: plan
 						? {
-							id: plan.id,
-							name: plan.name,
-							status: plan.status,
-							planData: plan.plan_data,
-						}
+								id: plan.id,
+								name: plan.name,
+								status: plan.status,
+								planData: plan.plan_data,
+							}
 						: null,
 					upcomingEvents: events.map((e) => ({
 						id: e.id,

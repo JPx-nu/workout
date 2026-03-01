@@ -108,10 +108,7 @@ export default function SettingsPage() {
 		<div className="space-y-8 animate-fade-in max-w-3xl">
 			<div>
 				<h1 className="text-2xl font-bold">Settings</h1>
-				<p
-					className="mt-1 text-sm"
-					style={{ color: "var(--color-text-secondary)" }}
-				>
+				<p className="mt-1 text-sm" style={{ color: "var(--color-text-secondary)" }}>
 					Profile, devices, and preferences
 				</p>
 			</div>
@@ -220,15 +217,13 @@ export default function SettingsPage() {
 				<div className="flex items-center gap-4">
 					<button
 						onClick={() => updateDefaultView("triathlon")}
-						className={`flex-1 p-3 rounded-xl border text-left transition-all ${profile.defaultView === "triathlon"
-							? "bg-primary/10 border-primary"
-							: "border-transparent hover-surface"
-							}`}
+						className={`flex-1 p-3 rounded-xl border text-left transition-all ${
+							profile.defaultView === "triathlon"
+								? "bg-primary/10 border-primary"
+								: "border-transparent hover-surface"
+						}`}
 						style={{
-							borderColor:
-								profile.defaultView === "triathlon"
-									? "var(--color-brand)"
-									: undefined,
+							borderColor: profile.defaultView === "triathlon" ? "var(--color-brand)" : undefined,
 						}}
 					>
 						<div className="font-medium text-sm mb-1">Triathlon</div>
@@ -236,15 +231,13 @@ export default function SettingsPage() {
 					</button>
 					<button
 						onClick={() => updateDefaultView("strength")}
-						className={`flex-1 p-3 rounded-xl border text-left transition-all ${profile.defaultView === "strength"
-							? "bg-primary/10 border-primary"
-							: "border-transparent hover-surface"
-							}`}
+						className={`flex-1 p-3 rounded-xl border text-left transition-all ${
+							profile.defaultView === "strength"
+								? "bg-primary/10 border-primary"
+								: "border-transparent hover-surface"
+						}`}
 						style={{
-							borderColor:
-								profile.defaultView === "strength"
-									? "var(--color-strength)"
-									: undefined,
+							borderColor: profile.defaultView === "strength" ? "var(--color-strength)" : undefined,
 						}}
 					>
 						<div className="font-medium text-sm mb-1">Strength</div>
@@ -278,10 +271,7 @@ export default function SettingsPage() {
 								</div>
 								<div>
 									<span className="text-sm font-medium block">{device.name}</span>
-									<span
-										className="text-xs font-medium"
-										style={{ color: device.color }}
-									>
+									<span className="text-xs font-medium" style={{ color: device.color }}>
 										{device.status}
 									</span>
 								</div>
@@ -304,8 +294,8 @@ export default function SettingsPage() {
 									onClick={() => {
 										const consent = confirm(
 											`Connect ${device.name}?\n\n` +
-											`We use your Heart Rate, HRV, and Sleep data from this device to personalize your AI Coach's recovery recommendations and adjust your training plan automatically.\n\n` +
-											`Do you consent to sharing this telemetry with JPx? You can disconnect at any time.`
+												`We use your Heart Rate, HRV, and Sleep data from this device to personalize your AI Coach's recovery recommendations and adjust your training plan automatically.\n\n` +
+												`Do you consent to sharing this telemetry with JPx? You can disconnect at any time.`,
 										);
 										if (consent) {
 											alert("Proceeding to OAuth flow...");
@@ -337,10 +327,7 @@ export default function SettingsPage() {
 						>
 							<div>
 								<div className="text-sm font-medium">{pref.label}</div>
-								<div
-									className="text-xs"
-									style={{ color: "var(--color-text-muted)" }}
-								>
+								<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 									{pref.description}
 								</div>
 							</div>
@@ -353,8 +340,9 @@ export default function SettingsPage() {
 								}}
 							>
 								<div
-									className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${notifications[pref.key] ? "left-6" : "left-1"
-										}`}
+									className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
+										notifications[pref.key] ? "left-6" : "left-1"
+									}`}
 								/>
 							</div>
 						</button>
@@ -363,20 +351,14 @@ export default function SettingsPage() {
 			</div>
 
 			{/* Data Control Center / Danger zone */}
-			<div
-				className="glass-card p-4 lg:p-6"
-				style={{ borderColor: "oklch(0.5 0.2 25 / 0.3)" }}
-			>
+			<div className="glass-card p-4 lg:p-6" style={{ borderColor: "oklch(0.5 0.2 25 / 0.3)" }}>
 				<h3
 					className="text-sm font-semibold mb-4 flex items-center gap-2"
 					style={{ color: "var(--color-danger)" }}
 				>
 					<Database size={16} /> Data Control Center
 				</h3>
-				<p
-					className="text-xs mb-5"
-					style={{ color: "var(--color-text-muted)" }}
-				>
+				<p className="text-xs mb-5" style={{ color: "var(--color-text-muted)" }}>
 					Manage your personal data, portability, and account deletion options.
 				</p>
 
@@ -384,11 +366,12 @@ export default function SettingsPage() {
 					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border border-white/5 bg-black/20">
 						<div>
 							<div className="text-sm font-medium">Export My Data</div>
-							<div className="text-xs text-muted">Download a complete JSON archive of all your health and training data (GDPR Portability).</div>
+							<div className="text-xs text-muted">
+								Download a complete JSON archive of all your health and training data (GDPR
+								Portability).
+							</div>
 						</div>
-						<button
-							className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface flex items-center gap-2"
-						>
+						<button className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface flex items-center gap-2">
 							<Download size={14} />
 							Export Data
 						</button>
@@ -397,7 +380,9 @@ export default function SettingsPage() {
 					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl border border-red-900/30 bg-red-950/10">
 						<div>
 							<div className="text-sm font-medium text-red-400">Delete Account & Data</div>
-							<div className="text-xs text-muted">Permanently erase your account, memories, and all telemetry. This cannot be undone.</div>
+							<div className="text-xs text-muted">
+								Permanently erase your account, memories, and all telemetry. This cannot be undone.
+							</div>
 						</div>
 						<button
 							className="px-4 py-2 text-xs font-medium rounded-lg border transition-colors hover-surface flex items-center gap-2"
@@ -406,7 +391,11 @@ export default function SettingsPage() {
 								color: "var(--color-danger)",
 							}}
 							onClick={() => {
-								if (confirm("Are you absolutely sure you want to permanently delete your account and all associated data?")) {
+								if (
+									confirm(
+										"Are you absolutely sure you want to permanently delete your account and all associated data?",
+									)
+								) {
 									alert("Deletion flow triggered. Requires re-authentication.");
 								}
 							}}

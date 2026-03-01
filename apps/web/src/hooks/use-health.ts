@@ -3,54 +3,23 @@
 // Fetches from Supabase daily_logs + injuries tables
 // ============================================================
 
+import {
+	computeReadinessScore,
+	DEFAULT_HEALTH_SNAPSHOT,
+	DEFAULT_MUSCLE_GROUPS,
+	mapDailyLogRow,
+	mergeInjuriesToMuscleGroups,
+} from "@triathlon/core";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/supabase-provider";
-import type {
-	DailyLog,
-	FatigueLevel,
-	HealthSnapshot,
-	MuscleFatigue,
-} from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
-
-const defaultSnapshot: HealthSnapshot = {
-	hrv: 0,
-	restingHr: 0,
-	sleepHours: 0,
-	sleepQuality: 0,
-	vo2max: 0,
-	weightKg: 0,
-	readinessScore: 0,
-};
-
-/* ─── Default muscle groups (always shown, even with no injuries) ─── */
-const DEFAULT_MUSCLE_GROUPS: MuscleFatigue[] = [
-	{ muscle: "Quadriceps", bodyPart: "quadriceps", level: 0, status: "low" },
-	{ muscle: "Hamstrings", bodyPart: "hamstrings", level: 0, status: "low" },
-	{ muscle: "Calves", bodyPart: "calves", level: 0, status: "low" },
-	{ muscle: "Shoulders", bodyPart: "shoulders", level: 0, status: "low" },
-	{ muscle: "Core", bodyPart: "core", level: 0, status: "low" },
-	{ muscle: "Glutes", bodyPart: "glutes", level: 0, status: "low" },
-	{ muscle: "Lower Back", bodyPart: "lower_back", level: 0, status: "low" },
-	{ muscle: "Lats", bodyPart: "lats", level: 0, status: "low" },
-	{ muscle: "Chest", bodyPart: "chest", level: 0, status: "low" },
-	{ muscle: "Biceps", bodyPart: "biceps", level: 0, status: "low" },
-	{ muscle: "Triceps", bodyPart: "triceps", level: 0, status: "low" },
-	{ muscle: "Traps", bodyPart: "traps", level: 0, status: "low" },
-	{ muscle: "Forearms", bodyPart: "forearms", level: 0, status: "low" },
-	{ muscle: "Neck", bodyPart: "neck", level: 0, status: "low" },
-	{ muscle: "Hip Flexors", bodyPart: "hip_flexors", level: 0, status: "low" },
-	{ muscle: "Adductors", bodyPart: "adductors", level: 0, status: "low" },
-];
+import type { DailyLog, HealthSnapshot, MuscleFatigue } from "@/lib/types";
 
 export function useHealth() {
 	const { user } = useAuth();
-	const [fatigueData, setFatigueData] = useState<MuscleFatigue[]>(
-		DEFAULT_MUSCLE_GROUPS,
-	);
+	const [fatigueData, setFatigueData] = useState<MuscleFatigue[]>(DEFAULT_MUSCLE_GROUPS);
 	const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
-	const [healthSnapshot, setHealthSnapshot] =
-		useState<HealthSnapshot>(defaultSnapshot);
+	const [healthSnapshot, setHealthSnapshot] = useState<HealthSnapshot>(DEFAULT_HEALTH_SNAPSHOT);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +27,7 @@ export function useHealth() {
 		if (!user) {
 			setFatigueData(DEFAULT_MUSCLE_GROUPS);
 			setDailyLogs([]);
-			setHealthSnapshot(defaultSnapshot);
+			setHealthSnapshot(DEFAULT_HEALTH_SNAPSHOT);
 			setIsLoading(false);
 			return;
 		}
@@ -81,18 +50,7 @@ export function useHealth() {
 		}
 
 		if (logData && logData.length > 0) {
-			const mapped: DailyLog[] = logData.map((row) => ({
-				id: row.id,
-				date: row.log_date,
-				sleepHours: row.sleep_hours ?? 0,
-				sleepQuality: row.sleep_quality ?? 5,
-				rpe: row.rpe ?? 5,
-				mood: row.mood ?? 5,
-				hrv: row.hrv ?? 0,
-				restingHr: row.resting_hr ?? 0,
-				weightKg: row.weight_kg ?? 0,
-				notes: row.notes ?? null,
-			}));
+			const mapped = logData.map(mapDailyLogRow);
 			setDailyLogs(mapped);
 
 			// Build health snapshot from the latest log
@@ -104,19 +62,11 @@ export function useHealth() {
 				sleepQuality: latest.sleepQuality,
 				vo2max: 0, // no direct source yet
 				weightKg: latest.weightKg,
-				readinessScore: Math.min(
-					100,
-					Math.round(
-						(latest.sleepQuality * 10 +
-							latest.mood * 5 +
-							(latest.hrv > 0 ? 30 : 0)) /
-						1.4,
-					),
-				),
+				readinessScore: computeReadinessScore(latest.sleepQuality, latest.mood, latest.hrv),
 			});
 		} else {
 			setDailyLogs([]);
-			setHealthSnapshot(defaultSnapshot);
+			setHealthSnapshot(DEFAULT_HEALTH_SNAPSHOT);
 		}
 
 		// 2. Fetch active injuries → merge into default muscle groups
@@ -130,45 +80,19 @@ export function useHealth() {
 			setError(injuryError.message);
 		}
 
-		// Build a map of injury fatigue, keyed by body_part
-		const injuryMap = new Map<string, MuscleFatigue>();
 		if (injuryData && injuryData.length > 0) {
-			for (const inj of injuryData) {
-				const severity = inj.severity ?? 50;
-				let status: FatigueLevel = "low";
-				if (severity >= 70) status = "high";
-				else if (severity >= 40) status = "moderate";
-
-				injuryMap.set(inj.body_part ?? "", {
-					muscle: inj.body_part ?? "Unknown",
-					bodyPart: inj.body_part ?? "",
-					level: severity,
-					status,
-				});
-			}
+			setFatigueData(mergeInjuriesToMuscleGroups(injuryData));
+		} else {
+			setFatigueData(DEFAULT_MUSCLE_GROUPS);
 		}
 
-		// Merge: default groups with any injury overrides
-		const merged = DEFAULT_MUSCLE_GROUPS.map((def) => {
-			const override = injuryMap.get(def.bodyPart);
-			return override ?? def;
-		});
-
-		// Add any injuries that don't match a default group
-		for (const [bodyPart, data] of injuryMap) {
-			if (!DEFAULT_MUSCLE_GROUPS.some((d) => d.bodyPart === bodyPart)) {
-				merged.push(data);
-			}
-		}
-
-		setFatigueData(merged);
 		setIsLoading(false);
 	}, [user, error]);
 
 	useEffect(() => {
 		fetchHealth();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [user]);
+	}, [fetchHealth]);
 
 	return {
 		fatigueData,

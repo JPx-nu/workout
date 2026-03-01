@@ -3,9 +3,9 @@
 // Fetches from Supabase profiles + clubs tables
 // ============================================================
 
+import type { AppProfile as Profile } from "@triathlon/types";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/supabase-provider";
-import type { AppProfile as Profile } from '@triathlon/types';
 import { createClient } from "@/lib/supabase/client";
 
 const defaultProfile: Profile = {
@@ -26,10 +26,7 @@ export function useProfile(): {
 	error: string | null;
 	refetch: () => void;
 	updateDefaultView: (view: "triathlon" | "strength") => Promise<void>;
-	updateProfile: (fields: {
-		displayName?: string;
-		timezone?: string;
-	}) => Promise<void>;
+	updateProfile: (fields: { displayName?: string; timezone?: string }) => Promise<void>;
 } {
 	const { user } = useAuth();
 	const [profile, setProfile] = useState<Profile>(defaultProfile);
@@ -62,9 +59,9 @@ export function useProfile(): {
 				id: user.id,
 				email: user.email ?? "",
 				displayName: user.email?.split("@")[0] ?? "User",
-				clubId: '',
-				clubName: '',
-				avatarUrl: null
+				clubId: "",
+				clubName: "",
+				avatarUrl: null,
 			});
 		} else if (data) {
 			setProfile({
@@ -74,11 +71,9 @@ export function useProfile(): {
 				clubId: data.club_id ?? "",
 				clubName: (data.clubs as { name: string } | null)?.name ?? "",
 				avatarUrl: data.avatar_url ?? null,
-				timezone:
-					data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+				timezone: data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
 				email: user.email ?? "",
-				defaultView:
-					(data.default_view as "triathlon" | "strength") ?? "triathlon",
+				defaultView: (data.default_view as "triathlon" | "strength") ?? "triathlon",
 			});
 		}
 
@@ -109,25 +104,19 @@ export function useProfile(): {
 		}
 	};
 
-	const updateProfile = async (fields: {
-		displayName?: string;
-		timezone?: string;
-	}) => {
+	const updateProfile = async (fields: { displayName?: string; timezone?: string }) => {
 		if (!user) return;
 
 		const prev: Profile = profile;
 		// Optimistic update
 		setProfile((p: Profile) => ({
 			...p,
-			...(fields.displayName !== undefined
-				? { displayName: fields.displayName }
-				: {}),
+			...(fields.displayName !== undefined ? { displayName: fields.displayName } : {}),
 			...(fields.timezone !== undefined ? { timezone: fields.timezone } : {}),
 		}));
 
 		const dbFields: Record<string, string> = {};
-		if (fields.displayName !== undefined)
-			dbFields.display_name = fields.displayName;
+		if (fields.displayName !== undefined) dbFields.display_name = fields.displayName;
 		if (fields.timezone !== undefined) dbFields.timezone = fields.timezone;
 
 		const supabase = createClient();

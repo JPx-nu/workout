@@ -8,19 +8,16 @@
 import { AzureChatOpenAI, AzureOpenAIEmbeddings } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AI_CONFIG } from "../../config/ai.js";
+import { createLogger } from "../../lib/logger.js";
 import { getRecentMemories, insertMemory } from "./supabase.js";
+
+const log = createLogger({ module: "memory-extractor" });
 
 /** Shape of a candidate memory from the extraction LLM */
 interface CandidateMemory {
-    category:
-    | "preference"
-    | "goal"
-    | "constraint"
-    | "pattern"
-    | "medical_note"
-    | "other";
-    content: string;
-    importance: number;
+	category: "preference" | "goal" | "constraint" | "pattern" | "medical_note" | "other";
+	content: string;
+	importance: number;
 }
 
 const EXTRACTION_PROMPT = `You are a memory extraction system for an AI fitness coach.
@@ -48,132 +45,122 @@ Respond ONLY with a JSON array. No markdown, no explanation.`;
  * Designed to run fire-and-forget (no await needed by caller).
  */
 export async function extractMemories(
-    client: SupabaseClient,
-    userId: string,
-    userMessage: string,
-    assistantResponse: string,
+	client: SupabaseClient,
+	userId: string,
+	userMessage: string,
+	assistantResponse: string,
 ): Promise<void> {
-    try {
-        // Load existing memories for deduplication context
-        const existingMemories = await getRecentMemories(client, userId, 20);
-        const existingContext =
-            existingMemories.length > 0
-                ? `\n\nExisting memories (DO NOT re-extract these):\n${existingMemories.map((m) => `- ${m.content}`).join("\n")}`
-                : "";
+	try {
+		// Load existing memories for deduplication context
+		const existingMemories = await getRecentMemories(client, userId, 20);
+		const existingContext =
+			existingMemories.length > 0
+				? `\n\nExisting memories (DO NOT re-extract these):\n${existingMemories.map((m) => `- ${m.content}`).join("\n")}`
+				: "";
 
-        // Use a separate, cheap LLM call for extraction
-        const llm = new AzureChatOpenAI({
-            azureOpenAIEndpoint: AI_CONFIG.azure.endpoint,
-            azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-            azureOpenAIApiDeploymentName: AI_CONFIG.azure.deploymentName,
-            azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-            temperature: 0, // Deterministic extraction
-            modelKwargs: { max_completion_tokens: 512 },
-        });
+		// Use a separate, cheap LLM call for extraction
+		const llm = new AzureChatOpenAI({
+			azureOpenAIEndpoint: AI_CONFIG.azure.endpoint,
+			azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+			azureOpenAIApiDeploymentName: AI_CONFIG.azure.deploymentName,
+			azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+			temperature: 0, // Deterministic extraction
+			modelKwargs: { max_completion_tokens: 512 },
+		});
 
-        const response = await llm.invoke([
-            { type: "system", content: EXTRACTION_PROMPT + existingContext },
-            {
-                type: "human",
-                content: `User: ${userMessage}\n\nAssistant: ${assistantResponse}`,
-            },
-        ]);
+		const response = await llm.invoke([
+			{ type: "system", content: EXTRACTION_PROMPT + existingContext },
+			{
+				type: "human",
+				content: `User: ${userMessage}\n\nAssistant: ${assistantResponse}`,
+			},
+		]);
 
-        const content =
-            typeof response.content === "string" ? response.content.trim() : "";
+		const content = typeof response.content === "string" ? response.content.trim() : "";
 
-        if (!content || content === "[]") return;
+		if (!content || content === "[]") return;
 
-        // Parse the JSON array
-        let candidates: CandidateMemory[];
-        try {
-            candidates = JSON.parse(content);
-            if (!Array.isArray(candidates)) return;
-        } catch {
-            console.warn("Memory extractor: failed to parse JSON:", content);
-            return;
-        }
+		// Parse the JSON array
+		let candidates: CandidateMemory[];
+		try {
+			candidates = JSON.parse(content);
+			if (!Array.isArray(candidates)) return;
+		} catch {
+			log.warn({ content }, "Memory extractor: failed to parse JSON");
+			return;
+		}
 
-        // Validate and limit
-        candidates = candidates
-            .filter(
-                (c) =>
-                    c.content &&
-                    typeof c.content === "string" &&
-                    c.category &&
-                    typeof c.importance === "number",
-            )
-            .slice(0, 3);
+		// Validate and limit
+		candidates = candidates
+			.filter(
+				(c) =>
+					c.content &&
+					typeof c.content === "string" &&
+					c.category &&
+					typeof c.importance === "number",
+			)
+			.slice(0, 3);
 
-        if (candidates.length === 0) return;
+		if (candidates.length === 0) return;
 
-        // Deduplicate via embeddings — skip if too similar to existing memories
-        const embeddingsModel = new AzureOpenAIEmbeddings({
-            azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-            azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-                .split(".")[0]
-                .replace("https://", ""),
-            azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
-            azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-        });
+		// Deduplicate via embeddings — skip if too similar to existing memories
+		const embeddingsModel = new AzureOpenAIEmbeddings({
+			azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
+			azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint.split(".")[0].replace("https://", ""),
+			azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
+			azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
+		});
 
-        // Get embeddings for existing memories that have them
-        const existingEmbeddings = existingMemories
-            .filter((m) => m.embedding && m.embedding.length > 0)
-            .map((m) => ({ content: m.content, embedding: m.embedding! }));
+		// Get embeddings for existing memories that have them
+		const existingEmbeddings = existingMemories
+			.filter((m) => m.embedding && m.embedding.length > 0)
+			.map((m) => ({ content: m.content, embedding: m.embedding! }));
 
-        for (const candidate of candidates) {
-            try {
-                const candidateEmbedding = await embeddingsModel.embedQuery(
-                    candidate.content,
-                );
+		for (const candidate of candidates) {
+			try {
+				const candidateEmbedding = await embeddingsModel.embedQuery(candidate.content);
 
-                // Check cosine similarity against existing memories
-                const isDuplicate = existingEmbeddings.some((existing) => {
-                    const similarity = cosineSimilarity(
-                        candidateEmbedding,
-                        existing.embedding,
-                    );
-                    return similarity > 0.88; // High threshold — only skip near-duplicates
-                });
+				// Check cosine similarity against existing memories
+				const isDuplicate = existingEmbeddings.some((existing) => {
+					const similarity = cosineSimilarity(candidateEmbedding, existing.embedding);
+					return similarity > 0.88; // High threshold — only skip near-duplicates
+				});
 
-                if (isDuplicate) {
-                    continue;
-                }
+				if (isDuplicate) {
+					continue;
+				}
 
-                // Save the new memory
-                await insertMemory(client, {
-                    athlete_id: userId,
-                    category: candidate.category,
-                    content: candidate.content,
-                    importance: Math.min(5, Math.max(1, Math.round(candidate.importance))),
-                    embedding: candidateEmbedding,
-                });
+				// Save the new memory
+				await insertMemory(client, {
+					athlete_id: userId,
+					category: candidate.category,
+					content: candidate.content,
+					importance: Math.min(5, Math.max(1, Math.round(candidate.importance))),
+					embedding: candidateEmbedding,
+				});
 
-                console.log(
-                    `🧠 Memory extracted: [${candidate.category}] ${candidate.content}`,
-                );
-            } catch (err) {
-                console.warn("Memory extractor: failed to process candidate:", err);
-            }
-        }
-    } catch (err) {
-        // Never throw — this is fire-and-forget
-        console.error("Memory extractor error:", err);
-    }
+				log.info({ category: candidate.category, content: candidate.content }, "Memory extracted");
+			} catch (err) {
+				log.warn({ err }, "Memory extractor: failed to process candidate");
+			}
+		}
+	} catch (err) {
+		// Never throw — this is fire-and-forget
+		log.error({ err }, "Memory extractor error");
+	}
 }
 
 /** Cosine similarity between two vectors */
 function cosineSimilarity(a: number[], b: number[]): number {
-    if (a.length !== b.length) return 0;
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < a.length; i++) {
-        dotProduct += a[i] * b[i];
-        normA += a[i] * a[i];
-        normB += b[i] * b[i];
-    }
-    const denominator = Math.sqrt(normA) * Math.sqrt(normB);
-    return denominator === 0 ? 0 : dotProduct / denominator;
+	if (a.length !== b.length) return 0;
+	let dotProduct = 0;
+	let normA = 0;
+	let normB = 0;
+	for (let i = 0; i < a.length; i++) {
+		dotProduct += a[i] * b[i];
+		normA += a[i] * a[i];
+		normB += b[i] * b[i];
+	}
+	const denominator = Math.sqrt(normA) * Math.sqrt(normB);
+	return denominator === 0 ? 0 : dotProduct / denominator;
 }

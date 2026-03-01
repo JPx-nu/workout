@@ -9,8 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function InstallPrompt() {
-	const [deferredPrompt, setDeferredPrompt] =
-		useState<BeforeInstallPromptEvent | null>(null);
+	const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 	const [dismissed, setDismissed] = useState(false);
 	const [isInstalled, setIsInstalled] = useState(false);
 
@@ -24,8 +23,7 @@ export function InstallPrompt() {
 		// Check if previously dismissed
 		const dismissedAt = localStorage.getItem("pwa-install-dismissed");
 		if (dismissedAt) {
-			const daysSince =
-				(Date.now() - Number(dismissedAt)) / (1000 * 60 * 60 * 24);
+			const daysSince = (Date.now() - Number(dismissedAt)) / (1000 * 60 * 60 * 24);
 			if (daysSince < 7) {
 				setDismissed(true);
 				return;
@@ -69,8 +67,7 @@ export function InstallPrompt() {
 			<div
 				className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
 				style={{
-					background:
-						"linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))",
+					background: "linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))",
 				}}
 			>
 				<Download size={18} />
@@ -81,10 +78,7 @@ export function InstallPrompt() {
 					Add to your home screen for the best experience
 				</div>
 			</div>
-			<button
-				onClick={handleInstall}
-				className="btn-primary text-xs px-3 py-1.5 shrink-0"
-			>
+			<button onClick={handleInstall} className="btn-primary text-xs px-3 py-1.5 shrink-0">
 				Install
 			</button>
 			<button

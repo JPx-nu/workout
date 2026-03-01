@@ -1,13 +1,4 @@
-import {
-	Activity,
-	Bike,
-	Brain,
-	Footprints,
-	Shield,
-	Users,
-	Waves,
-	Zap,
-} from "lucide-react";
+import { Activity, Bike, Brain, Footprints, Shield, Users, Waves, Zap } from "lucide-react";
 import Link from "next/link";
 
 const features = [
@@ -21,15 +12,13 @@ const features = [
 	{
 		icon: Activity,
 		title: "Smart Training Plans",
-		description:
-			"Auto-adaptive periodization based on real-time fatigue, HRV, and race countdown.",
+		description: "Auto-adaptive periodization based on real-time fatigue, HRV, and race countdown.",
 		color: "var(--color-success)",
 	},
 	{
 		icon: Zap,
 		title: "Live Health Sync",
-		description:
-			"HealthKit & Health Connect integration for sleep, HRV, resting HR, and VO₂max.",
+		description: "HealthKit & Health Connect integration for sleep, HRV, resting HR, and VO₂max.",
 		color: "var(--color-warning)",
 	},
 	{
@@ -49,8 +38,7 @@ const features = [
 	{
 		icon: Waves,
 		title: "3D Body Map",
-		description:
-			"Visualize muscle fatigue and injury risk with an interactive 3D heatmap.",
+		description: "Visualize muscle fatigue and injury risk with an interactive 3D heatmap.",
 		color: "var(--color-strength)",
 	},
 ];
@@ -107,9 +95,8 @@ export default function LandingPage() {
 						className="max-w-2xl mx-auto text-lg sm:text-xl mb-10 leading-relaxed"
 						style={{ color: "var(--color-text-secondary)" }}
 					>
-						Intelligent training plans, real-time health insights, and team
-						gamification — all powered by agentic AI that learns your body and
-						your goals.
+						Intelligent training plans, real-time health insights, and team gamification — all
+						powered by agentic AI that learns your body and your goals.
 					</p>
 
 					<div className="flex items-center justify-center gap-4">
@@ -147,13 +134,8 @@ export default function LandingPage() {
 			{/* Features */}
 			<section className="max-w-6xl mx-auto px-6 py-24">
 				<div className="text-center mb-16">
-					<h2 className="text-3xl sm:text-4xl font-bold mb-4">
-						Built for serious athletes
-					</h2>
-					<p
-						style={{ color: "var(--color-text-secondary)" }}
-						className="text-lg max-w-xl mx-auto"
-					>
+					<h2 className="text-3xl sm:text-4xl font-bold mb-4">Built for serious athletes</h2>
+					<p style={{ color: "var(--color-text-secondary)" }} className="text-lg max-w-xl mx-auto">
 						Every feature designed around the demands of swim-bike-run training.
 					</p>
 				</div>
@@ -185,17 +167,10 @@ export default function LandingPage() {
 			<section className="max-w-4xl mx-auto px-6 py-24 text-center">
 				<div className="glass-card p-12">
 					<h2 className="text-3xl font-bold mb-4">Ready to train smarter?</h2>
-					<p
-						className="text-lg mb-8"
-						style={{ color: "var(--color-text-secondary)" }}
-					>
-						Join your club and let AI take your triathlon performance to the
-						next level.
+					<p className="text-lg mb-8" style={{ color: "var(--color-text-secondary)" }}>
+						Join your club and let AI take your triathlon performance to the next level.
 					</p>
-					<Link
-						href="/dashboard"
-						className="btn-primary text-base px-8 py-3 inline-block"
-					>
+					<Link href="/dashboard" className="btn-primary text-base px-8 py-3 inline-block">
 						Get Started — It&apos;s Free
 					</Link>
 				</div>

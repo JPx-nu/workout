@@ -1,14 +1,7 @@
 "use client";
 
 import type { Session, User } from "@supabase/supabase-js";
-import {
-	createContext,
-	type ReactNode,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthContext = {
@@ -53,7 +46,7 @@ export function SupabaseProvider({ children }: { children: ReactNode }) {
 	const value = useMemo(
 		() => ({ user, session, isLoading, signOut }),
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-		[user, session, isLoading],
+		[user, session, isLoading, signOut],
 	);
 
 	return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

@@ -152,8 +152,7 @@ export function processOutput(
 	// Detect medical content in output
 	const outputLower = processed.toLowerCase();
 	const hasMedical =
-		options.hasMedicalContent ??
-		MEDICAL_TRIGGER_KEYWORDS.some((kw) => outputLower.includes(kw));
+		options.hasMedicalContent ?? MEDICAL_TRIGGER_KEYWORDS.some((kw) => outputLower.includes(kw));
 
 	if (hasMedical) {
 		processed += MEDICAL_DISCLAIMER;
@@ -180,9 +179,7 @@ export function processOutput(
 /**
  * Classifies user input intent for routing and safety decisions.
  */
-export function classifyIntent(
-	message: string,
-): "training" | "medical" | "emergency" | "general" {
+export function classifyIntent(message: string): "training" | "medical" | "emergency" | "general" {
 	const lower = message.toLowerCase();
 
 	if (EMERGENCY_KEYWORDS.some((kw) => lower.includes(kw))) {

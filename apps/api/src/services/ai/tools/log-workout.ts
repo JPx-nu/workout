@@ -10,7 +10,10 @@ import { AzureOpenAIEmbeddings } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { AI_CONFIG } from "../../../config/ai.js";
+import { createLogger } from "../../../lib/logger.js";
 import { insertWorkout } from "../supabase.js";
+
+const log = createLogger({ module: "tool-log-workout" });
 
 // ── Zod schemas for structured strength data ──────────────────
 
@@ -23,18 +26,11 @@ const setSchema = z.object({
 		.max(10)
 		.optional()
 		.describe("Rate of Perceived Exertion (1-10). 10 = absolute max effort"),
-	rir: z
-		.number()
-		.min(0)
-		.max(5)
-		.optional()
-		.describe("Reps In Reserve (0-5). 0 = failure"),
+	rir: z.number().min(0).max(5).optional().describe("Reps In Reserve (0-5). 0 = failure"),
 	tempo: z
 		.string()
 		.optional()
-		.describe(
-			'Tempo notation e.g. "3-1-2-0" (eccentric-pause-concentric-pause in seconds)',
-		),
+		.describe('Tempo notation e.g. "3-1-2-0" (eccentric-pause-concentric-pause in seconds)'),
 	set_type: z
 		.enum(["working", "warmup", "dropset", "backoff", "amrap", "cluster"])
 		.optional()
@@ -43,14 +39,8 @@ const setSchema = z.object({
 });
 
 const exerciseSchema = z.object({
-	name: z
-		.string()
-		.describe(
-			'Exercise name e.g. "Barbell Back Squat", "Dumbbell Bench Press"',
-		),
-	sets: z
-		.array(setSchema)
-		.describe("Array of sets performed for this exercise"),
+	name: z.string().describe('Exercise name e.g. "Barbell Back Squat", "Dumbbell Bench Press"'),
+	sets: z.array(setSchema).describe("Array of sets performed for this exercise"),
 	group_id: z
 		.number()
 		.optional()
@@ -68,21 +58,10 @@ const exerciseSchema = z.object({
 });
 
 const workoutLogSchema = z.object({
-	activityType: z
-		.string()
-		.describe("Activity type: SWIM, BIKE, RUN, STRENGTH, YOGA, OTHER"),
-	startedAt: z
-		.string()
-		.optional()
-		.describe("Start date/time in ISO 8601 (defaults to now)"),
-	durationMin: z
-		.number()
-		.optional()
-		.describe("Total workout duration in minutes"),
-	distanceKm: z
-		.number()
-		.optional()
-		.describe("Distance in kilometers (for cardio workouts)"),
+	activityType: z.string().describe("Activity type: SWIM, BIKE, RUN, STRENGTH, YOGA, OTHER"),
+	startedAt: z.string().optional().describe("Start date/time in ISO 8601 (defaults to now)"),
+	durationMin: z.number().optional().describe("Total workout duration in minutes"),
+	distanceKm: z.number().optional().describe("Distance in kilometers (for cardio workouts)"),
 	avgHr: z.number().optional().describe("Average heart rate"),
 	tss: z.number().optional().describe("Training Stress Score"),
 	notes: z.string().optional().describe("General workout notes"),
@@ -96,11 +75,7 @@ const workoutLogSchema = z.object({
 
 // ── Tool factory ──────────────────────────────────────────────
 
-export function createLogWorkoutTool(
-	client: SupabaseClient,
-	userId: string,
-	clubId: string,
-) {
+export function createLogWorkoutTool(client: SupabaseClient, userId: string, clubId: string) {
 	return tool(
 		async (input) => {
 			try {
@@ -110,17 +85,18 @@ export function createLogWorkoutTool(
 				const rawData =
 					input.exercises && input.exercises.length > 0
 						? {
-							exercises: input.exercises,
-							metadata: { source: "COACH", schema_version: 2 },
-						}
+								exercises: input.exercises,
+								metadata: { source: "COACH", schema_version: 2 },
+							}
 						: null;
 
 				// Generate embedding for natural language search
 				let embedding: number[] | undefined;
 				if (input.notes || rawData?.exercises) {
 					try {
-						const textToEmbed = `Activity: ${input.activityType}. Notes: ${input.notes ?? "None"}. Ex: ${rawData?.exercises ? JSON.stringify(rawData.exercises) : "None"
-							}`;
+						const textToEmbed = `Activity: ${input.activityType}. Notes: ${input.notes ?? "None"}. Ex: ${
+							rawData?.exercises ? JSON.stringify(rawData.exercises) : "None"
+						}`;
 						const embeddingsModel = new AzureOpenAIEmbeddings({
 							azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
 							azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
@@ -131,7 +107,7 @@ export function createLogWorkoutTool(
 						});
 						embedding = await embeddingsModel.embedQuery(textToEmbed);
 					} catch (err) {
-						console.error("Failed to generate embedding for workout", err);
+						log.error({ err }, "Failed to generate embedding for workout");
 					}
 				}
 
@@ -156,16 +132,11 @@ export function createLogWorkoutTool(
 
 				// Build response with exercise summary for STRENGTH workouts
 				if (rawData?.exercises) {
-					const exerciseLines = rawData.exercises.map(
-						(ex) => {
-							const workingSets = ex.sets.filter((s) => s.set_type !== "warmup");
-							const totalVol = workingSets.reduce(
-								(sum, s) => sum + s.weight_kg * s.reps,
-								0,
-							);
-							return `  - ${ex.name}: ${workingSets.length} working sets, ${totalVol} kg total volume`;
-						},
-					);
+					const exerciseLines = rawData.exercises.map((ex) => {
+						const workingSets = ex.sets.filter((s) => s.set_type !== "warmup");
+						const totalVol = workingSets.reduce((sum, s) => sum + s.weight_kg * s.reps, 0);
+						return `  - ${ex.name}: ${workingSets.length} working sets, ${totalVol} kg total volume`;
+					});
 					return `Workout logged successfully (ID: ${workout.id}).\nActivity: ${workout.activity_type}, Date: ${workout.started_at}\n\nExercises logged:\n${exerciseLines.join("\n")}\n\nNow retrieve workout history to compare this session against recent ones.`;
 				}
 

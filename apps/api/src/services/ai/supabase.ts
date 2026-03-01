@@ -6,6 +6,9 @@
 // ============================================================
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createLogger } from "../../lib/logger.js";
+
+const log = createLogger({ module: "ai-supabase" });
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
@@ -128,11 +131,7 @@ export async function getProfile(
 	client: SupabaseClient,
 	userId: string,
 ): Promise<AthleteProfile | null> {
-	const { data, error } = await client
-		.from("profiles")
-		.select("*")
-		.eq("id", userId)
-		.single();
+	const { data, error } = await client.from("profiles").select("*").eq("id", userId).single();
 
 	if (error) throw new Error(`Failed to fetch profile: ${error.message}`);
 	return data;
@@ -156,8 +155,7 @@ export async function getWorkouts(
 
 	if (options.fromDate) query = query.gte("started_at", options.fromDate);
 	if (options.toDate) query = query.lte("started_at", options.toDate);
-	if (options.activityType)
-		query = query.eq("activity_type", options.activityType);
+	if (options.activityType) query = query.eq("activity_type", options.activityType);
 	if (options.limit) query = query.limit(options.limit);
 
 	const { data, error } = await query;
@@ -201,8 +199,7 @@ export async function getHealthMetrics(
 	if (options.limit) query = query.limit(options.limit);
 
 	const { data, error } = await query;
-	if (error)
-		throw new Error(`Failed to fetch health metrics: ${error.message}`);
+	if (error) throw new Error(`Failed to fetch health metrics: ${error.message}`);
 	return data ?? [];
 }
 
@@ -306,7 +303,9 @@ export async function searchMemoriesBySimilarity(
 	userId: string,
 	queryEmbedding: number[],
 	options: { matchThreshold?: number; matchCount?: number } = {},
-): Promise<Array<{ id: string; category: string; content: string; importance: number; similarity: number }>> {
+): Promise<
+	Array<{ id: string; category: string; content: string; importance: number; similarity: number }>
+> {
 	const { matchThreshold = 0.4, matchCount = 8 } = options;
 
 	const { data, error } = await client.rpc("match_memories", {
@@ -317,7 +316,7 @@ export async function searchMemoriesBySimilarity(
 	});
 
 	if (error) {
-		console.warn("Semantic memory search failed:", error.message);
+		log.warn({ err: error }, "Semantic memory search failed");
 		return [];
 	}
 
@@ -330,11 +329,7 @@ export async function insertWorkout(
 	client: SupabaseClient,
 	workout: Omit<Workout, "id" | "created_at">,
 ): Promise<Workout> {
-	const { data, error } = await client
-		.from("workouts")
-		.insert(workout)
-		.select()
-		.single();
+	const { data, error } = await client.from("workouts").insert(workout).select().single();
 
 	if (error) throw new Error(`Failed to log workout: ${error.message}`);
 	return data;
@@ -344,11 +339,7 @@ export async function insertMemory(
 	client: SupabaseClient,
 	memory: Omit<AthleteMemory, "id" | "created_at" | "updated_at">,
 ): Promise<AthleteMemory> {
-	const { data, error } = await client
-		.from("athlete_memories")
-		.insert(memory)
-		.select()
-		.single();
+	const { data, error } = await client.from("athlete_memories").insert(memory).select().single();
 
 	if (error) throw new Error(`Failed to save memory: ${error.message}`);
 	return data;
@@ -378,11 +369,7 @@ export async function insertInjury(
 		notes?: string;
 	},
 ) {
-	const { data, error } = await client
-		.from("injuries")
-		.insert(injury)
-		.select()
-		.single();
+	const { data, error } = await client.from("injuries").insert(injury).select().single();
 
 	if (error) throw new Error(`Failed to log injury: ${error.message}`);
 	return data;
@@ -400,7 +387,6 @@ export async function updateTrainingPlan(
 		.select()
 		.single();
 
-	if (error)
-		throw new Error(`Failed to update training plan: ${error.message}`);
+	if (error) throw new Error(`Failed to update training plan: ${error.message}`);
 	return data;
 }

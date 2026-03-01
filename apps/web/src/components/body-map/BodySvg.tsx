@@ -1,17 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Model, {
-	type IExerciseData,
-	type IMuscleStats,
-} from "react-body-highlighter";
+import Model, { type IExerciseData, type IMuscleStats } from "react-body-highlighter";
 import type { MuscleFatigue } from "@/lib/types";
 import MuscleDetail from "./MuscleDetail";
-import {
-	fatigueToLibMuscles,
-	libMuscleLabels,
-	libMuscleToBodyPart,
-} from "./muscle-paths";
+import { fatigueToLibMuscles, libMuscleLabels, libMuscleToBodyPart } from "./muscle-paths";
 
 /* ═══════════════════════════════════════════════════
    Convert fatigue data to library format.
@@ -44,18 +37,11 @@ function buildExerciseData(fatigueData: MuscleFatigue[]): IExerciseData[] {
 /* ═══════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════ */
-export default function BodySvg({
-	fatigueData,
-}: {
-	fatigueData: MuscleFatigue[];
-}) {
+export default function BodySvg({ fatigueData }: { fatigueData: MuscleFatigue[] }) {
 	const [side, setSide] = useState<"anterior" | "posterior">("anterior");
 	const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 
-	const exerciseData = useMemo(
-		() => buildExerciseData(fatigueData),
-		[fatigueData],
-	);
+	const exerciseData = useMemo(() => buildExerciseData(fatigueData), [fatigueData]);
 
 	const handleClick = useCallback((data: IMuscleStats) => {
 		setSelectedMuscle((prev) => (prev === data.muscle ? null : data.muscle));
@@ -69,9 +55,7 @@ export default function BodySvg({
 		return fatigueData.find((f) => f.bodyPart === bodyPart) ?? null;
 	}, [selectedMuscle, fatigueData]);
 
-	const selectedLabel = selectedMuscle
-		? (libMuscleLabels[selectedMuscle] ?? selectedMuscle)
-		: null;
+	const selectedLabel = selectedMuscle ? (libMuscleLabels[selectedMuscle] ?? selectedMuscle) : null;
 
 	return (
 		<div className="flex flex-col lg:flex-row gap-6 w-full items-start">
@@ -138,10 +122,7 @@ export default function BodySvg({
 						{ label: "High", color: "#ef4444" },
 					].map(({ label, color }) => (
 						<span key={label} className="flex items-center gap-1.5">
-							<span
-								className="w-3 h-3 rounded-full"
-								style={{ background: color }}
-							/>
+							<span className="w-3 h-3 rounded-full" style={{ background: color }} />
 							{label}
 						</span>
 					))}

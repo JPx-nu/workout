@@ -3,6 +3,10 @@
 // Centralizes all AI-related settings for easy swapping
 // ============================================================
 
+import { createLogger } from "../lib/logger.js";
+
+const log = createLogger({ module: "ai-config" });
+
 export const AI_CONFIG = {
 	/** Azure OpenAI deployment settings */
 	azure: {
@@ -14,8 +18,7 @@ export const AI_CONFIG = {
 		deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-5-mini",
 		/** Deployment name for the embeddings model (e.g. "text-embedding-3-small") */
 		embeddingsDeployment:
-			process.env.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT ||
-			"text-embedding-3-small",
+			process.env.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT || "text-embedding-3-small",
 		/** API version — preview (supports gpt-5-mini on AIServices) */
 		apiVersion: process.env.AZURE_OPENAI_API_VERSION || "2024-12-01-preview",
 	},
@@ -54,12 +57,7 @@ export const AI_CONFIG = {
 		/** Maximum file size in megabytes */
 		maxFileSizeMB: 10,
 		/** Allowed MIME types for image uploads */
-		allowedImageTypes: [
-			"image/jpeg",
-			"image/png",
-			"image/webp",
-			"image/gif",
-		] as readonly string[],
+		allowedImageTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"] as readonly string[],
 		/** Max images per message */
 		maxImagesPerMessage: 3,
 		/** Supabase Storage bucket name */
@@ -75,8 +73,9 @@ export function validateAIConfig(): { valid: boolean; missing: string[] } {
 	if (!AI_CONFIG.azure.apiKey) missing.push("AZURE_OPENAI_API_KEY");
 
 	if (missing.length > 0) {
-		console.warn(
-			`⚠️  AI Agent: Missing env vars: ${missing.join(", ")}. Agent will not function until these are set.`,
+		log.warn(
+			{ missing },
+			"AI Agent: Missing env vars — agent will not function until these are set",
 		);
 	}
 

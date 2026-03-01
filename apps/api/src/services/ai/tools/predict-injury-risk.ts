@@ -8,10 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getWorkouts } from "../supabase.js";
 
-export function createPredictInjuryRiskTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createPredictInjuryRiskTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async () => {
 			const today = new Date();

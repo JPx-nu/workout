@@ -3,24 +3,23 @@
 // The core orchestration: LLM ↔ Tools loop with streaming
 // ============================================================
 
-import {
-	AIMessage,
-	type BaseMessage,
-	HumanMessage,
-	SystemMessage,
-} from "@langchain/core/messages";
+import { AIMessage, type BaseMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { END, MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AI_CONFIG } from "../../config/ai.js";
+import { createLogger } from "../../lib/logger.js";
+
+const log = createLogger({ module: "langgraph-agent" });
+
 import { buildSystemPrompt } from "./prompt.js";
 import {
+	type AthleteMemory,
 	getDailyLogs,
 	getProfile,
 	getRecentMemories,
 	searchMemoriesBySimilarity,
-	type AthleteMemory,
 } from "./supabase.js";
 import { createAllTools } from "./tools/index.js";
 
@@ -59,27 +58,23 @@ export async function createAgent(
 	const todayLog = dailyLogs.length > 0 ? dailyLogs[0] : null;
 
 	// Semantic memory recall: embed user message and find relevant memories
-	let allMemories: AthleteMemory[] = [...pinnedMemories];
+	const allMemories: AthleteMemory[] = [...pinnedMemories];
 
 	if (userMessage) {
 		try {
 			const { AzureOpenAIEmbeddings } = await import("@langchain/openai");
 			const embeddingsModel = new AzureOpenAIEmbeddings({
 				azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
-				azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint
-					.split(".")[0]
-					.replace("https://", ""),
+				azureOpenAIApiInstanceName: AI_CONFIG.azure.endpoint.split(".")[0].replace("https://", ""),
 				azureOpenAIApiDeploymentName: AI_CONFIG.azure.embeddingsDeployment,
 				azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
 			});
 
 			const queryEmbedding = await embeddingsModel.embedQuery(userMessage);
-			const semanticResults = await searchMemoriesBySimilarity(
-				client,
-				userId,
-				queryEmbedding,
-				{ matchThreshold: 0.4, matchCount: 8 },
-			);
+			const semanticResults = await searchMemoriesBySimilarity(client, userId, queryEmbedding, {
+				matchThreshold: 0.4,
+				matchCount: 8,
+			});
 
 			// Merge semantic results with pinned, deduplicate by content
 			const pinnedContents = new Set(pinnedMemories.map((m) => m.content));
@@ -98,7 +93,7 @@ export async function createAgent(
 			}
 		} catch (err) {
 			// Semantic search is best-effort — don't break the agent if it fails
-			console.warn("Semantic memory recall failed (non-fatal):", err);
+			log.warn({ err }, "Semantic memory recall failed (non-fatal)");
 		}
 	}
 
@@ -114,13 +109,6 @@ export async function createAgent(
 		modelKwargs: { max_completion_tokens: AI_CONFIG.model.maxCompletionTokens },
 	});
 
-	// [FUTURE] PII Anonymization Middleware (Inactive)
-	// Implement Presidio/LangChain JS PII stripping here before it hits the trace or LLM
-	const anonymizePII = async (messages: BaseMessage[]) => {
-		// e.g., messages.map(msg => presidio.anonymize(msg.content))
-		return messages;
-	};
-
 	// Create tools bound to user context
 	const tools = createAllTools(client, userId, clubId);
 
@@ -128,21 +116,14 @@ export async function createAgent(
 	const llmWithTools = llm.bindTools(tools);
 
 	// Build the system prompt
-	const systemMessage = new SystemMessage(
-		buildSystemPrompt(profile, todayLog, allMemories),
-	);
+	const systemMessage = new SystemMessage(buildSystemPrompt(profile, todayLog, allMemories));
 
 	// ── Define graph nodes ────────────────────────────────────
 
 	/** LLM call node: injects system prompt + invokes the model */
 	async function llmCall(state: typeof MessagesAnnotation.State) {
 		// Prepend system message to the conversation
-		let messagesWithSystem = [systemMessage, ...state.messages];
-
-		// Apply PII stripping if enabled (currently disabled/inactive per request)
-		if ((AI_CONFIG.features as any).enablePIIMiddleware) {
-			messagesWithSystem = await anonymizePII(messagesWithSystem);
-		}
+		const messagesWithSystem = [systemMessage, ...state.messages];
 
 		const response = await llmWithTools.invoke(messagesWithSystem);
 
@@ -152,11 +133,7 @@ export async function createAgent(
 	/** Reflection node: evaluates the draft response */
 	async function reflectNode(state: typeof MessagesAnnotation.State) {
 		const lastMessage = state.messages[state.messages.length - 1];
-		if (
-			!lastMessage ||
-			lastMessage._getType() !== "ai" ||
-			!lastMessage.content
-		) {
+		if (!lastMessage || lastMessage._getType() !== "ai" || !lastMessage.content) {
 			return { messages: [] };
 		}
 
@@ -174,8 +151,7 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 			new HumanMessage(`Draft response:\n${lastMessage.content}`),
 		]);
 
-		const critique =
-			typeof response.content === "string" ? response.content.trim() : "";
+		const critique = typeof response.content === "string" ? response.content.trim() : "";
 
 		// If accepted, route to END
 		if (critique.toUpperCase() === "ACCEPT" || critique.includes("ACCEPT")) {
@@ -185,17 +161,13 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 		// If critiqued, add it as a user message so the llmCall sees the feedback and regenerates
 		return {
 			messages: [
-				new HumanMessage(
-					`Head Coach critique: ${critique}. Please revise your response.`,
-				),
+				new HumanMessage(`Head Coach critique: ${critique}. Please revise your response.`),
 			],
 		};
 	}
 
 	/** Route: check if the LLM wants to call tools or is done drafting */
-	function shouldContinue(
-		state: typeof MessagesAnnotation.State,
-	): "tools" | "reflectNode" {
+	function shouldContinue(state: typeof MessagesAnnotation.State): "tools" | "reflectNode" {
 		const lastMessage = state.messages[state.messages.length - 1];
 
 		// If the last message has tool_calls, route to the tool node
@@ -203,7 +175,7 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 			lastMessage &&
 			"tool_calls" in lastMessage &&
 			(lastMessage as AIMessage).tool_calls &&
-			(lastMessage as AIMessage).tool_calls!.length > 0
+			(lastMessage as AIMessage).tool_calls?.length > 0
 		) {
 			return "tools";
 		}
@@ -212,9 +184,7 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 	}
 
 	/** Route: check if reflection accepted the draft */
-	function checkReflection(
-		state: typeof MessagesAnnotation.State,
-	): "llmCall" | typeof END {
+	function checkReflection(state: typeof MessagesAnnotation.State): "llmCall" | typeof END {
 		const lastMessage = state.messages[state.messages.length - 1];
 
 		// If the last message is from Human (the critique), we must regenerate
@@ -271,12 +241,12 @@ export function toBaseMessages(
 		const content =
 			msg.role === "user" && imageUrls.length > 0
 				? [
-					{ type: "text" as const, text: msg.content },
-					...imageUrls.map((url) => ({
-						type: "image_url" as const,
-						image_url: { url },
-					})),
-				]
+						{ type: "text" as const, text: msg.content },
+						...imageUrls.map((url) => ({
+							type: "image_url" as const,
+							image_url: { url },
+						})),
+					]
 				: msg.content;
 
 		switch (msg.role) {

@@ -6,8 +6,13 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { PlannedWorkoutInput, PlannedWorkoutUpdate } from "@triathlon/types";
 import { Hono } from "hono";
+import { createLogger } from "../../lib/logger.js";
 import { getAuth } from "../../middleware/auth.js";
+import { isResponse, parseBody } from "../../middleware/validate.js";
+
+const log = createLogger({ module: "planned-workouts" });
 
 const SUPABASE_URL = process.env.SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -48,7 +53,7 @@ plannedWorkoutsRoutes.get("/", async (c) => {
 	const { data, error } = await query;
 
 	if (error) {
-		console.error("Failed to fetch planned workouts:", error);
+		log.error({ err: error }, "Failed to fetch planned workouts");
 		return c.json({ error: error.message }, 500);
 	}
 
@@ -78,7 +83,8 @@ plannedWorkoutsRoutes.get("/:id", async (c) => {
 // ── POST /api/planned-workouts ─────────────────────────────────
 plannedWorkoutsRoutes.post("/", async (c) => {
 	const { userId, clubId } = getAuth(c);
-	const body = await c.req.json();
+	const body = await parseBody(c, PlannedWorkoutInput);
+	if (isResponse(body)) return body;
 
 	const supabase = getSupabase();
 	const { data, error } = await supabase
@@ -108,7 +114,7 @@ plannedWorkoutsRoutes.post("/", async (c) => {
 		.single();
 
 	if (error) {
-		console.error("Failed to create planned workout:", error);
+		log.error({ err: error }, "Failed to create planned workout");
 		return c.json({ error: error.message }, 500);
 	}
 
@@ -120,26 +126,22 @@ plannedWorkoutsRoutes.post("/", async (c) => {
 plannedWorkoutsRoutes.patch("/:id", async (c) => {
 	const { userId } = getAuth(c);
 	const id = c.req.param("id");
-	const body = await c.req.json();
+	const body = await parseBody(c, PlannedWorkoutUpdate);
+	if (isResponse(body)) return body;
 
 	// Map camelCase to snake_case for the fields being updated
 	const updateData: Record<string, unknown> = {};
-	if (body.plannedDate !== undefined)
-		updateData.planned_date = body.plannedDate;
-	if (body.plannedTime !== undefined)
-		updateData.planned_time = body.plannedTime;
-	if (body.activityType !== undefined)
-		updateData.activity_type = body.activityType;
+	if (body.plannedDate !== undefined) updateData.planned_date = body.plannedDate;
+	if (body.plannedTime !== undefined) updateData.planned_time = body.plannedTime;
+	if (body.activityType !== undefined) updateData.activity_type = body.activityType;
 	if (body.title !== undefined) updateData.title = body.title;
 	if (body.description !== undefined) updateData.description = body.description;
-	if (body.durationMin !== undefined)
-		updateData.duration_min = body.durationMin;
+	if (body.durationMin !== undefined) updateData.duration_min = body.durationMin;
 	if (body.distanceKm !== undefined) updateData.distance_km = body.distanceKm;
 	if (body.targetTss !== undefined) updateData.target_tss = body.targetTss;
 	if (body.targetRpe !== undefined) updateData.target_rpe = body.targetRpe;
 	if (body.intensity !== undefined) updateData.intensity = body.intensity;
-	if (body.sessionData !== undefined)
-		updateData.session_data = body.sessionData;
+	if (body.sessionData !== undefined) updateData.session_data = body.sessionData;
 	if (body.status !== undefined) updateData.status = body.status;
 	if (body.sortOrder !== undefined) updateData.sort_order = body.sortOrder;
 	if (body.notes !== undefined) updateData.notes = body.notes;
@@ -159,7 +161,7 @@ plannedWorkoutsRoutes.patch("/:id", async (c) => {
 		.single();
 
 	if (error) {
-		console.error("Failed to update planned workout:", error);
+		log.error({ err: error }, "Failed to update planned workout");
 		return c.json({ error: error.message }, 500);
 	}
 
@@ -186,7 +188,7 @@ plannedWorkoutsRoutes.patch("/:id/complete", async (c) => {
 		.single();
 
 	if (error) {
-		console.error("Failed to complete planned workout:", error);
+		log.error({ err: error }, "Failed to complete planned workout");
 		return c.json({ error: error.message }, 500);
 	}
 
@@ -206,7 +208,7 @@ plannedWorkoutsRoutes.delete("/:id", async (c) => {
 		.eq("athlete_id", userId);
 
 	if (error) {
-		console.error("Failed to delete planned workout:", error);
+		log.error({ err: error }, "Failed to delete planned workout");
 		return c.json({ error: error.message }, 500);
 	}
 

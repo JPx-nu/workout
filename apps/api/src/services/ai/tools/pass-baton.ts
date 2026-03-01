@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export function createPassBatonTool(client: SupabaseClient, userId: string) {
 	return tool(
-		async ({ toAthleteId, distanceMeters, notes }: Record<string, any>) => {
+		async ({ toAthleteId, distanceMeters, notes }) => {
 			// 1. Find user's squads
 			const { data: squadMemberships, error: squadErr } = await client
 				.from("squad_members")
@@ -49,7 +49,7 @@ export function createPassBatonTool(client: SupabaseClient, userId: string) {
 			const newTotal = (relay.total_distance_m || 0) + distanceMeters;
 			const isCompleted = newTotal >= relay.goal_distance_m;
 
-			const updatePayload: any = {
+			const updatePayload: Record<string, unknown> = {
 				total_distance_m: newTotal,
 			};
 
@@ -83,7 +83,6 @@ export function createPassBatonTool(client: SupabaseClient, userId: string) {
 			name: "pass_baton",
 			description:
 				"Pass the baton in an active squad relay event. This creates a baton pass record to another squad member and adds distance to the relay total.",
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			schema: z.object({
 				toAthleteId: z
 					.string()
@@ -92,14 +91,12 @@ export function createPassBatonTool(client: SupabaseClient, userId: string) {
 					),
 				distanceMeters: z
 					.number()
-					.describe(
-						"The distance in meters contributed to the relay leg by this pass.",
-					),
+					.describe("The distance in meters contributed to the relay leg by this pass."),
 				notes: z
 					.string()
 					.optional()
 					.describe("Optional message or cheer to send to the next athlete."),
-			}) as any,
+			}),
 		},
 	);
 }

@@ -1,26 +1,11 @@
 "use client";
 
-import {
-	Activity,
-	ChevronRight,
-	Dumbbell,
-	Timer,
-	TrendingUp,
-} from "lucide-react";
+import { Activity, ChevronRight, Dumbbell, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import {
-	Bar,
-	BarChart,
-	Cell,
-	ResponsiveContainer,
-	Tooltip,
-	XAxis,
-	YAxis,
-} from "recharts";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { formatDuration } from "@/hooks/use-workouts";
-import type { StrengthSessionData } from "@/lib/types";
-import type { Workout } from "@/lib/types";
+import type { StrengthSessionData, Workout } from "@/lib/types";
 
 // Reusing types from hook
 type StrengthMetrics = {
@@ -49,8 +34,7 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 			const data = w.rawData as StrengthSessionData | undefined;
 			if (!data) return acc;
 			const sessionVol = data.exercises.reduce(
-				(sAcc, ex) =>
-					sAcc + ex.sets.reduce((setAcc, s) => setAcc + s.weightKg * s.reps, 0),
+				(sAcc, ex) => sAcc + ex.sets.reduce((setAcc, s) => setAcc + s.weightKg * s.reps, 0),
 				0,
 			);
 			return acc + sessionVol;
@@ -117,10 +101,7 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 						</div>
 						<div className="text-xl lg:text-2xl font-bold">{stat.value}</div>
 						{stat.sub && (
-							<div
-								className="text-xs mt-1"
-								style={{ color: "var(--color-text-muted)" }}
-							>
+							<div className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
 								{stat.sub}
 							</div>
 						)}
@@ -162,10 +143,7 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 										color: "var(--color-text-primary)",
 										backdropFilter: "blur(12px)",
 									}}
-									formatter={(val: number | undefined) => [
-										val ? `${val} kg` : "0 kg",
-										"Volume",
-									]}
+									formatter={(val: number | undefined) => [val ? `${val} kg` : "0 kg", "Volume"]}
 								/>
 								<Bar dataKey="volume" radius={[4, 4, 0, 0]}>
 									{chartData.map((entry, index) => (
@@ -192,9 +170,7 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 						</h3>
 						<div className="space-y-3">
 							{muscles.length === 0 ? (
-								<div className="text-sm text-center py-4 text-muted">
-									No data this week
-								</div>
+								<div className="text-sm text-center py-4 text-muted">No data this week</div>
 							) : (
 								muscles.map((m) => (
 									<div key={m.name} className="space-y-1">
@@ -220,10 +196,7 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 					{/* Quick Add? Or PRs? */}
 					<div className="glass-card p-5 flex items-center justify-between">
 						<div className="text-sm font-medium">Log Workout</div>
-						<Link
-							href="/dashboard/workouts/new"
-							className="btn-primary text-xs px-3 py-1.5 h-auto"
-						>
+						<Link href="/dashboard/workouts/new" className="btn-primary text-xs px-3 py-1.5 h-auto">
 							+ New
 						</Link>
 					</div>
@@ -233,10 +206,7 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 			{/* Recent Workouts List (Detailed) */}
 			<div className="glass-card p-4 lg:p-6">
 				<div className="flex items-center justify-between mb-4">
-					<h3
-						className="text-sm font-semibold"
-						style={{ color: "var(--color-text-secondary)" }}
-					>
+					<h3 className="text-sm font-semibold" style={{ color: "var(--color-text-secondary)" }}>
 						Recent Workouts
 					</h3>
 					<Link
@@ -252,9 +222,7 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 						const data = w.rawData as StrengthSessionData | undefined;
 						const volume =
 							data?.exercises.reduce(
-								(act, ex) =>
-									act +
-									ex.sets.reduce((sact, s) => sact + s.weightKg * s.reps, 0),
+								(act, ex) => act + ex.sets.reduce((sact, s) => sact + s.weightKg * s.reps, 0),
 								0,
 							) || 0;
 						const exerciseCount = data?.exercises.length || 0;
@@ -267,23 +235,16 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 								<div
 									className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
 									style={{
-										background:
-											"color-mix(in oklch, var(--color-strength), transparent 85%)",
+										background: "color-mix(in oklch, var(--color-strength), transparent 85%)",
 									}}
 								>
-									<Dumbbell
-										size={18}
-										style={{ color: "var(--color-strength)" }}
-									/>
+									<Dumbbell size={18} style={{ color: "var(--color-strength)" }} />
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="text-sm font-medium truncate">
 										{data?.focus || w.notes || "Strength Session"}
 									</div>
-									<div
-										className="text-xs"
-										style={{ color: "var(--color-text-muted)" }}
-									>
+									<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 										{new Date(w.startedAt).toLocaleDateString("en-US", {
 											weekday: "short",
 											month: "short",
@@ -293,13 +254,8 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 									</div>
 								</div>
 								<div className="text-right shrink-0">
-									<div className="text-sm font-medium">
-										{formatDuration(w.durationSec)}
-									</div>
-									<div
-										className="text-xs"
-										style={{ color: "var(--color-text-muted)" }}
-									>
+									<div className="text-sm font-medium">{formatDuration(w.durationSec)}</div>
+									<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 										{volume > 0 ? `${(volume / 1000).toFixed(1)}k kg` : "—"}
 									</div>
 								</div>

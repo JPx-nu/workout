@@ -9,10 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { AI_CONFIG } from "../../../config/ai.js";
 
-export function createMatchDocumentsTool(
-	client: SupabaseClient,
-	clubId: string,
-) {
+export function createMatchDocumentsTool(client: SupabaseClient, clubId: string) {
 	return tool(
 		async ({ query, threshold = 0.7, limit = 5 }) => {
 			try {
@@ -67,10 +64,7 @@ export function createMatchDocumentsTool(
 					.number()
 					.optional()
 					.describe("Minimum similarity threshold (0-1). Default 0.7"),
-				limit: z
-					.number()
-					.optional()
-					.describe("Maximum number of documents to return. Default 5"),
+				limit: z.number().optional().describe("Maximum number of documents to return. Default 5"),
 			}),
 		},
 	);

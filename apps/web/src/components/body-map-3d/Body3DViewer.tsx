@@ -2,14 +2,7 @@
 
 import { Html, OrbitControls, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import {
-	Suspense,
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { MuscleFatigue } from "@/lib/types";
 
@@ -183,8 +176,7 @@ function BodyModel({
 					depthWrite: false,
 				});
 			} else if (userData.type === "muscle") {
-				const meshName =
-					userData.name || userData.nameDetail || mesh.name || "";
+				const meshName = userData.name || userData.nameDetail || mesh.name || "";
 				const bodyPart = findBodyPart(meshName);
 				const level = bodyPart ? fatigueLookup[bodyPart] : undefined;
 
@@ -290,7 +282,6 @@ function BodyModel({
 
 	const handlePointerOut = useCallback(() => setHovered(null), []);
 
-
 	const handleClick = useCallback(
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(e: any) => {
@@ -356,31 +347,20 @@ function ErrorFallback() {
 /* ═══════════════════════════════════════════════════
    MAIN EXPORT
    ═══════════════════════════════════════════════════ */
-export default function Body3DViewer({
-	fatigueData,
-}: {
-	fatigueData: MuscleFatigue[];
-}) {
+export default function Body3DViewer({ fatigueData }: { fatigueData: MuscleFatigue[] }) {
 	const [selectedMuscle, setSelectedMuscle] = useState<{
 		name: string;
 		bodyPart: string | null;
 	} | null>(null);
 	const [hasError, setHasError] = useState(false);
 
-	const handleMeshClick = useCallback(
-		(name: string, bodyPart: string | null) => {
-			setSelectedMuscle((prev) =>
-				prev?.name === name ? null : { name, bodyPart },
-			);
-		},
-		[],
-	);
+	const handleMeshClick = useCallback((name: string, bodyPart: string | null) => {
+		setSelectedMuscle((prev) => (prev?.name === name ? null : { name, bodyPart }));
+	}, []);
 
 	const selectedFatigue = useMemo(() => {
 		if (!selectedMuscle?.bodyPart) return null;
-		return (
-			fatigueData.find((f) => f.bodyPart === selectedMuscle.bodyPart) ?? null
-		);
+		return fatigueData.find((f) => f.bodyPart === selectedMuscle.bodyPart) ?? null;
 	}, [selectedMuscle, fatigueData]);
 
 	if (hasError) {
@@ -392,8 +372,7 @@ export default function Body3DViewer({
 					minHeight: "500px",
 					borderRadius: "16px",
 					border: "1px solid rgba(255,255,255,0.08)",
-					background:
-						"linear-gradient(135deg, rgba(13,17,23,0.95) 0%, rgba(22,27,45,0.95) 100%)",
+					background: "linear-gradient(135deg, rgba(13,17,23,0.95) 0%, rgba(22,27,45,0.95) 100%)",
 				}}
 			>
 				<ErrorFallback />
@@ -412,11 +391,9 @@ export default function Body3DViewer({
 						minHeight: "500px",
 						borderRadius: "16px",
 						border: "1px solid rgba(255,255,255,0.08)",
-						background:
-							"linear-gradient(135deg, rgba(13,17,23,0.95) 0%, rgba(22,27,45,0.95) 100%)",
+						background: "linear-gradient(135deg, rgba(13,17,23,0.95) 0%, rgba(22,27,45,0.95) 100%)",
 						backdropFilter: "blur(20px)",
-						boxShadow:
-							"0 0 80px rgba(99,102,241,0.06), inset 0 1px 0 rgba(255,255,255,0.04)",
+						boxShadow: "0 0 80px rgba(99,102,241,0.06), inset 0 1px 0 rgba(255,255,255,0.04)",
 					}}
 				>
 					<Canvas
@@ -441,16 +418,8 @@ export default function Body3DViewer({
 
 						{/* Lighting rig — soft, dramatic */}
 						<ambientLight intensity={0.3} />
-						<directionalLight
-							position={[5, 8, 5]}
-							intensity={0.7}
-							color="#e2e8f0"
-						/>
-						<directionalLight
-							position={[-5, 3, -5]}
-							intensity={0.25}
-							color="#94a3b8"
-						/>
+						<directionalLight position={[5, 8, 5]} intensity={0.7} color="#e2e8f0" />
+						<directionalLight position={[-5, 3, -5]} intensity={0.25} color="#94a3b8" />
 						{/* Rim lights for silhouette pop */}
 						<pointLight
 							position={[-3, 2, -2]}
@@ -476,10 +445,7 @@ export default function Body3DViewer({
 						/>
 
 						<Suspense fallback={<Loader />}>
-							<BodyModel
-								fatigueData={fatigueData}
-								onMeshClick={handleMeshClick}
-							/>
+							<BodyModel fatigueData={fatigueData} onMeshClick={handleMeshClick} />
 						</Suspense>
 
 						<OrbitControls
@@ -557,25 +523,17 @@ export default function Body3DViewer({
 						<>
 							<div className="flex items-start justify-between gap-3">
 								<div>
-									<h3
-										className="text-lg font-bold"
-										style={{ color: "#e2e8f0" }}
-									>
+									<h3 className="text-lg font-bold" style={{ color: "#e2e8f0" }}>
 										{selectedMuscle.name}
 									</h3>
-									<p
-										className="text-xs mt-0.5"
-										style={{ color: "rgba(255,255,255,0.35)" }}
-									>
+									<p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
 										3D Anatomy View
 									</p>
 								</div>
 								<span
 									className="px-2.5 py-1 rounded-full text-xs font-bold"
 									style={{
-										color: getFatigueTheme(
-											selectedFatigue.level,
-										).base.getStyle(),
+										color: getFatigueTheme(selectedFatigue.level).base.getStyle(),
 										background: `${getFatigueTheme(selectedFatigue.level).base.getStyle()}18`,
 										boxShadow: `0 0 12px ${getFatigueTheme(selectedFatigue.level).base.getStyle()}22`,
 									}}
@@ -600,9 +558,7 @@ export default function Body3DViewer({
 											cy="18"
 											r="14"
 											fill="none"
-											stroke={getFatigueTheme(
-												selectedFatigue.level,
-											).base.getStyle()}
+											stroke={getFatigueTheme(selectedFatigue.level).base.getStyle()}
 											strokeWidth="2.5"
 											strokeDasharray={`${(selectedFatigue.level / 100) * 88} 88`}
 											strokeLinecap="round"
@@ -614,19 +570,14 @@ export default function Body3DViewer({
 									<span
 										className="absolute inset-0 flex items-center justify-center text-lg font-bold"
 										style={{
-											color: getFatigueTheme(
-												selectedFatigue.level,
-											).base.getStyle(),
+											color: getFatigueTheme(selectedFatigue.level).base.getStyle(),
 										}}
 									>
 										{selectedFatigue.level}%
 									</span>
 								</div>
 								<div className="space-y-1">
-									<div
-										className="text-sm font-medium"
-										style={{ color: "#e2e8f0" }}
-									>
+									<div className="text-sm font-medium" style={{ color: "#e2e8f0" }}>
 										{selectedFatigue.muscle}
 									</div>
 									<div
@@ -645,16 +596,10 @@ export default function Body3DViewer({
 					) : (
 						<div className="text-center py-8">
 							<div className="text-3xl mb-3 opacity-50">🦴</div>
-							<p
-								className="text-sm font-medium"
-								style={{ color: "rgba(255,255,255,0.6)" }}
-							>
+							<p className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>
 								Select a muscle
 							</p>
-							<p
-								className="text-xs mt-1"
-								style={{ color: "rgba(255,255,255,0.25)" }}
-							>
+							<p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.25)" }}>
 								Click any highlighted muscle on the 3D model
 							</p>
 						</div>
@@ -681,10 +626,7 @@ export default function Body3DViewer({
 										className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-200"
 										style={{ background: "rgba(255,255,255,0.02)" }}
 									>
-										<span
-											className="text-xs flex-1"
-											style={{ color: "rgba(255,255,255,0.6)" }}
-										>
+										<span className="text-xs flex-1" style={{ color: "rgba(255,255,255,0.6)" }}>
 											{f.muscle}
 										</span>
 										<div

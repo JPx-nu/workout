@@ -28,11 +28,7 @@ const navItems = [
 	{ href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
-export default function DashboardLayout({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const { user, isLoading: authLoading, signOut } = useAuth();
@@ -84,8 +80,7 @@ export default function DashboardLayout({
 					<div
 						className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
 						style={{
-							background:
-								"linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))",
+							background: "linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))",
 						}}
 					>
 						TRI
@@ -101,8 +96,7 @@ export default function DashboardLayout({
 				<nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
 					{navItems.map(({ href, label, icon: Icon }) => {
 						const isActive =
-							pathname === href ||
-							(href !== "/dashboard" && pathname.startsWith(href));
+							pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 						return (
 							<Link
 								key={href}
@@ -117,8 +111,7 @@ export default function DashboardLayout({
 												background:
 													"linear-gradient(135deg, oklch(0.65 0.18 170 / 0.2), oklch(0.65 0.18 170 / 0.08))",
 												color: "var(--color-brand-light)",
-												boxShadow:
-													"inset 0 0 0 1px oklch(0.65 0.18 170 / 0.15)",
+												boxShadow: "inset 0 0 0 1px oklch(0.65 0.18 170 / 0.15)",
 											}
 										: { color: "var(--color-text-secondary)" }
 								}
@@ -131,37 +124,25 @@ export default function DashboardLayout({
 				</nav>
 
 				{/* Theme toggle */}
-				<div
-					className="px-3 py-2 border-t"
-					style={{ borderColor: "var(--color-glass-border)" }}
-				>
+				<div className="px-3 py-2 border-t" style={{ borderColor: "var(--color-glass-border)" }}>
 					<ThemeToggle collapsed={collapsed} />
 				</div>
 
 				{/* User section */}
-				<div
-					className="px-3 py-4 border-t"
-					style={{ borderColor: "var(--color-glass-border)" }}
-				>
+				<div className="px-3 py-4 border-t" style={{ borderColor: "var(--color-glass-border)" }}>
 					<div className="flex items-center gap-3 px-3 py-2">
 						<div
 							className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
 							style={{
-								background:
-									"linear-gradient(135deg, var(--color-swim), var(--color-brand))",
+								background: "linear-gradient(135deg, var(--color-swim), var(--color-brand))",
 							}}
 						>
 							{initials}
 						</div>
 						{!collapsed && (
 							<div className="min-w-0 flex-1 animate-fade-in">
-								<div className="text-sm font-medium truncate">
-									{profile.displayName}
-								</div>
-								<div
-									className="text-xs truncate"
-									style={{ color: "var(--color-text-muted)" }}
-								>
+								<div className="text-sm font-medium truncate">{profile.displayName}</div>
+								<div className="text-xs truncate" style={{ color: "var(--color-text-muted)" }}>
 									{profile.clubName}
 								</div>
 							</div>
@@ -208,9 +189,7 @@ export default function DashboardLayout({
 					<span className="font-semibold text-sm">Triathlon AI</span>
 				</div>
 
-				<div className="p-4 lg:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto">
-					{children}
-				</div>
+				<div className="p-4 lg:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto">{children}</div>
 			</main>
 
 			{/* PWA install prompt */}

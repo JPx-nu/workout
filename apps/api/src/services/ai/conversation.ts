@@ -70,8 +70,7 @@ export async function loadHistory(
 		.order("created_at", { ascending: true })
 		.limit(limit);
 
-	if (error)
-		throw new Error(`Failed to load message history: ${error.message}`);
+	if (error) throw new Error(`Failed to load message history: ${error.message}`);
 	return data ?? [];
 }
 
@@ -106,8 +105,7 @@ export async function updateConversationTitle(
 	conversationId: string,
 	firstMessage: string,
 ): Promise<void> {
-	const title =
-		firstMessage.length > 60 ? firstMessage.slice(0, 57) + "..." : firstMessage;
+	const title = firstMessage.length > 60 ? `${firstMessage.slice(0, 57)}...` : firstMessage;
 
 	await client.from("conversations").update({ title }).eq("id", conversationId);
 }

@@ -1,6 +1,5 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { createClient } from "@supabase/supabase-js";
-import { AI_CONFIG } from "./config/ai.js";
 import { createAgent } from "./services/ai/graph.js";
 
 async function runTest() {
@@ -11,9 +10,7 @@ async function runTest() {
 	const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 	if (!supabaseUrl || !supabaseKey) {
-		console.error(
-			"❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment variables.",
-		);
+		console.error("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment variables.");
 		process.exit(1);
 	}
 
@@ -22,11 +19,10 @@ async function runTest() {
 	// 2. Fetch or Create a valid athlete profile to test with
 	console.log("Logging in as test user...");
 
-	const { data: authData, error: authErr } =
-		await client.auth.signInWithPassword({
-			email: "tester@jpx.com",
-			password: "password123",
-		});
+	const { data: authData, error: authErr } = await client.auth.signInWithPassword({
+		email: "tester@jpx.com",
+		password: "password123",
+	});
 
 	if (authErr || !authData.user) {
 		console.error("❌ Failed to log in test user:", authErr?.message);
@@ -61,10 +57,18 @@ async function runTest() {
 
 	// 4. Run Test Prompts
 	const prompts = [
+		// Phase 1 tests
+		"What does my workout history look like for the last 5 days?",
+		"What is my current training plan and what's on the schedule for tomorrow?",
+		// Phase 2 tests
+		"Can you log a new swim workout for me? Today, 45 minutes, 2000 meters.",
+		"I just hurt my right shoulder, it's pretty bad, maybe an 8/10.",
+		// Phase 3 tests
 		"Please remember this fact: I am training for an Ironman 70.3 in September and I prefer morning workouts. Save this memory.",
 		"Can you search my past workouts and tell me the last time I did a threshold run? Look for anything related to feeling exhausted or tired.",
-		"Please analyze my biometric trends over the last 30 days. Am I sleeping well?",
-		"Can you forecast my injury risk using my recent training load (ACWR)?",
+		// Phase 4 tests
+		"Who is leading my squad leaderboard this week?",
+		"Can you generate a 3-week 10k running plan for me? I can run 4 times a week.",
 	];
 
 	const messageHistory: any[] = [];
@@ -99,10 +103,7 @@ async function runTest() {
 			// keep AI message in history
 			messageHistory.push(aiMessage);
 		} catch (err) {
-			console.error(
-				`❌ Error during agent invocation for prompt ${i + 1}:`,
-				err,
-			);
+			console.error(`❌ Error during agent invocation for prompt ${i + 1}:`, err);
 		}
 	}
 

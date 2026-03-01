@@ -5,31 +5,33 @@
 // ============================================================
 
 function env(key: string, fallback = ""): string {
-    return process.env[key] || fallback;
+	return process.env[key] || fallback;
 }
 
 export const INTEGRATION_CONFIG = {
-    /** Base URL for this API (used to build OAuth callback URLs) */
-    apiBaseUrl: env("API_URL", "http://localhost:8787"),
+	/** Base URL for this API (used to build OAuth callback URLs) */
+	apiBaseUrl: env("API_URL", "http://localhost:8787"),
 
-    STRAVA: {
-        clientId: env("STRAVA_CLIENT_ID"),
-        clientSecret: env("STRAVA_CLIENT_SECRET"),
-        verifyToken: env("STRAVA_VERIFY_TOKEN", "jpx-triathlon-strava"),
-    },
+	STRAVA: {
+		clientId: env("STRAVA_CLIENT_ID"),
+		clientSecret: env("STRAVA_CLIENT_SECRET"),
+		verifyToken: env("STRAVA_VERIFY_TOKEN", "jpx-triathlon-strava"),
+	},
 
-    GARMIN: {
-        consumerKey: env("GARMIN_CONSUMER_KEY"),
-        consumerSecret: env("GARMIN_CONSUMER_SECRET"),
-    },
+	GARMIN: {
+		consumerKey: env("GARMIN_CONSUMER_KEY"),
+		consumerSecret: env("GARMIN_CONSUMER_SECRET"),
+	},
 
-    POLAR: {
-        clientId: env("POLAR_CLIENT_ID"),
-        clientSecret: env("POLAR_CLIENT_SECRET"),
-    },
+	POLAR: {
+		clientId: env("POLAR_CLIENT_ID"),
+		clientSecret: env("POLAR_CLIENT_SECRET"),
+		webhookSecret: env("POLAR_WEBHOOK_SECRET"),
+	},
 
-    WAHOO: {
-        clientId: env("WAHOO_CLIENT_ID"),
-        clientSecret: env("WAHOO_CLIENT_SECRET"),
-    },
+	WAHOO: {
+		clientId: env("WAHOO_CLIENT_ID"),
+		clientSecret: env("WAHOO_CLIENT_SECRET"),
+		webhookToken: env("WAHOO_WEBHOOK_TOKEN"),
+	},
 } as const;

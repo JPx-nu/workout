@@ -55,8 +55,7 @@ export default function CoachPage() {
 					<div
 						className="w-10 h-10 rounded-xl flex items-center justify-center animate-pulse-glow"
 						style={{
-							background:
-								"linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))",
+							background: "linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))",
 						}}
 					>
 						<Bot size={20} />
@@ -86,53 +85,39 @@ export default function CoachPage() {
 												: "linear-gradient(135deg, var(--color-swim), oklch(0.5 0.15 220))",
 									}}
 								>
-									{msg.role === "assistant" ? (
-										<Bot size={14} />
-									) : (
-										<User size={14} />
-									)}
+									{msg.role === "assistant" ? <Bot size={14} /> : <User size={14} />}
 								</div>
 								<div
 									className={`glass-card p-3 lg:p-4 max-w-[85%] lg:max-w-[70%]`}
 									style={
 										msg.role === "user"
 											? {
-												background:
-													"oklch(from var(--color-brand) l c h / 0.12)",
-											}
+													background: "oklch(from var(--color-brand) l c h / 0.12)",
+												}
 											: undefined
 									}
 								>
 									{/* Image thumbnails */}
-									{msg.metadata?.imageUrls &&
-										msg.metadata.imageUrls.length > 0 && (
-											<div className="flex flex-wrap gap-2 mb-2">
-												{msg.metadata.imageUrls.map((url, i) => (
-													// eslint-disable-next-line @next/next/no-img-element
-													<img
-														key={i}
-														src={url}
-														alt={`Attached image ${i + 1}`}
-														className="rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
-														style={{
-															width:
-																msg.metadata!.imageUrls!.length === 1
-																	? "240px"
-																	: "120px",
-															height:
-																msg.metadata!.imageUrls!.length === 1
-																	? "180px"
-																	: "90px",
-															border: "1px solid var(--color-glass-border)",
-														}}
-														onClick={() => window.open(url, "_blank")}
-													/>
-												))}
-											</div>
-										)}
-									<div className="text-sm leading-relaxed whitespace-pre-wrap">
-										{msg.content}
-									</div>
+									{msg.metadata?.imageUrls && msg.metadata.imageUrls.length > 0 && (
+										<div className="flex flex-wrap gap-2 mb-2">
+											{msg.metadata.imageUrls.map((url, i) => (
+												// eslint-disable-next-line @next/next/no-img-element
+												<img
+													key={i}
+													src={url}
+													alt={`Attached image ${i + 1}`}
+													className="rounded-lg object-cover cursor-pointer transition-transform hover:scale-105"
+													style={{
+														width: msg.metadata?.imageUrls?.length === 1 ? "240px" : "120px",
+														height: msg.metadata?.imageUrls?.length === 1 ? "180px" : "90px",
+														border: "1px solid var(--color-glass-border)",
+													}}
+													onClick={() => window.open(url, "_blank")}
+												/>
+											))}
+										</div>
+									)}
+									<div className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</div>
 									{msg.metadata?.sources && (
 										<div className="mt-2 flex flex-wrap gap-1">
 											{msg.metadata.sources.map((src) => (
@@ -307,10 +292,7 @@ export default function CoachPage() {
 						onClick={() => fileInputRef.current?.click()}
 						className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors hover-surface cursor-pointer"
 						style={{
-							color:
-								attachedFiles.length > 0
-									? "var(--color-brand)"
-									: "var(--color-text-muted)",
+							color: attachedFiles.length > 0 ? "var(--color-brand)" : "var(--color-text-muted)",
 							border: "1px solid var(--color-glass-border)",
 						}}
 						title="Attach image (workout schedule, equipment photo)"
@@ -378,10 +360,7 @@ export default function CoachPage() {
 						<History size={14} style={{ color: "var(--color-brand)" }} />
 						Conversations
 					</h3>
-					<p
-						className="text-[11px] mt-0.5"
-						style={{ color: "var(--color-text-muted)" }}
-					>
+					<p className="text-[11px] mt-0.5" style={{ color: "var(--color-text-muted)" }}>
 						{conversations.length} recent chats
 					</p>
 				</div>
@@ -399,12 +378,12 @@ export default function CoachPage() {
 								style={
 									isActive
 										? {
-											background: "oklch(0.65 0.18 170 / 0.1)",
-											border: "1px solid oklch(0.65 0.18 170 / 0.2)",
-										}
+												background: "oklch(0.65 0.18 170 / 0.1)",
+												border: "1px solid oklch(0.65 0.18 170 / 0.2)",
+											}
 										: {
-											border: "1px solid transparent",
-										}
+												border: "1px solid transparent",
+											}
 								}
 							>
 								<div className="flex items-start gap-2.5">
@@ -412,9 +391,7 @@ export default function CoachPage() {
 										size={14}
 										className="shrink-0 mt-0.5"
 										style={{
-											color: isActive
-												? "var(--color-brand)"
-												: "var(--color-text-muted)",
+											color: isActive ? "var(--color-brand)" : "var(--color-text-muted)",
 										}}
 									/>
 									<div className="min-w-0 flex-1">

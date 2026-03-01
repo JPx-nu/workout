@@ -1,21 +1,27 @@
+// OTel MUST be imported before all other modules
+import "./lib/telemetry.js";
+
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
+import { swaggerUI } from "@hono/swagger-ui";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
+import { logger } from "./lib/logger.js";
 import { extractClaims, jwtAuth } from "./middleware/auth.js";
 import { RATE_LIMITS, rateLimit } from "./middleware/rate-limit.js";
 import { aiRoutes } from "./routes/ai/chat.js";
+import { aiStreamRoutes } from "./routes/ai/stream.js";
+import { integrationRoutes } from "./routes/integrations/index.js";
 import { plannedWorkoutsRoutes } from "./routes/planned-workouts/index.js";
 import { webhookRoutes } from "./routes/webhooks/index.js";
-import { integrationRoutes } from "./routes/integrations/index.js";
+import { stopPolling } from "./services/integrations/webhook-queue.js";
 
-const app = new Hono();
+const app = new OpenAPIHono();
 
 // ── Global error handler ───────────────────────────────────────
 app.onError((err, c) => {
-	console.error("Unhandled error:", err);
+	logger.error({ err, path: c.req.path, method: c.req.method }, "Unhandled error");
 	return c.json(
 		{
 			error: err.message || "Internal Server Error",
@@ -26,7 +32,6 @@ app.onError((err, c) => {
 });
 
 // ── Global middleware ──────────────────────────────────────────
-app.use("*", logger());
 app.use("*", secureHeaders());
 app.use(
 	"*",
@@ -77,15 +82,29 @@ app.use("/api/*", jwtAuth(), extractClaims);
 // Rate limiting for AI endpoints
 app.use("/api/ai/*", rateLimit(RATE_LIMITS.aiChat));
 
-// Route groups
-app.route("/api/ai", aiRoutes);
-app.route("/api/planned-workouts", plannedWorkoutsRoutes);
-app.route("/api/integrations", integrationRoutes);
+// Route groups — chained for Hono RPC type inference
+const routes = app
+	.route("/api/ai", aiRoutes)
+	.route("/api/ai", aiStreamRoutes)
+	.route("/api/planned-workouts", plannedWorkoutsRoutes)
+	.route("/api/integrations", integrationRoutes);
+
+// ── OpenAPI documentation ──────────────────────────────────────
+app.doc("/api/doc", {
+	openapi: "3.1.0",
+	info: {
+		title: "Triathlon AI Coaching API",
+		version: "0.1.0",
+		description: "REST API for the triathlon AI coaching platform",
+	},
+});
+
+app.get("/api/reference", swaggerUI({ url: "/api/doc" }));
 
 // ── Start server ───────────────────────────────────────────────
-const port = parseInt(process.env.PORT || "8787");
+const port = parseInt(process.env.PORT || "8787", 10);
 
-console.log(`🏊‍♂️🚴‍♂️🏃‍♂️ Triathlon AI API server starting on port ${port}`);
+logger.info({ port }, "Triathlon AI API server starting");
 
 const server = serve({
 	fetch: app.fetch,
@@ -95,14 +114,15 @@ const server = serve({
 // ── Graceful shutdown ──────────────────────────────────────────
 // Ensures in-flight requests complete before Azure restarts the process
 function shutdown(signal: string) {
-	console.log(`\n🛑 ${signal} received — shutting down gracefully…`);
+	logger.info({ signal }, "Shutdown signal received — closing gracefully");
+	stopPolling();
 	server.close(() => {
-		console.log("✅ Server closed. Goodbye.");
+		logger.info("Server closed");
 		process.exit(0);
 	});
 	// Force exit after 10s if connections don't drain
 	setTimeout(() => {
-		console.warn("⚠️  Forced shutdown after 10s timeout");
+		logger.warn("Forced shutdown after 10s timeout");
 		process.exit(1);
 	}, 10_000).unref();
 }
@@ -110,5 +130,6 @@ function shutdown(signal: string) {
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
+// Export for Hono RPC client type inference
+export type AppType = typeof routes;
 export default app;
-

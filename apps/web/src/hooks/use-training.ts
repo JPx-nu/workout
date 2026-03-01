@@ -3,14 +3,11 @@
 // Fetches from Supabase training_plans + events tables
 // ============================================================
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { daysUntil, progressPercent } from "@triathlon/core";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/supabase-provider";
-import type {
-	TrainingPlan,
-	TrainingSession,
-	UpcomingEvent,
-} from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import type { TrainingPlan, TrainingSession, UpcomingEvent } from "@/lib/types";
 
 const emptyPlan: TrainingPlan = {
 	id: "",
@@ -114,37 +111,20 @@ export function useTraining() {
 	useEffect(() => {
 		fetchTraining();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [user]);
+	}, [fetchTraining]);
 
 	const toggleSession = (index: number) => {
-		setSessions((prev) =>
-			prev.map((s, i) => (i === index ? { ...s, done: !s.done } : s)),
-		);
+		setSessions((prev) => prev.map((s, i) => (i === index ? { ...s, done: !s.done } : s)));
 	};
 
-	const now = useMemo(() => Date.now(), []);
-
-	const daysUntilEvent = Math.max(
-		0,
-		Math.ceil(
-			(new Date(plan.eventDate).getTime() - now) / (1000 * 60 * 60 * 24),
-		),
-	);
-
+	const daysUntilEvent = daysUntil(plan.eventDate);
 	const completedCount = sessions.filter((s) => s.done).length;
-	const progressPercent =
-		plan.totalWeeks > 0
-			? Math.round((plan.currentWeek / plan.totalWeeks) * 100)
-			: 0;
+	const progressPct = progressPercent(plan.currentWeek, plan.totalWeeks);
 
-	const eventsWithDays: Array<UpcomingEvent & { daysUntil: number }> =
-		events.map((e) => ({
-			...e,
-			daysUntil: Math.max(
-				0,
-				Math.ceil((new Date(e.date).getTime() - now) / (1000 * 60 * 60 * 24)),
-			),
-		}));
+	const eventsWithDays: Array<UpcomingEvent & { daysUntil: number }> = events.map((e) => ({
+		...e,
+		daysUntil: daysUntil(e.date),
+	}));
 
 	return {
 		plan: { ...plan, thisWeek: sessions },
@@ -152,7 +132,7 @@ export function useTraining() {
 		daysUntilEvent,
 		completedCount,
 		totalSessions: sessions.length,
-		progressPercent,
+		progressPercent: progressPct,
 		toggleSession,
 		isLoading,
 		error,

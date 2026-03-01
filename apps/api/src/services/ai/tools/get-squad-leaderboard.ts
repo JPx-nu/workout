@@ -2,17 +2,12 @@ import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-export function createGetSquadLeaderboardTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createGetSquadLeaderboardTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ timeframeDays }) => {
 			try {
 				const days = timeframeDays || 7;
-				const threshold = new Date(
-					Date.now() - days * 24 * 60 * 60 * 1000,
-				).toISOString();
+				const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
 				// 1. Get the squads the user is a member of
 				const { data: squadMemberships, error: squadErr } = await client
@@ -53,13 +48,8 @@ export function createGetSquadLeaderboardTool(
 				const leaderboard = athleteIds
 					.map((aId) => {
 						const athleteWorkouts = workouts.filter((w) => w.athlete_id === aId);
-						const totalDurationS = athleteWorkouts.reduce(
-							(sum, w) => sum + (w.duration_s || 0),
-							0,
-						);
-						const profile = allMembers.find(
-							(m) => m.athlete_id === aId,
-						)?.profiles;
+						const totalDurationS = athleteWorkouts.reduce((sum, w) => sum + (w.duration_s || 0), 0);
+						const profile = allMembers.find((m) => m.athlete_id === aId)?.profiles;
 						const displayName =
 							profile && typeof profile === "object" && "display_name" in profile
 								? profile.display_name
@@ -88,8 +78,7 @@ export function createGetSquadLeaderboardTool(
 					],
 					leaderboard: leaderboard.map((l, index) => ({
 						rank: index + 1,
-						athlete:
-							l.athleteId === userId ? `${l.displayName} (You)` : l.displayName,
+						athlete: l.athleteId === userId ? `${l.displayName} (You)` : l.displayName,
 						workouts: l.totalWorkouts,
 						minutes: l.totalDurationMinutes,
 					})),
@@ -106,10 +95,7 @@ export function createGetSquadLeaderboardTool(
 			description:
 				"Gets the workout leaderboard for the athlete's squads, ranking members by accumulated workout minutes over the specified timeframe.",
 			schema: z.object({
-				timeframeDays: z
-					.number()
-					.optional()
-					.describe("Number of days to look back"),
+				timeframeDays: z.number().optional().describe("Number of days to look back"),
 			}),
 		},
 	);

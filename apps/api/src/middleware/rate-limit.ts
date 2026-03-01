@@ -1,13 +1,18 @@
 /**
- * Rate Limiter Middleware — Sliding window, per-IP
+ * Rate Limiter Middleware — PostgreSQL-backed sliding window
  *
- * In-memory sliding window rate limiter for Hono.
+ * Distributed rate limiting that works across multiple API instances.
+ * Uses a PostgreSQL function for atomic check-and-increment.
+ * Falls back to allowing requests when DB is unreachable (fail-open).
+ *
  * Uses Draft 7 RateLimit response headers.
- *
- * TODO: Replace with Redis/KV store for multi-instance deployments.
  */
 
+import { createClient } from "@supabase/supabase-js";
 import { createMiddleware } from "hono/factory";
+import { createLogger } from "../lib/logger.js";
+
+const log = createLogger({ module: "rate-limit" });
 
 // ── Configuration ──────────────────────────────────────────────
 
@@ -25,30 +30,16 @@ export const RATE_LIMITS = {
 	webhooks: { limit: 200, windowSeconds: 60 } satisfies RateLimitConfig,
 } as const;
 
-// ── Sliding Window Store ───────────────────────────────────────
+// ── Supabase client for rate limiting ─────────────────────────
 
-interface WindowEntry {
-	timestamps: number[];
+function getSupabase() {
+	return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 }
-
-const store = new Map<string, WindowEntry>();
-
-// Clean up stale entries every 5 minutes
-setInterval(() => {
-	const now = Date.now();
-	for (const [key, entry] of store) {
-		entry.timestamps = entry.timestamps.filter((t) => now - t < 120_000);
-		if (entry.timestamps.length === 0) {
-			store.delete(key);
-		}
-	}
-}, 300_000);
 
 // ── Middleware Factory ─────────────────────────────────────────
 
 export function rateLimit(config: RateLimitConfig) {
 	const { limit, windowSeconds } = config;
-	const windowMs = windowSeconds * 1000;
 
 	return createMiddleware(async (c, next) => {
 		const clientId =
@@ -57,41 +48,46 @@ export function rateLimit(config: RateLimitConfig) {
 			"unknown";
 
 		const key = `${clientId}:${c.req.path}`;
-		const now = Date.now();
 
-		let entry = store.get(key);
-		if (!entry) {
-			entry = { timestamps: [] };
-			store.set(key, entry);
+		let remaining: number;
+
+		try {
+			const supabase = getSupabase();
+			const { data, error } = await supabase.rpc("check_rate_limit", {
+				rate_key: key,
+				max_requests: limit,
+				window_seconds: windowSeconds,
+			});
+
+			if (error) {
+				log.warn({ err: error }, "Rate limit DB check failed, allowing request");
+				remaining = limit; // fail open
+			} else {
+				remaining = data as number;
+			}
+		} catch {
+			log.warn("Rate limit DB unreachable, allowing request");
+			remaining = limit; // fail open
 		}
 
-		// Remove expired timestamps
-		entry.timestamps = entry.timestamps.filter((t) => now - t < windowMs);
-
-		if (entry.timestamps.length >= limit) {
-			const oldestInWindow = entry.timestamps[0]!;
-			const retryAfter = Math.ceil((oldestInWindow + windowMs - now) / 1000);
-
+		if (remaining < 0) {
 			c.header("RateLimit-Limit", String(limit));
 			c.header("RateLimit-Remaining", "0");
-			c.header("RateLimit-Reset", String(retryAfter));
-			c.header("Retry-After", String(retryAfter));
+			c.header("RateLimit-Reset", String(windowSeconds));
+			c.header("Retry-After", String(windowSeconds));
 
 			return c.json(
 				{
 					error: "Too many requests",
-					retryAfter,
+					retryAfter: windowSeconds,
 				},
 				429,
 			);
 		}
 
-		// Record this request
-		entry.timestamps.push(now);
-
 		// Set rate limit headers (Draft 7)
 		c.header("RateLimit-Limit", String(limit));
-		c.header("RateLimit-Remaining", String(limit - entry.timestamps.length));
+		c.header("RateLimit-Remaining", String(Math.max(0, remaining)));
 		c.header("RateLimit-Reset", String(windowSeconds));
 
 		await next();

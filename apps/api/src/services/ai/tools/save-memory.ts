@@ -8,7 +8,10 @@ import { AzureOpenAIEmbeddings } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { AI_CONFIG } from "../../../config/ai.js";
+import { createLogger } from "../../../lib/logger.js";
 import { insertMemory } from "../supabase.js";
+
+const log = createLogger({ module: "tool-save-memory" });
 
 export function createSaveMemoryTool(client: SupabaseClient, userId: string) {
 	return tool(
@@ -27,7 +30,7 @@ export function createSaveMemoryTool(client: SupabaseClient, userId: string) {
 					});
 					embedding = await embeddingsModel.embedQuery(content);
 				} catch (err) {
-					console.error("Failed to generate embedding for athlete memory", err);
+					log.error({ err }, "Failed to generate embedding for athlete memory");
 				}
 
 				const memory = await insertMemory(client, {
@@ -50,28 +53,17 @@ export function createSaveMemoryTool(client: SupabaseClient, userId: string) {
 				'Saves a long-term memory about the athlete. Use this proactively when the athlete mentions a preference, a continuous goal, a constraint (e.g., "I hate mornings", "I am training for an Ironman", "My knee always hurts on long runs").',
 			schema: z.object({
 				category: z
-					.enum([
-						"preference",
-						"goal",
-						"constraint",
-						"pattern",
-						"medical_note",
-						"other",
-					])
+					.enum(["preference", "goal", "constraint", "pattern", "medical_note", "other"])
 					.describe("The category of the memory"),
 				content: z
 					.string()
-					.describe(
-						'The standalone fact to remember (e.g. "Athlete prefers evening workouts")',
-					),
+					.describe('The standalone fact to remember (e.g. "Athlete prefers evening workouts")'),
 				importance: z
 					.number()
 					.min(1)
 					.max(5)
 					.optional()
-					.describe(
-						"Importance of the memory from 1 (trivial) to 5 (critical)",
-					),
+					.describe("Importance of the memory from 1 (trivial) to 5 (critical)"),
 			}),
 		},
 	);

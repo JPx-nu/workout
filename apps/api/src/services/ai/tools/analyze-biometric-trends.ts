@@ -9,10 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getDailyLogs } from "../supabase.js";
 
-export function createAnalyzeBiometricTrendsTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createAnalyzeBiometricTrendsTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ days = 30 }) => {
 			const toDate = new Date();
@@ -113,9 +110,7 @@ export function createAnalyzeBiometricTrendsTool(
 					.min(7)
 					.max(90)
 					.optional()
-					.describe(
-						"Number of days to look back for the trend analysis (default 30)",
-					),
+					.describe("Number of days to look back for the trend analysis (default 30)"),
 			}),
 		},
 	);

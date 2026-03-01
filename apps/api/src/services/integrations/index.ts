@@ -5,37 +5,31 @@
 // individual files for convenience.
 // ============================================================
 
-// Types
-export * from "./types.js";
+export { decryptToken, encryptToken } from "./crypto.js";
 export * from "./errors.js";
-
-// Provider registry
-export { getProvider, getAllProviders, getAllProviderNames } from "./registry.js";
-
-// OAuth flow
-export {
-    buildAuthorizationUrl,
-    verifyCallbackState,
-    handleOAuthCallback,
-    disconnectProvider,
-} from "./oauth.js";
-
-// Token management
-export {
-    ensureFreshToken,
-    getActiveConnection,
-    getConnectedAccounts,
-} from "./token-manager.js";
-
-// Data normalization
-export { normalizeAndStore } from "./normalizer.js";
-
 // HTTP utilities
 export { fetchWithRetry } from "./http.js";
-
+// Data normalization
+export { normalizeAndStore } from "./normalizer.js";
+// OAuth flow
+export {
+	buildAuthorizationUrl,
+	disconnectProvider,
+	handleOAuthCallback,
+	verifyCallbackState,
+} from "./oauth.js";
 // Security
 export { createOAuthState, verifyOAuthState } from "./oauth-state.js";
-export { encryptToken, decryptToken } from "./crypto.js";
+// Provider registry
+export { getAllProviderNames, getAllProviders, getProvider } from "./registry.js";
+// Token management
+export {
+	ensureFreshToken,
+	getActiveConnection,
+	getConnectedAccounts,
+} from "./token-manager.js";
+// Types
+export * from "./types.js";
 
 // Webhook processing
-export { enqueueWebhook, getQueueSize } from "./webhook-queue.js";
+export { enqueueWebhook, stopPolling } from "./webhook-queue.js";

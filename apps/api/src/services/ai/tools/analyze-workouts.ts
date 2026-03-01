@@ -9,10 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getWorkouts } from "../supabase.js";
 
-export function createAnalyzeWorkoutsTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createAnalyzeWorkoutsTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ days = 30 }) => {
 			const toDate = new Date();
@@ -44,8 +41,7 @@ export function createAnalyzeWorkoutsTool(
 					totalTss += (w.duration_s / 60) * (w.avg_hr / 150) * 1.5;
 				}
 
-				activityCounts[w.activity_type] =
-					(activityCounts[w.activity_type] || 0) + 1;
+				activityCounts[w.activity_type] = (activityCounts[w.activity_type] || 0) + 1;
 			});
 
 			const totalHours = (totalVolumeS / 3600).toFixed(1);
@@ -63,7 +59,7 @@ export function createAnalyzeWorkoutsTool(
 			analysis += `- Total Estimated Load (TSS/TRIMP): ${totalLoad} (Avg ${weeklyAvgLoad} / week)\n\n`;
 
 			analysis += `### Activity Breakdown\n`;
-			analysis += breakdown + "\n\n";
+			analysis += `${breakdown}\n\n`;
 
 			analysis += `**Coaching Guidance:** Use this to evaluate whether the athlete's training volume is appropriate. If they are feeling fatigued (check biometrics), tell them their weekly load is ${weeklyAvgLoad} which might be too high for their current recovery state. If they want to build fitness, ensure progressive overload.`;
 

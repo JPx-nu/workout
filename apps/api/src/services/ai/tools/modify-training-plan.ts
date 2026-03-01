@@ -8,14 +8,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getTrainingPlan, updateTrainingPlan } from "../supabase.js";
 
-export function createModifyTrainingPlanTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createModifyTrainingPlanTool(client: SupabaseClient, userId: string) {
 	return tool(
-		async (input: Record<string, unknown>) => {
-			const planData = input.planData as Record<string, unknown> | undefined;
-			const status = input.status as string | undefined;
+		async (input) => {
+			const { planData, status } = input;
 
 			const currentPlan = await getTrainingPlan(client, userId);
 			if (!currentPlan) return "No active training plan found. Cannot modify.";
@@ -42,7 +38,7 @@ export function createModifyTrainingPlanTool(
 					.string()
 					.optional()
 					.describe("New plan status: ACTIVE, PAUSED, COMPLETED, CANCELLED"),
-			}) as any,
+			}),
 		},
 	);
 }

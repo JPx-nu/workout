@@ -9,10 +9,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { AI_CONFIG } from "../../../config/ai.js";
 
-export function createSearchWorkoutsTool(
-	client: SupabaseClient,
-	userId: string,
-) {
+export function createSearchWorkoutsTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ query, threshold = 0.6, limit = 5 }) => {
 			try {
@@ -68,17 +65,12 @@ export function createSearchWorkoutsTool(
 			schema: z.object({
 				query: z
 					.string()
-					.describe(
-						'The natural language search query (e.g. "rainy run", "felt great")',
-					),
+					.describe('The natural language search query (e.g. "rainy run", "felt great")'),
 				threshold: z
 					.number()
 					.optional()
 					.describe("Minimum similarity threshold (0-1). Default 0.6"),
-				limit: z
-					.number()
-					.optional()
-					.describe("Maximum number of workouts to return. Default 5"),
+				limit: z.number().optional().describe("Maximum number of workouts to return. Default 5"),
 			}),
 		},
 	);

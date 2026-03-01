@@ -9,20 +9,15 @@ import { tool } from "@langchain/core/tools";
 import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { createLogger } from "../../../lib/logger.js";
+
+const log = createLogger({ module: "tool-generate-workout-plan" });
 
 // ── Input schema ───────────────────────────────────────────────
 
 const generatePlanInputSchema = z.object({
-	goal: z
-		.string()
-		.describe('Primary goal, e.g. "finish a half marathon in under 2 hours"'),
-	durationWeeks: z
-		.number()
-		.int()
-		.min(1)
-		.max(52)
-		.default(8)
-		.describe("Plan duration in weeks"),
+	goal: z.string().describe('Primary goal, e.g. "finish a half marathon in under 2 hours"'),
+	durationWeeks: z.number().int().min(1).max(52).default(8).describe("Plan duration in weeks"),
 	weeklyAvailability: z
 		.number()
 		.int()
@@ -47,11 +42,7 @@ const generatePlanInputSchema = z.object({
 // ── Output schema (for withStructuredOutput) ───────────────────
 
 const sessionOutputSchema = z.object({
-	dayOffset: z
-		.number()
-		.int()
-		.min(0)
-		.describe("Day offset from week start (0=Monday)"),
+	dayOffset: z.number().int().min(0).describe("Day offset from week start (0=Monday)"),
 	activityType: z.enum(["SWIM", "BIKE", "RUN", "STRENGTH", "YOGA", "OTHER"]),
 	title: z.string().describe("Concise session title"),
 	description: z.string().describe("Detailed instructions for the athlete"),
@@ -114,10 +105,8 @@ export function createGenerateWorkoutPlanTool(
 
 				// 2. Generate structured plan using withStructuredOutput
 				const llm = new AzureChatOpenAI({
-					azureOpenAIApiDeploymentName:
-						process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o",
-					azureOpenAIApiVersion:
-						process.env.AZURE_OPENAI_API_VERSION || "2024-12-01-preview",
+					azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4o",
+					azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION || "2024-12-01-preview",
 					temperature: 0.7,
 				});
 
@@ -177,17 +166,14 @@ GUIDELINES:
 					.select("id")
 					.single();
 
-				if (planError)
-					throw new Error(`Failed to create plan: ${planError.message}`);
+				if (planError) throw new Error(`Failed to create plan: ${planError.message}`);
 
 				// 5. Insert all planned_workouts
 				const plannedWorkouts = plan.weeks.flatMap((week) =>
 					week.sessions.map((session) => {
 						const sessionDate = new Date(startDate);
 						sessionDate.setDate(
-							sessionDate.getDate() +
-								(week.weekNumber - 1) * 7 +
-								session.dayOffset,
+							sessionDate.getDate() + (week.weekNumber - 1) * 7 + session.dayOffset,
 						);
 
 						return {
@@ -213,14 +199,12 @@ GUIDELINES:
 					.from("planned_workouts")
 					.insert(plannedWorkouts);
 
-				if (insertError)
-					throw new Error(`Failed to insert workouts: ${insertError.message}`);
+				if (insertError) throw new Error(`Failed to insert workouts: ${insertError.message}`);
 
 				// 6. Build summary
 				const totalSessions = plannedWorkouts.length;
 				const weekSummaries = plan.weeks.map(
-					(w) =>
-						`  Week ${w.weekNumber} (${w.theme}): ${w.sessions.length} sessions`,
+					(w) => `  Week ${w.weekNumber} (${w.theme}): ${w.sessions.length} sessions`,
 				);
 
 				return `✅ Created "${plan.name}" — ${input.durationWeeks}-week plan with ${totalSessions} sessions.
@@ -233,7 +217,7 @@ ${weekSummaries.join("\n")}
 The plan is now visible in your training calendar. You can ask me to adjust any session or week.`;
 			} catch (error) {
 				const msg = error instanceof Error ? error.message : "Unknown error";
-				console.error("generate-workout-plan error:", msg);
+				log.error({ err: msg }, "Failed to generate workout plan");
 				return `❌ Failed to generate plan: ${msg}`;
 			}
 		},

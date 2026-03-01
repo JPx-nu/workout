@@ -1,14 +1,13 @@
 // ============================================================
-// Hook: useCoach — AI Coach integration with SSE streaming
-// Replaces mock data with real API calls
+// Hook: useCoach — AI Coach integration with Vercel AI SDK 6
+// Replaces manual SSE parsing with useChat from @ai-sdk/react
 // ============================================================
 
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-	type Message,
-	suggestedPrompts,
-} from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import { type Message, suggestedPrompts } from "@/lib/types";
 
 // API base URL — the Hono API server
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
@@ -19,17 +18,16 @@ const MAX_SIZE_MB = 10;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 /**
- * AI Coach hook with real API integration.
- * Streams responses via SSE and persists conversations.
+ * AI Coach hook with Vercel AI SDK 6 streaming.
+ * Uses useChat for message state and AI SDK protocol streaming.
+ * Keeps conversation management and file attachment logic.
  */
 export function useCoach() {
-	const [messages, setMessages] = useState<Message[]>([]);
-	const [isTyping, setIsTyping] = useState(false);
-	const [isLoading, setIsLoading] = useState(false);
-	const [input, setInput] = useState("");
-	const [conversationId, setConversationId] = useState<string | undefined>(
-		undefined,
-	);
+	const supabase = useMemo(() => createClient(), []);
+	const tokenRef = useRef("");
+	const conversationIdRef = useRef<string | undefined>(undefined);
+
+	const [conversationId, setConversationId] = useState<string | undefined>(undefined);
 	const [conversations, setConversations] = useState<
 		Array<{
 			id: string;
@@ -38,11 +36,71 @@ export function useCoach() {
 			message_count: number;
 		}>
 	>([]);
-	const [activeToolCalls, setActiveToolCalls] = useState<string[]>([]);
-	const [error, setError] = useState<string | null>(null);
 	const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-	const abortRef = useRef<AbortController | null>(null);
-	const supabase = useMemo(() => createClient(), []);
+	const [error, setError] = useState<string | null>(null);
+	const [input, setInput] = useState("");
+
+	// Keep conversationIdRef in sync so the fetch callback reads the latest value
+	useEffect(() => {
+		conversationIdRef.current = conversationId;
+	}, [conversationId]);
+
+	// ── Auth token management ────────────────────────────────
+	useEffect(() => {
+		supabase.auth.getSession().then(({ data: { session } }) => {
+			tokenRef.current = session?.access_token || "";
+		});
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange((_, session) => {
+			tokenRef.current = session?.access_token || "";
+		});
+		return () => subscription.unsubscribe();
+	}, [supabase]);
+
+	// ── AI SDK useChat for message state + streaming ─────────
+	const {
+		messages: aiMessages,
+		sendMessage: aiSendMessage,
+		setMessages: setAiMessages,
+		status,
+		stop,
+	} = useChat({
+		transport: new DefaultChatTransport({
+			api: `${API_BASE}/api/ai/stream`,
+			headers: () => ({
+				Authorization: `Bearer ${tokenRef.current}`,
+			}),
+			body: () => ({ conversationId: conversationIdRef.current }),
+			fetch: async (url, init) => {
+				const response = await globalThis.fetch(url, init);
+				// Capture conversationId from response header
+				const convId = response.headers.get("X-Conversation-Id");
+				if (convId) {
+					setConversationId(convId);
+				}
+				return response;
+			},
+		}),
+	});
+
+	const isTyping = status === "streaming" || status === "submitted";
+
+	// ── Convert AI SDK UIMessages → our Message format ───────
+	const messages: Message[] = useMemo(
+		() =>
+			aiMessages.map((m) => ({
+				id: m.id,
+				role: m.role as "user" | "assistant" | "system",
+				content:
+					m.parts
+						?.filter((p): p is { type: "text"; text: string } => p.type === "text")
+						.map((p) => p.text)
+						.join("") || "",
+				createdAt: new Date().toISOString(),
+			})),
+		[aiMessages],
+	);
 
 	// ── Load conversations list ──────────────────────────────
 	const loadConversations = useCallback(async () => {
@@ -73,7 +131,6 @@ export function useCoach() {
 	// ── Load a specific conversation's messages ──────────────
 	const loadConversation = useCallback(
 		async (convId: string) => {
-			setIsLoading(true);
 			setError(null);
 
 			try {
@@ -94,42 +151,32 @@ export function useCoach() {
 
 				if (dbError) throw dbError;
 
-				const msgs: Message[] = (data ?? []).map(
-					(m: {
-						id: string;
-						role: string;
-						content: string;
-						created_at: string;
-						metadata: Record<string, unknown> | null;
-					}) => ({
-						id: m.id,
-						role: m.role as "user" | "assistant" | "system",
-						content: m.content,
-						createdAt: m.created_at,
-						metadata: m.metadata as Message["metadata"],
-					}),
+				// Convert DB messages to AI SDK UIMessage format for setMessages
+				setAiMessages(
+					(data ?? []).map(
+						(m: { id: string; role: string; content: string; created_at: string }) => ({
+							id: m.id,
+							role: m.role as "user" | "assistant",
+							parts: [{ type: "text" as const, text: m.content }],
+						}),
+					),
 				);
-
-				setMessages(msgs);
 				setConversationId(convId);
 			} catch (err) {
 				setError("Failed to load conversation");
 				console.error("Load conversation error:", err);
-			} finally {
-				setIsLoading(false);
 			}
 		},
-		[supabase],
+		[supabase, setAiMessages],
 	);
 
 	// ── Start a new conversation ─────────────────────────────
 	const newConversation = useCallback(() => {
-		setMessages([]);
+		setAiMessages([]);
 		setConversationId(undefined);
 		setError(null);
-		setActiveToolCalls([]);
 		setAttachedFiles([]);
-	}, []);
+	}, [setAiMessages]);
 
 	// ── File attachment management ───────────────────────────
 
@@ -156,7 +203,7 @@ export function useCoach() {
 		setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
 	}, []);
 
-	/** Upload files to Supabase Storage, returns signed URLs (bucket is private) */
+	/** Upload files to Supabase Storage, returns signed URLs */
 	const uploadImages = useCallback(
 		async (files: File[], convId: string): Promise<string[]> => {
 			const urls: string[] = [];
@@ -181,7 +228,7 @@ export function useCoach() {
 				if (uploadResponse.data) {
 					const signResponse = await supabase.storage
 						.from("chat-images")
-						.createSignedUrl(uploadResponse.data.path, 3600); // 1-hour TTL
+						.createSignedUrl(uploadResponse.data.path, 3600);
 
 					if (!signResponse.error && signResponse.data?.signedUrl) {
 						urls.push(signResponse.data.signedUrl);
@@ -193,249 +240,74 @@ export function useCoach() {
 		[supabase],
 	);
 
-	// ── Send message with SSE streaming ──────────────────────
+	// ── Send message ─────────────────────────────────────────
 	const sendMessage = useCallback(async () => {
 		const text = input.trim();
 		if (!text) return;
 
-		// If AI is currently streaming, abort it and keep the partial response
-		if (isTyping && abortRef.current) {
-			abortRef.current.abort();
-			abortRef.current = null;
-			setIsTyping(false);
-		}
-
-		const filesToUpload = [...attachedFiles];
-		setAttachedFiles([]);
-		setError(null);
-
-		// Add user message optimistically (with image previews)
-		const previewUrls = filesToUpload.map((f) => URL.createObjectURL(f));
-		const userMsg: Message = {
-			id: `msg-${Date.now()}`,
-			role: "user",
-			content: text,
-			createdAt: new Date().toISOString(),
-			metadata: previewUrls.length > 0 ? { imageUrls: previewUrls } : undefined,
-		};
-		setMessages((prev) => [...prev, userMsg]);
-		setInput("");
-		setIsTyping(true);
-		setActiveToolCalls([]);
-
-		// Get auth token
+		// Refresh auth token
 		const {
 			data: { session },
 		} = await supabase.auth.getSession();
 		if (!session?.access_token) {
 			setError("Not authenticated. Please sign in.");
-			setIsTyping(false);
 			return;
 		}
+		tokenRef.current = session.access_token;
 
-		// Upload images to Supabase Storage if any
+		// Handle file uploads if any
+		const filesToUpload = [...attachedFiles];
+		setAttachedFiles([]);
+		setInput("");
+		setError(null);
+
 		let imageUrls: string[] = [];
 		if (filesToUpload.length > 0) {
 			const tempConvId = conversationId || "pending";
 			imageUrls = await uploadImages(filesToUpload, tempConvId);
-			// Update user message with final URLs (replace blob: previews)
-			if (imageUrls.length > 0) {
-				setMessages((prev) =>
-					prev.map((m) =>
-						m.id === userMsg.id
-							? { ...m, metadata: { ...m.metadata, imageUrls } }
-							: m,
-					),
-				);
-			}
 		}
 
-		// Abort any previous streaming request
-		if (abortRef.current) {
-			abortRef.current.abort();
-		}
-		abortRef.current = new AbortController();
-
-		try {
-			const res = await fetch(`${API_BASE}/api/ai/chat`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify({
-					message: text,
-					conversationId,
-					...(imageUrls.length > 0 && { imageUrls }),
-				}),
-				signal: abortRef.current.signal,
+		// Send via AI SDK useChat — handles streaming automatically
+		if (imageUrls.length > 0) {
+			aiSendMessage({
+				text,
+				files: imageUrls.map((url) => ({
+					type: "file" as const,
+					mediaType: "image/jpeg",
+					url,
+				})),
 			});
-
-			// Handle non-SSE responses (safety blocks, config errors)
-			const contentType = res.headers.get("content-type") ?? "";
-			if (contentType.includes("application/json")) {
-				const data = await res.json();
-				const aiMsg: Message = {
-					id: `msg-${Date.now() + 1}`,
-					role: "assistant",
-					content: data.content || data.error || "No response",
-					createdAt: new Date().toISOString(),
-					metadata: data.metadata,
-				};
-				setMessages((prev) => [...prev, aiMsg]);
-				if (data.conversationId) setConversationId(data.conversationId);
-				setIsTyping(false);
-				return;
-			}
-
-			// Process SSE stream
-			const reader = res.body?.getReader();
-			const decoder = new TextDecoder();
-			let assistantContent = "";
-			const assistantMsgId = `msg-${Date.now() + 1}`;
-
-			// Add empty assistant message that we'll fill in
-			setMessages((prev) => [
-				...prev,
-				{
-					id: assistantMsgId,
-					role: "assistant",
-					content: "",
-					createdAt: new Date().toISOString(),
-				},
-			]);
-
-			if (!reader) {
-				setError("Failed to read response stream");
-				setIsTyping(false);
-				return;
-			}
-
-			let buffer = "";
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-
-				buffer += decoder.decode(value, { stream: true });
-
-				// Parse SSE events from buffer
-				const lines = buffer.split("\n");
-				buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-				let eventType = "";
-				for (const line of lines) {
-					if (line.startsWith("event: ")) {
-						eventType = line.slice(7).trim();
-					} else if (line.startsWith("data: ")) {
-						const dataStr = line.slice(6);
-						try {
-							const data = JSON.parse(dataStr);
-
-							switch (eventType) {
-								case "metadata":
-									if (data.conversationId) {
-										setConversationId(data.conversationId);
-									}
-									break;
-
-								case "delta":
-									assistantContent += data.content || "";
-									setMessages((prev) =>
-										prev.map((m) =>
-											m.id === assistantMsgId
-												? { ...m, content: assistantContent }
-												: m,
-										),
-									);
-									break;
-
-								case "tool":
-									setActiveToolCalls((prev) => [...prev, data.tool]);
-									break;
-
-								case "clear":
-									assistantContent = "";
-									setMessages((prev) =>
-										prev.map((m) =>
-											m.id === assistantMsgId
-												? { ...m, content: assistantContent }
-												: m,
-										),
-									);
-									break;
-
-								case "correction":
-									assistantContent = data.content;
-									setMessages((prev) =>
-										prev.map((m) =>
-											m.id === assistantMsgId
-												? { ...m, content: assistantContent }
-												: m,
-										),
-									);
-									break;
-
-								case "error":
-									setError(data.message);
-									assistantContent = data.message;
-									setMessages((prev) =>
-										prev.map((m) =>
-											m.id === assistantMsgId
-												? { ...m, content: assistantContent }
-												: m,
-										),
-									);
-									break;
-
-								case "done":
-									// Refresh conversations list
-									loadConversations();
-									break;
-							}
-						} catch {
-							// Skip malformed JSON
-						}
-					}
-				}
-			}
-		} catch (err) {
-			if ((err as Error).name === "AbortError") return;
-
-			setError("Failed to connect to AI Coach. Please try again.");
-			console.error("Chat error:", err);
-		} finally {
-			setIsTyping(false);
-			abortRef.current = null;
+		} else {
+			aiSendMessage({ text });
 		}
+
+		// Refresh conversations list after backend has had time to save
+		setTimeout(() => loadConversations(), 2000);
 	}, [
 		input,
-		isTyping,
+		attachedFiles,
 		conversationId,
 		supabase,
-		loadConversations,
-		attachedFiles,
+		aiSendMessage,
 		uploadImages,
+		loadConversations,
 	]);
 
 	// ── Stop streaming ───────────────────────────────────────
 	const stopStreaming = useCallback(() => {
-		if (abortRef.current) {
-			abortRef.current.abort();
-			abortRef.current = null;
-			setIsTyping(false);
-		}
-	}, []);
+		stop();
+	}, [stop]);
 
 	return {
 		// State
 		messages,
 		isTyping,
-		isLoading,
+		isLoading: false,
 		input,
 		setInput,
 		conversationId,
 		conversations,
-		activeToolCalls,
+		activeToolCalls: [] as string[],
 		error,
 		suggestedPrompts,
 		attachedFiles,

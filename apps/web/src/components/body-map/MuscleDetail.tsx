@@ -74,10 +74,7 @@ function MuscleList({ fatigueData }: { fatigueData: MuscleFatigue[] }) {
 					All Muscle Groups
 				</h4>
 				<div className="flex items-center gap-2">
-					<span
-						className="text-xs tabular-nums"
-						style={{ color: "var(--color-text-muted)" }}
-					>
+					<span className="text-xs tabular-nums" style={{ color: "var(--color-text-muted)" }}>
 						{fatigueData.length}
 					</span>
 					<ChevronDown
@@ -119,8 +116,7 @@ function MuscleList({ fatigueData }: { fatigueData: MuscleFatigue[] }) {
 								<div
 									className="w-20 h-1.5 rounded-full"
 									style={{
-										background:
-											"var(--color-progress-track, rgba(255,255,255,0.1))",
+										background: "var(--color-progress-track, rgba(255,255,255,0.1))",
 									}}
 								>
 									<div
@@ -128,10 +124,7 @@ function MuscleList({ fatigueData }: { fatigueData: MuscleFatigue[] }) {
 										style={{ width: `${f.level}%`, background: badge.color }}
 									/>
 								</div>
-								<span
-									className="text-xs font-bold w-8 text-right"
-									style={{ color: badge.color }}
-								>
+								<span className="text-xs font-bold w-8 text-right" style={{ color: badge.color }}>
 									{f.level}%
 								</span>
 							</div>
@@ -159,22 +152,13 @@ export default function MuscleDetail({
 }) {
 	if (!muscleName || !fatigue) {
 		return (
-			<div
-				className="glass-card p-5 space-y-4"
-				style={{ borderColor: "var(--color-border)" }}
-			>
+			<div className="glass-card p-5 space-y-4" style={{ borderColor: "var(--color-border)" }}>
 				<div className="text-center py-4">
 					<div className="text-3xl mb-3">🏃</div>
-					<p
-						className="text-sm font-medium"
-						style={{ color: "var(--color-text-primary)" }}
-					>
+					<p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
 						Tap a muscle group
 					</p>
-					<p
-						className="text-xs mt-1"
-						style={{ color: "var(--color-text-muted)" }}
-					>
+					<p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
 						Click any zone on the body to see details
 					</p>
 				</div>
@@ -188,23 +172,14 @@ export default function MuscleDetail({
 	const recovery = getRecovery(level);
 
 	return (
-		<div
-			className="glass-card p-5 space-y-5"
-			style={{ borderColor: badge.color + "40" }}
-		>
+		<div className="glass-card p-5 space-y-5" style={{ borderColor: `${badge.color}40` }}>
 			{/* Header */}
 			<div className="flex items-start justify-between gap-3">
 				<div>
-					<h3
-						className="text-lg font-bold"
-						style={{ color: "var(--color-text-primary)" }}
-					>
+					<h3 className="text-lg font-bold" style={{ color: "var(--color-text-primary)" }}>
 						{muscleName}
 					</h3>
-					<p
-						className="text-xs mt-0.5"
-						style={{ color: "var(--color-text-muted)" }}
-					>
+					<p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
 						{side === "front" ? "Anterior" : "Posterior"} view
 					</p>
 				</div>
@@ -248,10 +223,7 @@ export default function MuscleDetail({
 					</span>
 				</div>
 				<div className="flex-1 space-y-1.5">
-					<div
-						className="text-sm"
-						style={{ color: "var(--color-text-primary)" }}
-					>
+					<div className="text-sm" style={{ color: "var(--color-text-primary)" }}>
 						Fatigue Level
 					</div>
 					<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
@@ -268,16 +240,10 @@ export default function MuscleDetail({
 				>
 					<span className="text-lg">⏱️</span>
 					<div>
-						<div
-							className="text-xs font-semibold"
-							style={{ color: "var(--color-text-primary)" }}
-						>
+						<div className="text-xs font-semibold" style={{ color: "var(--color-text-primary)" }}>
 							Est. Recovery
 						</div>
-						<div
-							className="text-xs"
-							style={{ color: "var(--color-text-muted)" }}
-						>
+						<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 							{recovery.time}
 						</div>
 					</div>
@@ -288,16 +254,10 @@ export default function MuscleDetail({
 				>
 					<span className="text-lg">💡</span>
 					<div>
-						<div
-							className="text-xs font-semibold"
-							style={{ color: "var(--color-text-primary)" }}
-						>
+						<div className="text-xs font-semibold" style={{ color: "var(--color-text-primary)" }}>
 							Recommendation
 						</div>
-						<div
-							className="text-xs"
-							style={{ color: "var(--color-text-muted)" }}
-						>
+						<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 							{recovery.tip}
 						</div>
 					</div>

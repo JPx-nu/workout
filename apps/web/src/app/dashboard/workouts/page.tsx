@@ -1,12 +1,7 @@
 "use client";
 
 import { Bike, Dumbbell, Filter, Footprints, Waves } from "lucide-react";
-import {
-	formatDuration,
-	formatPace,
-	mToKm,
-	useWorkouts,
-} from "@/hooks/use-workouts";
+import { formatDuration, formatPace, mToKm, useWorkouts } from "@/hooks/use-workouts";
 
 const activityIcons: Record<string, typeof Waves> = {
 	SWIM: Waves,
@@ -37,10 +32,7 @@ export default function WorkoutsPage() {
 			<div className="flex items-center justify-between">
 				<div>
 					<h1 className="text-2xl font-bold">Workouts</h1>
-					<p
-						className="mt-1 text-sm"
-						style={{ color: "var(--color-text-secondary)" }}
-					>
+					<p className="mt-1 text-sm" style={{ color: "var(--color-text-secondary)" }}>
 						{allWorkouts.length} workouts recorded
 					</p>
 				</div>
@@ -59,10 +51,7 @@ export default function WorkoutsPage() {
 							style={
 								isActive
 									? {
-											background:
-												type === "ALL"
-													? "oklch(0.65 0.18 170 / 0.2)"
-													: undefined,
+											background: type === "ALL" ? "oklch(0.65 0.18 170 / 0.2)" : undefined,
 											boxShadow: "0 0 0 1px currentColor",
 										}
 									: type === "ALL"
@@ -74,9 +63,7 @@ export default function WorkoutsPage() {
 							}
 						>
 							<Icon size={12} />{" "}
-							{type === "ALL"
-								? "All"
-								: type.charAt(0) + type.slice(1).toLowerCase()}
+							{type === "ALL" ? "All" : type.charAt(0) + type.slice(1).toLowerCase()}
 						</button>
 					);
 				})}
@@ -104,18 +91,12 @@ export default function WorkoutsPage() {
 										<span className={`badge ${badgeClasses[w.activityType]}`}>
 											{w.activityType}
 										</span>
-										<span
-											className="text-xs"
-											style={{ color: "var(--color-text-muted)" }}
-										>
+										<span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 											via {w.source}
 										</span>
 									</div>
 									<div className="text-sm font-medium">{w.notes}</div>
-									<div
-										className="text-xs mt-1"
-										style={{ color: "var(--color-text-muted)" }}
-									>
+									<div className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
 										{new Date(w.startedAt).toLocaleDateString("en-US", {
 											weekday: "long",
 											year: "numeric",
@@ -128,25 +109,15 @@ export default function WorkoutsPage() {
 								{/* Stats */}
 								<div className="hidden sm:flex gap-6 shrink-0 text-right">
 									<div>
-										<div className="text-sm font-semibold">
-											{formatDuration(w.durationSec)}
-										</div>
-										<div
-											className="text-xs"
-											style={{ color: "var(--color-text-muted)" }}
-										>
+										<div className="text-sm font-semibold">{formatDuration(w.durationSec)}</div>
+										<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 											Duration
 										</div>
 									</div>
 									{w.distanceM && (
 										<div>
-											<div className="text-sm font-semibold">
-												{mToKm(w.distanceM)} km
-											</div>
-											<div
-												className="text-xs"
-												style={{ color: "var(--color-text-muted)" }}
-											>
+											<div className="text-sm font-semibold">{mToKm(w.distanceM)} km</div>
+											<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 												Distance
 											</div>
 										</div>
@@ -154,10 +125,7 @@ export default function WorkoutsPage() {
 									{w.avgHr && (
 										<div>
 											<div className="text-sm font-semibold">{w.avgHr} bpm</div>
-											<div
-												className="text-xs"
-												style={{ color: "var(--color-text-muted)" }}
-											>
+											<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 												Avg HR
 											</div>
 										</div>
@@ -165,10 +133,7 @@ export default function WorkoutsPage() {
 									{w.tss && (
 										<div>
 											<div className="text-sm font-semibold">{w.tss}</div>
-											<div
-												className="text-xs"
-												style={{ color: "var(--color-text-muted)" }}
-											>
+											<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 												TSS
 											</div>
 										</div>
@@ -178,10 +143,7 @@ export default function WorkoutsPage() {
 											<div className="text-sm font-semibold">
 												{formatPace(w.durationSec, w.distanceM)}
 											</div>
-											<div
-												className="text-xs"
-												style={{ color: "var(--color-text-muted)" }}
-											>
+											<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
 												Pace
 											</div>
 										</div>
@@ -194,25 +156,15 @@ export default function WorkoutsPage() {
 								style={{ borderColor: "var(--color-glass-border)" }}
 							>
 								<div className="shrink-0">
-									<div className="text-sm font-semibold">
-										{formatDuration(w.durationSec)}
-									</div>
-									<div
-										className="text-[10px]"
-										style={{ color: "var(--color-text-muted)" }}
-									>
+									<div className="text-sm font-semibold">{formatDuration(w.durationSec)}</div>
+									<div className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
 										Duration
 									</div>
 								</div>
 								{w.distanceM && (
 									<div className="shrink-0">
-										<div className="text-sm font-semibold">
-											{mToKm(w.distanceM)} km
-										</div>
-										<div
-											className="text-[10px]"
-											style={{ color: "var(--color-text-muted)" }}
-										>
+										<div className="text-sm font-semibold">{mToKm(w.distanceM)} km</div>
+										<div className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
 											Distance
 										</div>
 									</div>
@@ -220,10 +172,7 @@ export default function WorkoutsPage() {
 								{w.avgHr && (
 									<div className="shrink-0">
 										<div className="text-sm font-semibold">{w.avgHr} bpm</div>
-										<div
-											className="text-[10px]"
-											style={{ color: "var(--color-text-muted)" }}
-										>
+										<div className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
 											HR
 										</div>
 									</div>
@@ -231,10 +180,7 @@ export default function WorkoutsPage() {
 								{w.tss && (
 									<div className="shrink-0">
 										<div className="text-sm font-semibold">{w.tss}</div>
-										<div
-											className="text-[10px]"
-											style={{ color: "var(--color-text-muted)" }}
-										>
+										<div className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
 											TSS
 										</div>
 									</div>

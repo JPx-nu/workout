@@ -6,10 +6,13 @@
 // ============================================================
 
 import { Hono } from "hono";
-import type { ProviderName } from "../../services/integrations/types.js";
-import { getProvider } from "../../services/integrations/registry.js";
-import { enqueueWebhook } from "../../services/integrations/webhook-queue.js";
 import { INTEGRATION_CONFIG } from "../../config/integrations.js";
+import { createLogger } from "../../lib/logger.js";
+import { getProvider } from "../../services/integrations/registry.js";
+import type { ProviderName } from "../../services/integrations/types.js";
+import { enqueueWebhook } from "../../services/integrations/webhook-queue.js";
+
+const log = createLogger({ module: "webhooks" });
 
 export const webhookRoutes = new Hono();
 
@@ -26,13 +29,13 @@ async function handleWebhook(
 	// 1. Verify webhook signature/authenticity
 	const valid = await provider.verifyWebhook(headers, body);
 	if (!valid) {
-		console.warn(`[Webhook] Invalid ${providerName} signature`);
+		log.warn({ provider: providerName }, "Invalid webhook signature");
 		return { status: "invalid_signature", code: 401 };
 	}
 
-	// 2. Enqueue for async processing (fire-and-forget)
+	// 2. Enqueue for async processing
 	const event = JSON.parse(body) as Record<string, unknown>;
-	enqueueWebhook(providerName, event);
+	await enqueueWebhook(providerName, event);
 
 	return { status: "accepted", code: 200 };
 }
@@ -46,10 +49,7 @@ webhookRoutes.post("/strava", async (c) => {
 		const parsed = JSON.parse(body) as Record<string, unknown>;
 
 		// Only process activity.create events
-		if (
-			parsed.object_type !== "activity" ||
-			parsed.aspect_type !== "create"
-		) {
+		if (parsed.object_type !== "activity" || parsed.aspect_type !== "create") {
 			return c.json({ status: "ignored" }, 200);
 		}
 
@@ -57,7 +57,7 @@ webhookRoutes.post("/strava", async (c) => {
 		const result = await handleWebhook("STRAVA", headers, body);
 		return c.json({ status: result.status }, result.code as 200);
 	} catch (err) {
-		console.error("[Webhook] Strava error:", err);
+		log.error({ err, provider: "STRAVA" }, "Webhook processing error");
 		return c.json({ status: "error" }, 200); // 200 to prevent retries
 	}
 });
@@ -68,11 +68,8 @@ webhookRoutes.get("/strava", (c) => {
 	const token = c.req.query("hub.verify_token");
 	const challenge = c.req.query("hub.challenge");
 
-	if (
-		mode === "subscribe" &&
-		token === INTEGRATION_CONFIG.STRAVA.verifyToken
-	) {
-		console.log("[Webhook] Strava subscription verified");
+	if (mode === "subscribe" && token === INTEGRATION_CONFIG.STRAVA.verifyToken) {
+		log.info("Strava subscription verified");
 		return c.json({ "hub.challenge": challenge });
 	}
 
@@ -87,7 +84,7 @@ webhookRoutes.post("/garmin", async (c) => {
 		const result = await handleWebhook("GARMIN", headers, body);
 		return c.json({ status: result.status }, result.code as 200);
 	} catch (err) {
-		console.error("[Webhook] Garmin error:", err);
+		log.error({ err, provider: "GARMIN" }, "Webhook processing error");
 		return c.json({ status: "error" }, 200);
 	}
 });
@@ -100,7 +97,7 @@ webhookRoutes.post("/polar", async (c) => {
 		const result = await handleWebhook("POLAR", headers, body);
 		return c.json({ status: result.status }, result.code as 200);
 	} catch (err) {
-		console.error("[Webhook] Polar error:", err);
+		log.error({ err, provider: "POLAR" }, "Webhook processing error");
 		return c.json({ status: "error" }, 200);
 	}
 });
@@ -113,7 +110,7 @@ webhookRoutes.post("/wahoo", async (c) => {
 		const result = await handleWebhook("WAHOO", headers, body);
 		return c.json({ status: result.status }, result.code as 200);
 	} catch (err) {
-		console.error("[Webhook] Wahoo error:", err);
+		log.error({ err, provider: "WAHOO" }, "Webhook processing error");
 		return c.json({ status: "error" }, 200);
 	}
 });

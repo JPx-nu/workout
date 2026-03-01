@@ -15,10 +15,7 @@ export function ThemeToggle({ collapsed = false }: { collapsed?: boolean }) {
 	if (!mounted) {
 		return (
 			<div className="flex items-center gap-2 px-3 py-2">
-				<div
-					className="w-8 h-8 rounded-lg"
-					style={{ background: "oklch(0.2 0.01 260)" }}
-				/>
+				<div className="w-8 h-8 rounded-lg" style={{ background: "oklch(0.2 0.01 260)" }} />
 			</div>
 		);
 	}
@@ -29,10 +26,8 @@ export function ThemeToggle({ collapsed = false }: { collapsed?: boolean }) {
 		else setTheme("dark");
 	};
 
-	const Icon =
-		theme === "system" ? Monitor : resolvedTheme === "dark" ? Moon : Sun;
-	const label =
-		theme === "system" ? "System" : theme === "dark" ? "Dark" : "Light";
+	const Icon = theme === "system" ? Monitor : resolvedTheme === "dark" ? Moon : Sun;
+	const label = theme === "system" ? "System" : theme === "dark" ? "Dark" : "Light";
 
 	return (
 		<button

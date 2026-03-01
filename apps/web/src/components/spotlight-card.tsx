@@ -12,11 +12,7 @@ interface SpotlightCardProps {
  * Glass card with a subtle cursor-following spotlight effect on hover.
  * Renders as a regular glass-card on touch devices (no mouse tracking).
  */
-export function SpotlightCard({
-	children,
-	className = "",
-	style,
-}: SpotlightCardProps) {
+export function SpotlightCard({ children, className = "", style }: SpotlightCardProps) {
 	const ref = useRef<HTMLDivElement>(null);
 
 	const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {

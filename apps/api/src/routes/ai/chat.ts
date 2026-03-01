@@ -1,7 +1,9 @@
 import { HumanMessage } from "@langchain/core/messages";
+import { ChatMessageInput } from "@triathlon/types";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { AI_CONFIG, validateAIConfig } from "../../config/ai.js";
+import { createLogger } from "../../lib/logger.js";
 import { getAuth } from "../../middleware/auth.js";
 import {
 	getOrCreateConversation,
@@ -11,13 +13,11 @@ import {
 	updateConversationTitle,
 } from "../../services/ai/conversation.js";
 import { createAgent, toBaseMessages } from "../../services/ai/graph.js";
-import {
-	checkInput,
-	classifyIntent,
-	processOutput,
-} from "../../services/ai/safety.js";
 import { extractMemories } from "../../services/ai/memory-extractor.js";
+import { checkInput, classifyIntent, processOutput } from "../../services/ai/safety.js";
 import { createUserClient } from "../../services/ai/supabase.js";
+
+const log = createLogger({ module: "ai-chat" });
 
 export const aiRoutes = new Hono();
 
@@ -25,28 +25,22 @@ export const aiRoutes = new Hono();
 aiRoutes.post("/chat", async (c) => {
 	const body = await c.req.json();
 
-	// ── Input validation ─────────────────────────────────────
-	const message = typeof body.message === "string" ? body.message.trim() : "";
-	const conversationId =
-		typeof body.conversationId === "string" ? body.conversationId : undefined;
-	const imageUrls: string[] = Array.isArray(body.imageUrls)
-		? body.imageUrls
-			.filter((u: unknown): u is string => typeof u === "string")
-			.slice(0, AI_CONFIG.uploads.maxImagesPerMessage)
-		: [];
-
-	if (!message) {
-		return c.json({ error: "Message is required" }, 400);
-	}
-
-	if (message.length > AI_CONFIG.safety.maxInputLength) {
+	// ── Input validation (Zod schema from @triathlon/types) ──
+	const parsed = ChatMessageInput.safeParse(body);
+	if (!parsed.success) {
 		return c.json(
 			{
-				error: `Message too long (max ${AI_CONFIG.safety.maxInputLength} chars)`,
+				error: "Validation failed",
+				issues: parsed.error.issues.map((i) => ({
+					path: i.path.join("."),
+					message: i.message,
+				})),
 			},
 			400,
 		);
 	}
+
+	const { message, conversationId, imageUrls = [] } = parsed.data;
 
 	// ── Safety check ─────────────────────────────────────────
 	const safetyCheck = checkInput(message);
@@ -94,11 +88,7 @@ aiRoutes.post("/chat", async (c) => {
 	);
 
 	// Load history for context
-	const history = await loadHistory(
-		client,
-		conversation.id,
-		AI_CONFIG.model.historyLimit,
-	);
+	const history = await loadHistory(client, conversation.id, AI_CONFIG.model.historyLimit);
 
 	// Save user message and conditionally update title concurrently for lower latency
 	const userMsgMetadata = imageUrls.length > 0 ? { imageUrls } : undefined;
@@ -132,18 +122,15 @@ aiRoutes.post("/chat", async (c) => {
 			const userContent =
 				imageUrls.length > 0
 					? [
-						{ type: "text" as const, text: message },
-						...imageUrls.map((url) => ({
-							type: "image_url" as const,
-							image_url: { url },
-						})),
-					]
+							{ type: "text" as const, text: message },
+							...imageUrls.map((url) => ({
+								type: "image_url" as const,
+								image_url: { url },
+							})),
+						]
 					: message;
 
-			const inputMessages = [
-				...historyMessages,
-				new HumanMessage({ content: userContent }),
-			];
+			const inputMessages = [...historyMessages, new HumanMessage({ content: userContent })];
 
 			let fullResponse = "";
 			let isRevisePass = false;
@@ -243,8 +230,8 @@ aiRoutes.post("/chat", async (c) => {
 			]);
 
 			// Fire-and-forget: extract memories from this conversation turn
-			extractMemories(client, auth.userId, message, fullResponse).catch(
-				(err) => console.warn("Background memory extraction failed:", err),
+			extractMemories(client, auth.userId, message, fullResponse).catch((err) =>
+				log.warn({ err }, "Background memory extraction failed"),
 			);
 
 			// Signal completion
@@ -256,7 +243,7 @@ aiRoutes.post("/chat", async (c) => {
 				}),
 			});
 		} catch (err) {
-			console.error("AI Agent error:", err);
+			log.error({ err }, "AI Agent error");
 			const errorMessage =
 				"❌ Sorry, I encountered an error processing your request. Please try again.";
 
