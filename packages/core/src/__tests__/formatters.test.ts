@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, formatPace, mToKm, secToMin } from "../utils/formatters.js";
+import { formatDuration, formatPace, mToKm, secToMin } from "../utils/formatters";
 
 describe("secToMin", () => {
 	it("converts seconds to minutes (rounded)", () => {

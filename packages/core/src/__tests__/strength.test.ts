@@ -8,7 +8,7 @@ import {
 	findTopSet,
 	type SetData,
 	summarizeStrengthWorkout,
-} from "../strength/index.js";
+} from "../strength/index";
 
 describe("estimate1RM", () => {
 	it("returns identity for 1 rep", () => {

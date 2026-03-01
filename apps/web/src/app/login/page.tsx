@@ -4,8 +4,16 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const showGoogleAuth = process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH === "true";
-const showDemo = process.env.NEXT_PUBLIC_ENABLE_DEMO === "true";
+const WEB_BASE_PATH = "/workout";
+
+function isFeatureEnabled(value: string | undefined): boolean {
+	if (value === "true") return true;
+	if (value === "false") return false;
+	return process.env.NODE_ENV === "development";
+}
+
+const showGoogleAuth = isFeatureEnabled(process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH);
+const showDemo = isFeatureEnabled(process.env.NEXT_PUBLIC_ENABLE_DEMO);
 
 export default function LoginPage() {
 	const router = useRouter();
@@ -24,11 +32,12 @@ export default function LoginPage() {
 		const supabase = createClient();
 
 		if (mode === "signup") {
+			const callbackUrl = `${window.location.origin}${WEB_BASE_PATH}/auth/callback`;
 			const { error: signUpError } = await supabase.auth.signUp({
 				email,
 				password,
 				options: {
-					emailRedirectTo: `${window.location.origin}/auth/callback`,
+					emailRedirectTo: callbackUrl,
 				},
 			});
 
@@ -63,10 +72,11 @@ export default function LoginPage() {
 		setLoading(true);
 
 		const supabase = createClient();
+		const callbackUrl = `${window.location.origin}${WEB_BASE_PATH}/auth/callback`;
 		const { error: oauthError } = await supabase.auth.signInWithOAuth({
 			provider: "google",
 			options: {
-				redirectTo: `${window.location.origin}/auth/callback`,
+				redirectTo: callbackUrl,
 			},
 		});
 

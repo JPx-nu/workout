@@ -2,18 +2,19 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
+	const webBasePath = "/workout";
 	const { searchParams, origin } = new URL(request.url);
 	const code = searchParams.get("code");
-	const next = searchParams.get("next") ?? "/dashboard";
+	const next = searchParams.get("next");
+	const safeNext = next?.startsWith("/") ? next : `${webBasePath}/dashboard`;
 
 	if (code) {
 		const supabase = await createClient();
 		const { error } = await supabase.auth.exchangeCodeForSession(code);
 		if (!error) {
-			// basePath is already included in origin from the request URL
-			return NextResponse.redirect(`${origin}${next}`);
+			return NextResponse.redirect(`${origin}${safeNext}`);
 		}
 	}
 
-	return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+	return NextResponse.redirect(`${origin}${webBasePath}/login?error=auth_failed`);
 }

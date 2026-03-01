@@ -1,11 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-	daysUntil,
-	getWeekStart,
-	lookbackDate,
-	progressPercent,
-	toIsoDate,
-} from "../utils/dates.js";
+import { daysUntil, getWeekStart, lookbackDate, progressPercent, toIsoDate } from "../utils/dates";
 
 afterEach(() => {
 	vi.useRealTimers();
