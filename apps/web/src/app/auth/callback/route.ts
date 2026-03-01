@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 function getCanonicalOrigin(requestOrigin: string) {
 	if (process.env.NODE_ENV !== "production") return requestOrigin;
 
-	const configuredWebUrl = process.env.WEB_URL;
+	const configuredWebUrl = process.env.WEB_URL ?? process.env.NEXT_PUBLIC_WEB_URL;
 	if (!configuredWebUrl) return requestOrigin;
 
 	let requestHost = "";

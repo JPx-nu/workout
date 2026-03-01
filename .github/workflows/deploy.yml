@@ -49,6 +49,18 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Configure Web App Settings
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          WEB: ${{ secrets.WEB_URL }}
+        run: |
+          az webapp config appsettings set \
+            --resource-group "$RG" \
+            --name jpx-workout-web \
+            --settings \
+              WEB_URL="$WEB" \
+              NEXT_PUBLIC_WEB_URL="$WEB"
+
       - name: Deploy Frontend to Azure
         uses: azure/webapps-deploy@v3
         with:
