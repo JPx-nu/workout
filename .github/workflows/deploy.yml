@@ -33,6 +33,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_WEB_URL: ${{ secrets.WEB_URL }}
           NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: "true"
 
       # ── Prepare Deployment Package ───────────────────

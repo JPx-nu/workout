@@ -12,6 +12,18 @@ function isFeatureEnabled(value: string | undefined): boolean {
 	return process.env.NODE_ENV === "development";
 }
 
+function getPublicOrigin() {
+	const configured = process.env.NEXT_PUBLIC_WEB_URL;
+	if (configured) {
+		try {
+			return new URL(configured).origin;
+		} catch {
+			// Ignore malformed env and fall back to browser origin.
+		}
+	}
+	return window.location.origin;
+}
+
 const showGoogleAuth = isFeatureEnabled(process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH);
 const showDemo = isFeatureEnabled(process.env.NEXT_PUBLIC_ENABLE_DEMO);
 
@@ -32,7 +44,7 @@ export default function LoginPage() {
 		const supabase = createClient();
 
 		if (mode === "signup") {
-			const callbackUrl = `${window.location.origin}${WEB_BASE_PATH}/auth/callback`;
+			const callbackUrl = `${getPublicOrigin()}${WEB_BASE_PATH}/auth/callback`;
 			const { error: signUpError } = await supabase.auth.signUp({
 				email,
 				password,
@@ -72,7 +84,7 @@ export default function LoginPage() {
 		setLoading(true);
 
 		const supabase = createClient();
-		const callbackUrl = `${window.location.origin}${WEB_BASE_PATH}/auth/callback`;
+		const callbackUrl = `${getPublicOrigin()}${WEB_BASE_PATH}/auth/callback`;
 		const { error: oauthError } = await supabase.auth.signInWithOAuth({
 			provider: "google",
 			options: {
