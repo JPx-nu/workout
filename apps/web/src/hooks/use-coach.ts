@@ -186,9 +186,8 @@ export function useCoach() {
 					),
 				);
 				setConversationId(convId);
-			} catch (err) {
+			} catch {
 				setError("Failed to load conversation");
-				console.error("Load conversation error:", err);
 			}
 		},
 		[supabase, setAiMessages],
@@ -264,7 +263,6 @@ export function useCoach() {
 					.upload(path, file, { contentType: file.type });
 
 				if (uploadResponse.error) {
-					console.error("Upload error:", uploadResponse.error);
 					continue;
 				}
 

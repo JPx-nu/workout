@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAnalyzeBiometricTrendsTool } from "./analyze-biometric-trends.js";
-import { analyzeForm } from "./analyze-form.js";
+import { createAnalyzeFormTool } from "./analyze-form.js";
 import { createAnalyzeWorkoutsTool } from "./analyze-workouts.js";
 import { createGenerateWorkoutPlanTool } from "./generate-workout-plan.js";
 import { createGetAthleteProfileTool } from "./get-athlete-profile.js";
@@ -58,6 +58,6 @@ export function createAllTools(client: SupabaseClient, userId: string, clubId: s
 		createAnalyzeBiometricTrendsTool(client, userId),
 		createAnalyzeWorkoutsTool(client, userId),
 		createPredictInjuryRiskTool(client, userId),
-		analyzeForm,
+		createAnalyzeFormTool(),
 	];
 }

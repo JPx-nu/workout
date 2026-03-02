@@ -8,6 +8,7 @@
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { AI_CONFIG } from "../../../config/ai.js";
 import { createLogger } from "../../../lib/logger.js";
 
 const log = createLogger({ module: "tool-schedule-workout" });
@@ -71,14 +72,7 @@ export function createScheduleWorkoutTool(client: SupabaseClient, userId: string
 				log.debug({ workoutId: data?.id, error }, "Insert result");
 				if (error) throw new Error(error.message);
 
-				const emoji = {
-					SWIM: "🏊",
-					BIKE: "🚴",
-					RUN: "🏃",
-					STRENGTH: "🏋️",
-					YOGA: "🧘",
-					OTHER: "⚡",
-				}[input.activityType];
+				const emoji = AI_CONFIG.activityEmoji[input.activityType] ?? "⚡";
 
 				return `${emoji} Scheduled "${input.title}" on ${input.plannedDate}${input.plannedTime ? ` at ${input.plannedTime}` : ""}${input.durationMin ? ` (${input.durationMin} min)` : ""}${input.intensity ? ` — ${input.intensity}` : ""}. Check your training calendar!`;
 			} catch (error) {

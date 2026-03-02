@@ -7,42 +7,37 @@ Items are categorized by priority and area. Resolved items move to the bottom.
 
 ## MEDIUM — Code Quality
 
-- [ ] **`analyzeForm` tool not factory-wrapped** — `tools/index.ts:61` imports differently from all other tools. Inconsistent pattern
-- [ ] **Oversized components** — `Body3DViewer.tsx` (662 lines), `training/page.tsx` (536 lines), `coach/page.tsx` (461 lines). Extract sub-components
-- [ ] **Duplicate fatigue-to-color logic** — `MuscleDetail.tsx:38-55` (`statusBadge`) and `Body3DViewer.tsx:80-84` (`getFatigueTheme`). Extract to shared utility
-- [ ] **Duplicate profile name formatting** — `dashboard/page.tsx:26-29` and `layout.tsx:63-67` both split display name. Extract helper
+- [ ] **Oversized components** — `Body3DViewer.tsx` (661 lines), `training/page.tsx` (539 lines), `coach/page.tsx` (461 lines). Extract sub-components → Phase 7
+- [ ] **Duplicate fatigue-to-color logic** — `body-map/MuscleDetail.tsx:38-55` (`statusBadge` → CSS) and `body-map-3d/Body3DViewer.tsx:80-84` (`getFatigueTheme` → THREE.Color). Different rendering contexts but same threshold logic — extract shared `getFatigueLevel()` function
 
 ## MEDIUM — Performance
 
-- [ ] **Memory deduplication is O(n²)** — `memory-extractor.ts:115-127` loops existing embeddings for each candidate. Batch embedding queries
-- [ ] **Embedding vector oversized** — `00003` migration uses `vector(2000)` but Azure text-embedding-3-small is 1536 dims. Wasted storage
-
-## MEDIUM — Accessibility
-
-- [ ] **Generic alt text** — coach image attachments use `alt="Attachment"` (`coach/page.tsx:111-120`). Describe content
+- [ ] **Memory deduplication is O(n²)** — `memory-extractor.ts:115-127` loops existing embeddings for each candidate. Small in practice (3×20) but could batch cosine similarity via pgvector
+- [ ] **Embedding vector oversized** — `00003` migration uses `vector(2000)` but Azure text-embedding-3-small produces 1536 dims. Needs ALTER COLUMN migration
 
 ## LOW — Code Smells & Cleanup
 
-- [ ] **console.error in use-coach.ts:165** — Will be resolved by Phase 6 AI SDK migration
-- [ ] **packages/api-client unused** — Package exists but never imported by any consumer. Wire up or remove
-- [ ] **TypeScript target inconsistency** — API: ES2024, Web: ES2017, Core: ES2022. Align
-- [ ] **Missing `sourceMap` in api-client tsconfig** — Has declaration/declarationMap but no sourceMap
-- [ ] **Missing EnvSchema type export** — `validation.ts:147` defines schema but no `z.infer<typeof EnvSchema>` export
-- [ ] **Hardcoded emojis in schedule-workout** — `schedule-workout.ts:74-81` emoji map. Move to config constant
-- [ ] **test-ai.ts has `as any` casts** — Lines 94-99. Type properly or remove test file
+- [ ] **packages/api-client unused** — Package exists but never imported by any consumer. Wire up in Phase 5 (Expo) or remove
+- [ ] **TypeScript target inconsistency** — API: ES2024, Web: ES2017, Core: ES2022. Align when practical
 
 ## Deferred to Future Phases
 
 - [ ] **Route conversion to OpenAPI `createRoute()`** — Individual routes still use plain handlers. Convert incrementally → Phase 6/7
 - [ ] **Wire `packages/api-client` into consumers** — No consumer exists yet → Phase 5 (Expo) or Phase 6
 - [ ] **Platform adapter interfaces (Auth/Storage)** — Needed when mobile app starts → Phase 5
-- [ ] **useCoach hook extraction to core** — Will be replaced by AI SDK `useChat` → Phase 6
-- [ ] **use-coach.ts console calls** — Entire hook gets rewritten → Phase 6
 
 ---
 
 ## Recently Resolved
 
+- ~~`analyzeForm` not factory-wrapped~~ — Wrapped in `createAnalyzeFormTool()` factory for barrel export consistency (2026-03-02)
+- ~~Missing EnvSchema type export~~ — Added `export type EnvSchema = z.infer<typeof EnvSchema>` to `validation.ts` (2026-03-02)
+- ~~Hardcoded emojis in schedule-workout~~ — Moved to `AI_CONFIG.activityEmoji` in `config/ai.ts` (2026-03-02)
+- ~~Generic alt text on coach image attachments~~ — Changed `alt="Attachment"` to role-aware alt text (2026-03-02)
+- ~~console.error in use-coach.ts~~ — Removed both `console.error` calls (load conversation + upload error) (2026-03-02)
+- ~~Missing `sourceMap` in api-client tsconfig~~ — Already present; stale reference (2026-03-02)
+- ~~Duplicate profile name formatting~~ — No longer duplicated after layout refactoring; stale reference (2026-03-02)
+- ~~test-ai.ts `as any` casts~~ — Casts are now typed `as Array<{...}>`, not raw `as any`; acceptable (2026-03-02)
 - ~~Duplicate DataSource definitions~~ — Zod schema in `validation.ts` is now single source of truth, TS type derived via `z.infer` (2026-03-01)
 - ~~PlannedWorkoutRow too loose~~ — `mappers.ts` now has explicit 23-field interface matching DB schema (2026-03-01)
 - ~~Turbo.json missing task outputs~~ — Added `inputs` arrays for `lint` and `type-check` tasks (2026-03-01)

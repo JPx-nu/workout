@@ -172,3 +172,4 @@ export const EnvSchema = z.object({
 	API_URL: z.url().optional(),
 	PORT: z.string().regex(/^\d+$/).optional(),
 });
+export type EnvSchema = z.infer<typeof EnvSchema>;

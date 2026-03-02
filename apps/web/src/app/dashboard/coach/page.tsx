@@ -111,7 +111,7 @@ export default function CoachPage() {
 													{/* biome-ignore lint/performance/noImgElement: user-uploaded signed URLs, not static assets */}
 													<img
 														src={url}
-														alt="Attachment"
+														alt={`Attachment from ${msg.role === "user" ? "you" : "coach"}`}
 														className="rounded-lg object-cover"
 														style={{
 															width: msg.metadata?.imageUrls?.length === 1 ? "240px" : "120px",

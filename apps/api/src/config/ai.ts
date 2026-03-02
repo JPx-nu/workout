@@ -87,6 +87,15 @@ export const AI_CONFIG = {
 		/** Supabase Storage bucket name */
 		storageBucket: "chat-images",
 	},
+	/** Emoji labels for activity types (used in AI tool response strings) */
+	activityEmoji: {
+		SWIM: "\u{1F3CA}",
+		BIKE: "\u{1F6B4}",
+		RUN: "\u{1F3C3}",
+		STRENGTH: "\u{1F3CB}\uFE0F",
+		YOGA: "\u{1F9D8}",
+		OTHER: "\u26A1",
+	} as Record<string, string>,
 } as const;
 
 /** Validate that required env vars are set — warns at startup */
