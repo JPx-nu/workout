@@ -14,6 +14,7 @@ import { type Message, suggestedPrompts } from "@/lib/types";
 const MAX_IMAGES = 3;
 const MAX_SIZE_MB = 10;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const STREAM_TIMEOUT_MS = 120_000;
 
 /**
  * AI Coach hook with Vercel AI SDK 6 streaming.
@@ -36,6 +37,7 @@ export function useCoach() {
 	>([]);
 	const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 	const previewUrlsRef = useRef<Map<File, string>>(new Map());
+	const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [input, setInput] = useState("");
 
@@ -84,6 +86,29 @@ export function useCoach() {
 	});
 
 	const isTyping = status === "streaming" || status === "submitted";
+
+	// Stop requests that never complete to avoid zombie streaming sessions.
+	useEffect(() => {
+		if (status !== "streaming") {
+			if (streamTimeoutRef.current) {
+				clearTimeout(streamTimeoutRef.current);
+				streamTimeoutRef.current = null;
+			}
+			return;
+		}
+
+		streamTimeoutRef.current = setTimeout(() => {
+			stop();
+			setError("The response took too long and was stopped. Please try again.");
+		}, STREAM_TIMEOUT_MS);
+
+		return () => {
+			if (streamTimeoutRef.current) {
+				clearTimeout(streamTimeoutRef.current);
+				streamTimeoutRef.current = null;
+			}
+		};
+	}, [status, stop]);
 
 	// ── Convert AI SDK UIMessages → our Message format ───────
 	const messages: Message[] = useMemo(

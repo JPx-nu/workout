@@ -21,6 +21,26 @@ const log = createLogger({ module: "ai-chat" });
 
 export const aiRoutes = new Hono();
 
+function isGraphRecursionError(err: unknown): boolean {
+	if (!(err instanceof Error)) return false;
+	return err.name === "GraphRecursionError" || err.message.includes("GRAPH_RECURSION_LIMIT");
+}
+
+function isAbortError(err: unknown): boolean {
+	if (!(err instanceof Error)) return false;
+	return err.name === "AbortError";
+}
+
+function getAgentErrorMessage(err: unknown): string {
+	if (isAbortError(err)) {
+		return "I'm taking too long on this one. Please try a shorter or more specific question.";
+	}
+	if (isGraphRecursionError(err)) {
+		return "I got stuck in a reasoning loop. Please rephrase and I will answer with a simpler path.";
+	}
+	return "Sorry, I encountered an error processing your request. Please try again.";
+}
+
 // ── AI Coach chat endpoint (SSE streaming) ──────────────────
 aiRoutes.post("/chat", async (c) => {
 	const body = await c.req.json();
@@ -111,8 +131,15 @@ aiRoutes.post("/chat", async (c) => {
 		// Disable Azure App Service / IIS / ARR response buffering for SSE
 		c.header("X-Accel-Buffering", "no");
 		c.header("Cache-Control", "no-cache, no-transform");
+		const runStartedAt = Date.now();
+		const requestAbortController = new AbortController();
+		const requestTimeoutId = setTimeout(
+			() => requestAbortController.abort(),
+			AI_CONFIG.agent.requestTimeoutMs,
+		);
+		let agent: Awaited<ReturnType<typeof createAgent>> | null = null;
 		try {
-			const agent = await createAgent(client, auth.userId, auth.clubId, message);
+			agent = await createAgent(client, auth.userId, auth.clubId, message);
 
 			// Build input with history + new user message
 			// toBaseMessages handles multimodal content via metadata.imageUrls
@@ -139,7 +166,11 @@ aiRoutes.post("/chat", async (c) => {
 			// Stream the agent's response
 			const agentStream = await agent.stream(
 				{ messages: inputMessages },
-				{ streamMode: "messages" },
+				{
+					streamMode: "messages",
+					recursionLimit: AI_CONFIG.agent.maxGraphSteps,
+					signal: requestAbortController.signal,
+				},
 			);
 
 			// Send conversation ID first
@@ -241,10 +272,30 @@ aiRoutes.post("/chat", async (c) => {
 					disclaimerAdded: processed.disclaimerAdded,
 				}),
 			});
+
+			const stats = agent.getExecutionStats();
+			log.info(
+				{
+					userId: auth.userId,
+					conversationId: conversation.id,
+					durationMs: Date.now() - runStartedAt,
+					...stats,
+				},
+				"AI agent execution completed",
+			);
 		} catch (err) {
-			log.error({ err }, "AI Agent error");
-			const errorMessage =
-				"❌ Sorry, I encountered an error processing your request. Please try again.";
+			const errorMessage = getAgentErrorMessage(err);
+			const stats = agent?.getExecutionStats();
+			log.error(
+				{
+					err,
+					userId: auth.userId,
+					conversationId: conversation.id,
+					durationMs: Date.now() - runStartedAt,
+					...(stats ?? {}),
+				},
+				"AI Agent error",
+			);
 
 			await stream.writeSSE({
 				event: "error",
@@ -255,6 +306,8 @@ aiRoutes.post("/chat", async (c) => {
 			await saveMessages(client, conversation.id, [
 				{ role: "assistant", content: errorMessage, metadata: { error: true } },
 			]);
+		} finally {
+			clearTimeout(requestTimeoutId);
 		}
 	});
 });

@@ -26,6 +26,26 @@ const log = createLogger({ module: "ai-stream" });
 
 export const aiStreamRoutes = new Hono();
 
+function isGraphRecursionError(err: unknown): boolean {
+	if (!(err instanceof Error)) return false;
+	return err.name === "GraphRecursionError" || err.message.includes("GRAPH_RECURSION_LIMIT");
+}
+
+function isAbortError(err: unknown): boolean {
+	if (!(err instanceof Error)) return false;
+	return err.name === "AbortError";
+}
+
+function getAgentErrorMessage(err: unknown): string {
+	if (isAbortError(err)) {
+		return "I'm taking too long on this one. Please try a shorter or more specific question.";
+	}
+	if (isGraphRecursionError(err)) {
+		return "I got stuck in a reasoning loop. Please rephrase and I will answer with a simpler path.";
+	}
+	return "Sorry, I encountered an error processing your request. Please try again.";
+}
+
 // ── AI Coach streaming endpoint (AI SDK protocol) ────────────
 aiStreamRoutes.post("/stream", async (c) => {
 	const body = await c.req.json();
@@ -126,6 +146,12 @@ aiStreamRoutes.post("/stream", async (c) => {
 
 	// ── Create agent and prepare messages ─────────────────────
 	const agent = await createAgent(client, auth.userId, auth.clubId, message);
+	const runStartedAt = Date.now();
+	const requestAbortController = new AbortController();
+	const requestTimeoutId = setTimeout(
+		() => requestAbortController.abort(),
+		AI_CONFIG.agent.requestTimeoutMs,
+	);
 	const historyMessages = toBaseMessages(history);
 
 	// Build multimodal user content if images attached
@@ -143,46 +169,93 @@ aiStreamRoutes.post("/stream", async (c) => {
 	const inputMessages = [...historyMessages, new HumanMessage({ content: userContent })];
 
 	// ── Stream with AI SDK adapter ───────────────────────────
-	const graphStream = await agent.stream(
-		{ messages: inputMessages },
-		{ streamMode: ["values", "messages"] as const },
-	);
-
-	return createUIMessageStreamResponse({
-		stream: toUIMessageStream(graphStream, {
-			onFinal: async (completion) => {
-				// Post-processing: save the assistant response and extract memories
-				if (!completion) return;
-				try {
-					const processed = processOutput(completion, {
-						confidence: 0.85,
-						hasMedicalContent: intent === "medical",
-					});
-
-					await saveMessages(client, conversation.id, [
-						{
-							role: "assistant",
-							content: processed.content,
-							metadata: {
-								model: AI_CONFIG.azure.deploymentName,
-								intent,
-								disclaimerAdded: processed.disclaimerAdded,
-							},
-						},
-					]);
-
-					extractMemories(client, auth.userId, message, processed.content).catch((err) =>
-						log.warn({ err }, "Background memory extraction failed"),
-					);
-				} catch (err) {
-					log.error({ err }, "Post-stream processing failed");
-				}
+	try {
+		const graphStream = await agent.stream(
+			{ messages: inputMessages },
+			{
+				streamMode: ["values", "messages"] as const,
+				recursionLimit: AI_CONFIG.agent.maxGraphSteps,
+				signal: requestAbortController.signal,
 			},
-		}),
-		headers: {
-			"X-Accel-Buffering": "no",
-			"Cache-Control": "no-cache, no-transform",
-			"X-Conversation-Id": conversation.id,
-		},
-	});
+		);
+
+		return createUIMessageStreamResponse({
+			stream: toUIMessageStream(graphStream, {
+				onFinal: async (completion) => {
+					clearTimeout(requestTimeoutId);
+					const stats = agent.getExecutionStats();
+					log.info(
+						{
+							userId: auth.userId,
+							conversationId: conversation.id,
+							durationMs: Date.now() - runStartedAt,
+							...stats,
+						},
+						"AI agent execution completed",
+					);
+
+					// Post-processing: save the assistant response and extract memories
+					if (!completion) return;
+					try {
+						const processed = processOutput(completion, {
+							confidence: 0.85,
+							hasMedicalContent: intent === "medical",
+						});
+
+						await saveMessages(client, conversation.id, [
+							{
+								role: "assistant",
+								content: processed.content,
+								metadata: {
+									model: AI_CONFIG.azure.deploymentName,
+									intent,
+									disclaimerAdded: processed.disclaimerAdded,
+								},
+							},
+						]);
+
+						extractMemories(client, auth.userId, message, processed.content).catch((err) =>
+							log.warn({ err }, "Background memory extraction failed"),
+						);
+					} catch (err) {
+						log.error({ err }, "Post-stream processing failed");
+					}
+				},
+			}),
+			headers: {
+				"X-Accel-Buffering": "no",
+				"Cache-Control": "no-cache, no-transform",
+				"X-Conversation-Id": conversation.id,
+			},
+		});
+	} catch (err) {
+		clearTimeout(requestTimeoutId);
+		const errorMessage = getAgentErrorMessage(err);
+		log.error(
+			{
+				err,
+				userId: auth.userId,
+				conversationId: conversation.id,
+			},
+			"AI stream initialization failed",
+		);
+
+		await saveMessages(client, conversation.id, [
+			{
+				role: "assistant",
+				content: errorMessage,
+				metadata: { error: true, phase: "stream_init" },
+			},
+		]);
+
+		return c.json(
+			{
+				role: "assistant",
+				content: errorMessage,
+				conversationId: conversation.id,
+				metadata: { error: true, phase: "stream_init" },
+			},
+			500,
+		);
+	}
 });

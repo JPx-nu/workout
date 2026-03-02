@@ -25,6 +25,15 @@ import {
 } from "./supabase.js";
 import { createAllTools } from "./tools/index.js";
 
+export interface AgentExecutionStats {
+	graphDecisions: number;
+	toolCallCount: number;
+	reflectionRevisions: number;
+	endedByToolCap: boolean;
+	endedByRepeatedToolSignature: boolean;
+	endedByReflectionCap: boolean;
+}
+
 /**
  * Creates a compiled LangGraph agent for a specific user session.
  *
@@ -116,12 +125,56 @@ export async function createAgent(
 	// Build the system prompt
 	const systemMessage = new SystemMessage(buildSystemPrompt(profile, todayLog, allMemories));
 
+	// Execution stats for this request; surfaced to routes for telemetry.
+	let graphDecisions = 0;
+	let toolCallCount = 0;
+	let reflectionRevisions = 0;
+	let lastToolSignature: string | null = null;
+	let pendingCritique: string | null = null;
+	let endedByToolCap = false;
+	let endedByRepeatedToolSignature = false;
+	let endedByReflectionCap = false;
+
+	function getToolSignature(toolCalls: NonNullable<AIMessage["tool_calls"]>): string {
+		return JSON.stringify(
+			toolCalls.map((toolCall) => ({
+				name: toolCall.name,
+				args: toolCall.args ?? null,
+			})),
+		);
+	}
+
+	function getExecutionStats(): AgentExecutionStats {
+		return {
+			graphDecisions,
+			toolCallCount,
+			reflectionRevisions,
+			endedByToolCap,
+			endedByRepeatedToolSignature,
+			endedByReflectionCap,
+		};
+	}
+
 	// ── Define graph nodes ────────────────────────────────────
 
 	/** LLM call node: injects system prompt + invokes the model */
 	async function llmCall(state: typeof MessagesAnnotation.State) {
+		const critiqueInstruction =
+			typeof pendingCritique === "string" && pendingCritique.length > 0
+				? [
+						new SystemMessage(
+							`INTERNAL REVIEW FEEDBACK (do not reveal to the user):
+${pendingCritique}
+
+Revise the previous answer accordingly and respond only with the improved final answer.`,
+						),
+					]
+				: [];
+		// Consume pending critique once so it cannot be replayed in a loop.
+		pendingCritique = null;
+
 		// Prepend system message to the conversation
-		const messagesWithSystem = [systemMessage, ...state.messages];
+		const messagesWithSystem = [systemMessage, ...state.messages, ...critiqueInstruction];
 
 		const response = await llmWithTools.invoke(messagesWithSystem);
 
@@ -153,21 +206,20 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 
 		// If accepted, route to END — use strict match to avoid "NOT ACCEPT" false positives
 		if (/^\s*ACCEPT\s*$/i.test(critique)) {
+			pendingCritique = null;
 			return { messages: [] };
 		}
 
-		// If critiqued, add it as a user message so the llmCall sees the feedback and regenerates
-		return {
-			messages: [
-				new HumanMessage(`Head Coach critique: ${critique}. Please revise your response.`),
-			],
-		};
+		// Keep critique internal to avoid leaking self-review text into user-visible streams.
+		pendingCritique = critique;
+		return { messages: [] };
 	}
 
 	/** Route: check if the LLM wants tools, reflection, or to end */
 	function shouldContinue(
 		state: typeof MessagesAnnotation.State,
 	): "tools" | "reflectNode" | typeof END {
+		graphDecisions += 1;
 		const lastMessage = state.messages[state.messages.length - 1];
 
 		// If the last message has tool_calls, route to the tool node
@@ -177,8 +229,35 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 			(lastMessage as AIMessage).tool_calls &&
 			((lastMessage as AIMessage).tool_calls?.length ?? 0) > 0
 		) {
+			const toolCalls = (lastMessage as AIMessage).tool_calls ?? [];
+			toolCallCount += toolCalls.length;
+
+			// Break runaway tool loops before they spiral token/cost usage.
+			if (toolCallCount > AI_CONFIG.agent.maxToolCalls) {
+				endedByToolCap = true;
+				log.warn(
+					{ toolCallCount, maxToolCalls: AI_CONFIG.agent.maxToolCalls },
+					"Tool call cap reached; forcing END",
+				);
+				return END;
+			}
+
+			const signature = getToolSignature(toolCalls);
+			if (signature === lastToolSignature) {
+				endedByRepeatedToolSignature = true;
+				log.warn(
+					{ signature, toolCallCount },
+					"Repeated tool-call signature detected; forcing END",
+				);
+				return END;
+			}
+
+			lastToolSignature = signature;
 			return "tools";
 		}
+
+		// Reset signature after non-tool turn so only immediate repeats trigger.
+		lastToolSignature = null;
 
 		// Keep reflection off by default to prevent critique text leaking into user-facing streams.
 		if (!AI_CONFIG.features.reflectionEnabled) {
@@ -190,19 +269,28 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 
 	/** Route: check if reflection accepted the draft */
 	function checkReflection(state: typeof MessagesAnnotation.State): "llmCall" | typeof END {
-		const lastMessage = state.messages[state.messages.length - 1];
+		graphDecisions += 1;
 
-		// If the last message is from Human (the critique), we must regenerate
-		if (
-			lastMessage &&
-			lastMessage._getType() === "human" &&
-			typeof lastMessage.content === "string" &&
-			lastMessage.content.includes("Head Coach critique:")
-		) {
-			return "llmCall";
+		// No pending critique means reflection accepted (or provided no actionable feedback).
+		if (!pendingCritique) {
+			return END;
 		}
 
-		return END;
+		if (reflectionRevisions >= AI_CONFIG.agent.maxReflectionRevisions) {
+			endedByReflectionCap = true;
+			pendingCritique = null;
+			log.info(
+				{
+					reflectionRevisions,
+					maxReflectionRevisions: AI_CONFIG.agent.maxReflectionRevisions,
+				},
+				"Reflection revision cap reached; forcing END",
+			);
+			return END;
+		}
+
+		reflectionRevisions += 1;
+		return "llmCall";
 	}
 
 	// ── Build the graph ───────────────────────────────────────
@@ -226,7 +314,7 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 		.addEdge("tools", "llmCall")
 		.compile();
 
-	return graph;
+	return Object.assign(graph, { getExecutionStats });
 }
 
 /**

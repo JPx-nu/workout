@@ -54,14 +54,26 @@ export const AI_CONFIG = {
 	features: {
 		/** Enable SSE streaming responses */
 		streaming: true,
-		/** Reflection loop can leak internal critique in some stream adapters */
-		reflectionEnabled: false,
+		/** Enable internal self-review pass (guarded by loop/cost limits) */
+		reflectionEnabled: true,
 		/** Enable RAG document retrieval (future) */
 		ragEnabled: false,
 		/** Require user confirmation before write operations */
 		confirmWrites: true,
 		/** Enable vision/image analysis via GPT-5-mini */
 		visionEnabled: true,
+	},
+
+	/** Agent execution guardrails to prevent runaway loops/costs */
+	agent: {
+		/** Max graph steps (LangGraph recursionLimit) per request */
+		maxGraphSteps: 15,
+		/** Overall timeout for a single request's agent execution */
+		requestTimeoutMs: 90_000,
+		/** Max cumulative tool calls per request */
+		maxToolCalls: 10,
+		/** Max reflection revisions when reflection is enabled */
+		maxReflectionRevisions: 1,
 	},
 
 	/** File/image upload limits */
