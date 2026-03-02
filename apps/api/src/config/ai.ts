@@ -54,6 +54,8 @@ export const AI_CONFIG = {
 	features: {
 		/** Enable SSE streaming responses */
 		streaming: true,
+		/** Reflection loop can leak internal critique in some stream adapters */
+		reflectionEnabled: false,
 		/** Enable RAG document retrieval (future) */
 		ragEnabled: false,
 		/** Require user confirmation before write operations */

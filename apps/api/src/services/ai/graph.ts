@@ -164,8 +164,10 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 		};
 	}
 
-	/** Route: check if the LLM wants to call tools or is done drafting */
-	function shouldContinue(state: typeof MessagesAnnotation.State): "tools" | "reflectNode" {
+	/** Route: check if the LLM wants tools, reflection, or to end */
+	function shouldContinue(
+		state: typeof MessagesAnnotation.State,
+	): "tools" | "reflectNode" | typeof END {
 		const lastMessage = state.messages[state.messages.length - 1];
 
 		// If the last message has tool_calls, route to the tool node
@@ -176,6 +178,11 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 			((lastMessage as AIMessage).tool_calls?.length ?? 0) > 0
 		) {
 			return "tools";
+		}
+
+		// Keep reflection off by default to prevent critique text leaking into user-facing streams.
+		if (!AI_CONFIG.features.reflectionEnabled) {
+			return END;
 		}
 
 		return "reflectNode";
@@ -210,6 +217,7 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 		.addConditionalEdges("llmCall", shouldContinue, {
 			tools: "tools",
 			reflectNode: "reflectNode",
+			[END]: END,
 		})
 		.addConditionalEdges("reflectNode", checkReflection, {
 			llmCall: "llmCall",
