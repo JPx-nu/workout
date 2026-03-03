@@ -21,6 +21,7 @@
 		"@langchain/core": "^1.1.28",
 		"@langchain/langgraph": "^1.1.5",
 		"@langchain/openai": "^1.2.10",
+		"@modelcontextprotocol/sdk": "^1.27.1",
 		"@opentelemetry/api": "^1.9.0",
 		"@opentelemetry/exporter-trace-otlp-http": "^0.212.0",
 		"@opentelemetry/instrumentation": "^0.212.0",

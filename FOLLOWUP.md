@@ -9,6 +9,8 @@ Items are categorized by priority and area. Resolved items move to the bottom.
 
 - [ ] **Oversized components** — `Body3DViewer.tsx` (661 lines), `training/page.tsx` (539 lines), `coach/page.tsx` (461 lines). Extract sub-components → Phase 7
 - [ ] **Duplicate fatigue-to-color logic** — `body-map/MuscleDetail.tsx:38-55` (`statusBadge` → CSS) and `body-map-3d/Body3DViewer.tsx:80-84` (`getFatigueTheme` → THREE.Color). Different rendering contexts but same threshold logic — extract shared `getFatigueLevel()` function
+- [ ] **Web-side duplicate patterns** — Duplicate fetch patterns in hooks, repeated inline styles, duplicate stat card patterns, icon wrapper duplication, date formatting duplication → Phase 7
+- [ ] **generate-workout-plan.ts bypasses service layer** — Makes raw Supabase calls instead of using `getProfile()`, `getWorkouts()` from `services/ai/supabase.ts`. Should be refactored for consistency
 
 ## MEDIUM — Performance
 
@@ -22,14 +24,23 @@ Items are categorized by priority and area. Resolved items move to the bottom.
 
 ## Deferred to Future Phases
 
-- [ ] **Route conversion to OpenAPI `createRoute()`** — Individual routes still use plain handlers. Convert incrementally → Phase 6/7
-- [ ] **Wire `packages/api-client` into consumers** — No consumer exists yet → Phase 5 (Expo) or Phase 6
+- [ ] **Route conversion to OpenAPI `createRoute()`** — Individual routes still use plain handlers. Convert incrementally → Phase 7
+- [ ] **Wire `packages/api-client` into consumers** — No consumer exists yet → Phase 5 (Expo)
 - [ ] **Platform adapter interfaces (Auth/Storage)** — Needed when mobile app starts → Phase 5
 
 ---
 
 ## Recently Resolved
 
+- ~~3 duplicate `getSupabase()` admin client~~ — Replaced with `createAdminClient()` from `services/ai/supabase.ts` in onboarding.ts, planned-workouts/index.ts, rate-limit.ts (2026-03-02)
+- ~~4 duplicate JWT extractions~~ — Added `getJwt(c)` helper to auth middleware, updated chat.ts, stream.ts, mcp/index.ts (2026-03-02)
+- ~~Duplicate agent error handlers~~ — Extracted `isGraphRecursionError`, `isAbortError`, `getAgentErrorMessage` to `services/ai/utils/agent-errors.ts` (2026-03-02)
+- ~~Duplicate session load calculation~~ — Added `estimateSessionLoad()` to `@triathlon/core`, used in analyze-workouts + predict-injury-risk (2026-03-02)
+- ~~Duplicate biometric averaging~~ — Added `computeAverage()` to `@triathlon/core`, used in analyze-biometric-trends + get-progress-report (2026-03-02)
+- ~~Manual date math in 3 tools~~ — Standardized to `lookbackDate()` from `@triathlon/core` in analyze-workouts, analyze-biometric-trends, predict-injury-risk (2026-03-02)
+- ~~Duplicate squad membership queries~~ — Added `getUserSquadIds()` to `services/ai/supabase.ts`, used in get-squad-leaderboard + pass-baton (2026-03-02)
+- ~~Azure OpenAI API inconsistency (endpoint vs instanceName)~~ — Standardized all 4 sites to `azureOpenAIApiInstanceName` via `getAzureInstanceName()` helper (2026-03-02)
+- ~~No MCP server for external agents~~ — Added `/mcp` endpoint with `WebStandardStreamableHTTPServerTransport`, bridges all 21 LangChain tools to MCP protocol (2026-03-02)
 - ~~`analyzeForm` not factory-wrapped~~ — Wrapped in `createAnalyzeFormTool()` factory for barrel export consistency (2026-03-02)
 - ~~Missing EnvSchema type export~~ — Added `export type EnvSchema = z.infer<typeof EnvSchema>` to `validation.ts` (2026-03-02)
 - ~~Hardcoded emojis in schedule-workout~~ — Moved to `AI_CONFIG.activityEmoji` in `config/ai.ts` (2026-03-02)

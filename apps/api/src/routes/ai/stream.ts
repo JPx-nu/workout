@@ -10,7 +10,7 @@ import { createUIMessageStreamResponse, type UIMessage } from "ai";
 import { Hono } from "hono";
 import { AI_CONFIG, validateAIConfig } from "../../config/ai.js";
 import { createLogger } from "../../lib/logger.js";
-import { getAuth } from "../../middleware/auth.js";
+import { getAuth, getJwt } from "../../middleware/auth.js";
 import {
 	getOrCreateConversation,
 	loadHistory,
@@ -21,30 +21,11 @@ import { createAgent, toBaseMessages } from "../../services/ai/graph.js";
 import { extractMemories } from "../../services/ai/memory-extractor.js";
 import { checkInput, classifyIntent, processOutput } from "../../services/ai/safety.js";
 import { createUserClient } from "../../services/ai/supabase.js";
+import { getAgentErrorMessage } from "../../services/ai/utils/agent-errors.js";
 
 const log = createLogger({ module: "ai-stream" });
 
 export const aiStreamRoutes = new Hono();
-
-function isGraphRecursionError(err: unknown): boolean {
-	if (!(err instanceof Error)) return false;
-	return err.name === "GraphRecursionError" || err.message.includes("GRAPH_RECURSION_LIMIT");
-}
-
-function isAbortError(err: unknown): boolean {
-	if (!(err instanceof Error)) return false;
-	return err.name === "AbortError";
-}
-
-function getAgentErrorMessage(err: unknown): string {
-	if (isAbortError(err)) {
-		return "I'm taking too long on this one. Please try a shorter or more specific question.";
-	}
-	if (isGraphRecursionError(err)) {
-		return "I got stuck in a reasoning loop. Please rephrase and I will answer with a simpler path.";
-	}
-	return "Sorry, I encountered an error processing your request. Please try again.";
-}
 
 // ── AI Coach streaming endpoint (AI SDK protocol) ────────────
 aiStreamRoutes.post("/stream", async (c) => {
@@ -118,8 +99,7 @@ aiStreamRoutes.post("/stream", async (c) => {
 
 	// ── Auth & Supabase client ───────────────────────────────
 	const auth = getAuth(c);
-	const jwt = c.req.header("Authorization")?.replace("Bearer ", "") || "";
-	const client = createUserClient(jwt);
+	const client = createUserClient(getJwt(c));
 
 	// ── Conversation persistence ─────────────────────────────
 	const conversation = await getOrCreateConversation(

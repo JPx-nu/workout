@@ -7,7 +7,7 @@
 
 import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { AI_CONFIG } from "../../config/ai.js";
+import { AI_CONFIG, getAzureInstanceName } from "../../config/ai.js";
 import { createLogger } from "../../lib/logger.js";
 import { getRecentMemories, insertMemory } from "./supabase.js";
 import { createEmbeddings } from "./utils/embeddings.js";
@@ -61,7 +61,7 @@ export async function extractMemories(
 
 		// Use a separate, cheap LLM call for extraction
 		const llm = new AzureChatOpenAI({
-			azureOpenAIEndpoint: AI_CONFIG.azure.endpoint,
+			azureOpenAIApiInstanceName: getAzureInstanceName(),
 			azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
 			azureOpenAIApiDeploymentName: AI_CONFIG.azure.deploymentName,
 			azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,

@@ -5,21 +5,14 @@
  * (applied in server.ts for /api/* routes).
  */
 
-import { createClient } from "@supabase/supabase-js";
 import { PlannedWorkoutInput, PlannedWorkoutUpdate } from "@triathlon/types";
 import { Hono } from "hono";
 import { createLogger } from "../../lib/logger.js";
 import { getAuth } from "../../middleware/auth.js";
 import { isResponse, parseBody } from "../../middleware/validate.js";
+import { createAdminClient } from "../../services/ai/supabase.js";
 
 const log = createLogger({ module: "planned-workouts" });
-
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-function getSupabase() {
-	return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-}
 
 export const plannedWorkoutsRoutes = new Hono();
 
@@ -35,7 +28,7 @@ plannedWorkoutsRoutes.get("/", async (c) => {
 		return c.json({ error: "Missing required query params: from, to" }, 400);
 	}
 
-	const supabase = getSupabase();
+	const supabase = createAdminClient();
 	let query = supabase
 		.from("planned_workouts")
 		.select("*")
@@ -65,7 +58,7 @@ plannedWorkoutsRoutes.get("/", async (c) => {
 plannedWorkoutsRoutes.get("/:id", async (c) => {
 	const { userId } = getAuth(c);
 	const id = c.req.param("id");
-	const supabase = getSupabase();
+	const supabase = createAdminClient();
 
 	const { data, error } = await supabase
 		.from("planned_workouts")
@@ -87,7 +80,7 @@ plannedWorkoutsRoutes.post("/", async (c) => {
 	const body = await parseBody(c, PlannedWorkoutInput);
 	if (isResponse(body)) return body;
 
-	const supabase = getSupabase();
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("planned_workouts")
 		.insert({
@@ -152,7 +145,7 @@ plannedWorkoutsRoutes.patch("/:id", async (c) => {
 		return c.json({ error: "No fields to update" }, 400);
 	}
 
-	const supabase = getSupabase();
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("planned_workouts")
 		.update(updateData)
@@ -176,7 +169,7 @@ plannedWorkoutsRoutes.patch("/:id/complete", async (c) => {
 	const id = c.req.param("id");
 	const body = await c.req.json().catch(() => ({}));
 
-	const supabase = getSupabase();
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("planned_workouts")
 		.update({
@@ -201,7 +194,7 @@ plannedWorkoutsRoutes.delete("/:id", async (c) => {
 	const { userId } = getAuth(c);
 	const id = c.req.param("id");
 
-	const supabase = getSupabase();
+	const supabase = createAdminClient();
 	const { error } = await supabase
 		.from("planned_workouts")
 		.delete()

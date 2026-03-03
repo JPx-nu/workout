@@ -12,6 +12,8 @@ export const AI_CONFIG = {
 	azure: {
 		/** Azure OpenAI resource endpoint, e.g. https://<resource>.openai.azure.com */
 		endpoint: process.env.AZURE_OPENAI_ENDPOINT || "",
+		/** Azure OpenAI instance name (e.g. "myinstance" from myinstance.openai.azure.com) */
+		instanceName: process.env.AZURE_OPENAI_INSTANCE_NAME || "",
 		/** Azure OpenAI API key */
 		apiKey: process.env.AZURE_OPENAI_API_KEY || "",
 		/** Deployment name for the chat model (e.g. "gpt-5-mini") */
@@ -102,7 +104,9 @@ export const AI_CONFIG = {
 export function validateAIConfig(): { valid: boolean; missing: string[] } {
 	const missing: string[] = [];
 
-	if (!AI_CONFIG.azure.endpoint) missing.push("AZURE_OPENAI_ENDPOINT");
+	if (!AI_CONFIG.azure.instanceName && !AI_CONFIG.azure.endpoint) {
+		missing.push("AZURE_OPENAI_INSTANCE_NAME or AZURE_OPENAI_ENDPOINT");
+	}
 	if (!AI_CONFIG.azure.apiKey) missing.push("AZURE_OPENAI_API_KEY");
 
 	if (missing.length > 0) {
@@ -113,4 +117,10 @@ export function validateAIConfig(): { valid: boolean; missing: string[] } {
 	}
 
 	return { valid: missing.length === 0, missing };
+}
+
+/** Resolves Azure instance name from explicit env var or parses endpoint URL */
+export function getAzureInstanceName(): string {
+	if (AI_CONFIG.azure.instanceName) return AI_CONFIG.azure.instanceName;
+	return AI_CONFIG.azure.endpoint.split(".")[0].replace("https://", "");
 }

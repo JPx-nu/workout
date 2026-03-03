@@ -1,21 +1,16 @@
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { getUserSquadIds } from "../supabase.js";
 
 export function createPassBatonTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ toAthleteId, distanceMeters, notes }) => {
 			// 1. Find user's squads
-			const { data: squadMemberships, error: squadErr } = await client
-				.from("squad_members")
-				.select("squad_id")
-				.eq("athlete_id", userId);
-
-			if (squadErr || !squadMemberships || squadMemberships.length === 0) {
+			const squadIds = await getUserSquadIds(client, userId);
+			if (squadIds.length === 0) {
 				return "User is not currently in any squads.";
 			}
-
-			const squadIds = squadMemberships.map((m) => m.squad_id);
 
 			// 2. Find an active relay event for these squads
 			const { data: activeRelays, error: relayErr } = await client

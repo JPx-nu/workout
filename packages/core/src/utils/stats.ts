@@ -103,6 +103,34 @@ export function computeChartData(workouts: WorkoutLike[]): ChartDataPoint[] {
 	});
 }
 
+// ── Generic Aggregation Helpers ───────────────────────────────
+
+/** Average of non-null numbers. Returns null if array is empty. */
+export function computeAverage(values: number[]): number | null {
+	if (values.length === 0) return null;
+	return +(values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+}
+
+/**
+ * Estimates session training load (TSS/TRIMP) for a single workout.
+ * Uses TSS when available, falls back to a rough TRIMP estimation
+ * based on duration and heart rate, or duration-only as a last resort.
+ */
+export function estimateSessionLoad(workout: {
+	tss: number | null;
+	duration_s: number | null;
+	avg_hr: number | null;
+}): number {
+	if (workout.tss != null) return workout.tss;
+	if (workout.duration_s != null && workout.avg_hr != null) {
+		return (workout.duration_s / 60) * (workout.avg_hr / 150) * 1.5;
+	}
+	if (workout.duration_s != null) {
+		return (workout.duration_s / 60) * 1.0;
+	}
+	return 0;
+}
+
 // ── Health ─────────────────────────────────────────────────────
 
 export type HealthSnapshot = {

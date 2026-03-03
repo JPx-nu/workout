@@ -1,25 +1,20 @@
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { getUserSquadIds } from "../supabase.js";
 
 export function createGetSquadLeaderboardTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ timeframeDays }) => {
 			try {
 				const days = timeframeDays || 7;
-				const threshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+				const threshold = new Date(Date.now() - days * 86400000).toISOString();
 
 				// 1. Get the squads the user is a member of
-				const { data: squadMemberships, error: squadErr } = await client
-					.from("squad_members")
-					.select("squad_id, squads(name)")
-					.eq("athlete_id", userId);
-
-				if (squadErr || !squadMemberships || squadMemberships.length === 0) {
+				const squadIds = await getUserSquadIds(client, userId);
+				if (squadIds.length === 0) {
 					return "User is not currently in any squads.";
 				}
-
-				const squadIds = squadMemberships.map((m) => m.squad_id);
 
 				// 2. Get all members of those squads
 				const { data: allMembers, error: memErr } = await client
@@ -64,18 +59,21 @@ export function createGetSquadLeaderboardTool(client: SupabaseClient, userId: st
 					})
 					.sort((a, b) => b.totalDurationMinutes - a.totalDurationMinutes);
 
+				// Extract squad names from allMembers (which joins squads)
+				const squadNames = [
+					...new Set(
+						allMembers.map((m) => {
+							const squad = m.squads;
+							return squad && typeof squad === "object" && "name" in squad
+								? (squad.name as string)
+								: "Unknown Squad";
+						}),
+					),
+				];
+
 				const result = {
 					timeframe: `Past ${days} days`,
-					squads: [
-						...new Set(
-							squadMemberships.map((m) => {
-								const squad = m.squads;
-								return squad && typeof squad === "object" && "name" in squad
-									? squad.name
-									: "Unknown Squad";
-							}),
-						),
-					],
+					squads: squadNames,
 					leaderboard: leaderboard.map((l, index) => ({
 						rank: index + 1,
 						athlete: l.athleteId === userId ? `${l.displayName} (You)` : l.displayName,

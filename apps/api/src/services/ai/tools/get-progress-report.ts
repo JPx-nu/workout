@@ -5,7 +5,7 @@
 
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { lookbackDate } from "@triathlon/core";
+import { computeAverage, lookbackDate } from "@triathlon/core";
 import { z } from "zod";
 import { getDailyLogs, getWorkouts } from "../supabase.js";
 
@@ -31,23 +31,18 @@ export function createGetProgressReportTool(client: SupabaseClient, userId: stri
 			}
 
 			// ── Health trends ──────────────────────────────────
-			const sleepValues = dailyLogs.map((d) => d.sleep_hours).filter((v): v is number => v != null);
-			const hrvValues = dailyLogs.map((d) => d.hrv).filter((v): v is number => v != null);
-			const moodValues = dailyLogs.map((d) => d.mood).filter((v): v is number => v != null);
-			const rpeValues = dailyLogs.map((d) => d.rpe).filter((v): v is number => v != null);
-
-			const avg = (arr: number[]) =>
-				arr.length ? +(arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : null;
+			const nonNull = <T>(items: T[], fn: (i: T) => number | null) =>
+				items.map(fn).filter((v): v is number => v != null);
 
 			return JSON.stringify({
 				period: `Last ${lookbackDays} days`,
 				totalWorkouts: workouts.length,
 				byActivity,
 				healthTrends: {
-					avgSleepHours: avg(sleepValues),
-					avgHrv: avg(hrvValues),
-					avgMood: avg(moodValues),
-					avgRpe: avg(rpeValues),
+					avgSleepHours: computeAverage(nonNull(dailyLogs, (d) => d.sleep_hours)),
+					avgHrv: computeAverage(nonNull(dailyLogs, (d) => d.hrv)),
+					avgMood: computeAverage(nonNull(dailyLogs, (d) => d.mood)),
+					avgRpe: computeAverage(nonNull(dailyLogs, (d) => d.rpe)),
 					daysLogged: dailyLogs.length,
 				},
 			});

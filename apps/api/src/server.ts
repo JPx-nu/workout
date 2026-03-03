@@ -13,6 +13,7 @@ import { RATE_LIMITS, rateLimit } from "./middleware/rate-limit.js";
 import { aiRoutes } from "./routes/ai/chat.js";
 import { aiStreamRoutes } from "./routes/ai/stream.js";
 import { integrationRoutes } from "./routes/integrations/index.js";
+import { mcpRoutes } from "./routes/mcp/index.js";
 import { onboardingRoutes } from "./routes/onboarding.js";
 import { plannedWorkoutsRoutes } from "./routes/planned-workouts/index.js";
 import { webhookRoutes } from "./routes/webhooks/index.js";
@@ -79,6 +80,10 @@ app.route("/webhooks", webhookRoutes);
 // ── Protected API routes ───────────────────────────────────────
 // JWT auth + claims extraction for all /api/* routes
 app.use("/api/*", jwtAuth(), extractClaims);
+
+// ── MCP server (JWT-protected, same auth as API) ─────────────
+app.use("/mcp", jwtAuth(), extractClaims);
+app.route("/mcp", mcpRoutes);
 
 // Rate limiting for AI endpoints
 app.use("/api/ai/*", rateLimit(RATE_LIMITS.aiChat));

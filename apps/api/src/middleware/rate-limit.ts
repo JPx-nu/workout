@@ -8,9 +8,9 @@
  * Uses Draft 7 RateLimit response headers.
  */
 
-import { createClient } from "@supabase/supabase-js";
 import { createMiddleware } from "hono/factory";
 import { createLogger } from "../lib/logger.js";
+import { createAdminClient } from "../services/ai/supabase.js";
 
 const log = createLogger({ module: "rate-limit" });
 
@@ -30,12 +30,6 @@ export const RATE_LIMITS = {
 	webhooks: { limit: 200, windowSeconds: 60 } satisfies RateLimitConfig,
 } as const;
 
-// ── Supabase client for rate limiting ─────────────────────────
-
-function getSupabase() {
-	return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
-
 // ── Middleware Factory ─────────────────────────────────────────
 
 export function rateLimit(config: RateLimitConfig) {
@@ -52,7 +46,7 @@ export function rateLimit(config: RateLimitConfig) {
 		let remaining: number;
 
 		try {
-			const supabase = getSupabase();
+			const supabase = createAdminClient();
 			const { data, error } = await supabase.rpc("check_rate_limit", {
 				rate_key: key,
 				max_requests: limit,

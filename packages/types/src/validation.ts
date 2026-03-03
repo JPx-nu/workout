@@ -165,6 +165,7 @@ export const EnvSchema = z.object({
 	SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 	SUPABASE_JWT_SECRET: z.string().min(1),
 	AZURE_OPENAI_ENDPOINT: z.url().optional(),
+	AZURE_OPENAI_INSTANCE_NAME: z.string().optional(),
 	AZURE_OPENAI_API_KEY: z.string().optional(),
 	AZURE_OPENAI_DEPLOYMENT: z.string().optional(),
 	AZURE_OPENAI_API_VERSION: z.string().optional(),

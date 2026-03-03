@@ -48,7 +48,8 @@ export function jwtAuth(): MiddlewareHandler {
 				issuer: `${SUPABASE_URL}/auth/v1`,
 			});
 
-			// Store the payload for downstream middleware
+			// Store the raw JWT and payload for downstream middleware
+			c.set("jwt", token);
 			c.set("jwtPayload", payload);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Token verification failed";
@@ -103,4 +104,12 @@ export function getAuth(c: Context): AuthContext {
 		throw new Error("getAuth() called without auth middleware — check route middleware stack");
 	}
 	return auth;
+}
+
+/**
+ * Retrieves the raw JWT from a Hono request (set by jwtAuth middleware).
+ * Use this to create user-scoped Supabase clients.
+ */
+export function getJwt(c: Context): string {
+	return (c.get("jwt") as string) || "";
 }

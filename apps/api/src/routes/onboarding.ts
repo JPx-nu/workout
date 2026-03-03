@@ -1,20 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
 import { OnboardingSubmission } from "@triathlon/types";
 import { Hono } from "hono";
 import { createLogger } from "../lib/logger.js";
 import { getAuth } from "../middleware/auth.js";
 import { isResponse, parseBody } from "../middleware/validate.js";
-import { insertMemory } from "../services/ai/supabase.js";
+import { createAdminClient, insertMemory } from "../services/ai/supabase.js";
 import { createEmbeddings } from "../services/ai/utils/embeddings.js";
 
 const log = createLogger({ module: "onboarding-route" });
-
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-function getSupabase() {
-	return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-}
 
 function asPreferenceObject(value: unknown): Record<string, unknown> {
 	if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -30,7 +22,7 @@ onboardingRoutes.post("/", async (c) => {
 	const body = await parseBody(c, OnboardingSubmission);
 	if (isResponse(body)) return body;
 
-	const supabase = getSupabase();
+	const supabase = createAdminClient();
 
 	const { data: profileRow, error: profileError } = await supabase
 		.from("profiles")

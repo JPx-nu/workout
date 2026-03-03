@@ -59,11 +59,13 @@ export type {
 } from "./utils/stats";
 // Statistics & health
 export {
+	computeAverage,
 	computeChartData,
 	computeReadinessScore,
 	computeWeeklyStats,
 	DEFAULT_HEALTH_SNAPSHOT,
 	DEFAULT_MUSCLE_GROUPS,
+	estimateSessionLoad,
 	mergeInjuriesToMuscleGroups,
 	severityToFatigueLevel,
 } from "./utils/stats";

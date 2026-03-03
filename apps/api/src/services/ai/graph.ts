@@ -9,7 +9,7 @@ import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toIsoDate } from "@triathlon/core";
-import { AI_CONFIG } from "../../config/ai.js";
+import { AI_CONFIG, getAzureInstanceName } from "../../config/ai.js";
 import { createLogger } from "../../lib/logger.js";
 import { createEmbeddings } from "./utils/embeddings.js";
 
@@ -104,7 +104,7 @@ export async function createAgent(
 
 	// Create LLM instance — uses AzureChatOpenAI for Azure Foundry compatibility
 	const llm = new AzureChatOpenAI({
-		azureOpenAIEndpoint: AI_CONFIG.azure.endpoint,
+		azureOpenAIApiInstanceName: getAzureInstanceName(),
 		azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
 		azureOpenAIApiDeploymentName: AI_CONFIG.azure.deploymentName,
 		azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,

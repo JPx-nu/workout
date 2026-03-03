@@ -324,6 +324,22 @@ export async function searchMemoriesBySimilarity(
 	return data ?? [];
 }
 
+// ── Squad services ────────────────────────────────────────────
+
+/**
+ * Returns the squad IDs the athlete belongs to.
+ * Returns an empty array if not in any squads.
+ */
+export async function getUserSquadIds(client: SupabaseClient, userId: string): Promise<string[]> {
+	const { data, error } = await client
+		.from("squad_members")
+		.select("squad_id")
+		.eq("athlete_id", userId);
+
+	if (error) throw new Error(`Failed to fetch squad memberships: ${error.message}`);
+	return (data ?? []).map((m) => m.squad_id);
+}
+
 // ── Write services ────────────────────────────────────────────
 
 export async function insertWorkout(

@@ -5,7 +5,7 @@
 
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { toIsoDate } from "@triathlon/core";
+import { estimateSessionLoad, lookbackDate } from "@triathlon/core";
 import { z } from "zod";
 import { AI_CONFIG } from "../../../config/ai.js";
 import { getWorkouts } from "../supabase.js";
@@ -13,45 +13,27 @@ import { getWorkouts } from "../supabase.js";
 export function createPredictInjuryRiskTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async () => {
-			const today = new Date();
-			const fourWeeksAgo = new Date();
-			fourWeeksAgo.setDate(today.getDate() - 28);
-
-			// Fetch last 28 days of workouts
 			const workouts = await getWorkouts(client, userId, {
-				fromDate: toIsoDate(fourWeeksAgo),
-				toDate: toIsoDate(today),
+				fromDate: lookbackDate(28),
 			});
 
 			if (workouts.length === 0) {
 				return "Not enough workout data in the last 28 days to calculate injury risk.";
 			}
 
-			// Calculate daily loads
-			// Load = TSS. If no TSS, estimate: (duration_s / 60) * (avg_hr / 150) * 1.5
+			// Calculate daily loads using shared estimator
 			const dailyLoads: Record<string, number> = {};
 
-			workouts.forEach((w) => {
+			for (const w of workouts) {
 				const dateKey = w.started_at.split("T")[0];
-				let sessionLoad = 0;
-				if (w.tss != null) {
-					sessionLoad = w.tss;
-				} else if (w.duration_s != null && w.avg_hr != null) {
-					sessionLoad = (w.duration_s / 60) * (w.avg_hr / 150) * 1.5;
-				} else if (w.duration_s != null) {
-					// Fallback using moderate RPE equivalent
-					sessionLoad = (w.duration_s / 60) * 1.0;
-				}
-				dailyLoads[dateKey] = (dailyLoads[dateKey] || 0) + sessionLoad;
-			});
+				dailyLoads[dateKey] = (dailyLoads[dateKey] || 0) + estimateSessionLoad(w);
+			}
 
 			// Calculate Acute Load (last 7 days) and Chronic Load (last 28 days)
 			let acuteLoad = 0;
 			let chronicLoad = 0;
 
-			const sevenDaysAgo = new Date();
-			sevenDaysAgo.setDate(today.getDate() - 7);
-			const sevenDaysStr = toIsoDate(sevenDaysAgo);
+			const sevenDaysStr = lookbackDate(7);
 
 			for (const [date, load] of Object.entries(dailyLoads)) {
 				chronicLoad += load;

@@ -6,80 +6,46 @@
 
 import { tool } from "@langchain/core/tools";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { toIsoDate } from "@triathlon/core";
+import { computeAverage, lookbackDate } from "@triathlon/core";
 import { z } from "zod";
+import type { DailyLog } from "../supabase.js";
 import { getDailyLogs } from "../supabase.js";
+
+function extractNonNull<T>(items: T[], getter: (item: T) => number | null): number[] {
+	return items.map(getter).filter((v): v is number => v != null);
+}
+
+function summarizeLogs(logSet: DailyLog[]) {
+	return {
+		sleep: computeAverage(extractNonNull(logSet, (l) => l.sleep_hours)) ?? "N/A",
+		sleepQuality: computeAverage(extractNonNull(logSet, (l) => l.sleep_quality)) ?? "N/A",
+		hrv: computeAverage(extractNonNull(logSet, (l) => l.hrv)) ?? "N/A",
+		rhr: computeAverage(extractNonNull(logSet, (l) => l.resting_hr)) ?? "N/A",
+		rpe: computeAverage(extractNonNull(logSet, (l) => l.rpe)) ?? "N/A",
+	};
+}
 
 export function createAnalyzeBiometricTrendsTool(client: SupabaseClient, userId: string) {
 	return tool(
 		async ({ days = 30 }) => {
-			const toDate = new Date();
-			const fromDate = new Date();
-			fromDate.setDate(toDate.getDate() - days);
-
 			const logs = await getDailyLogs(client, userId, {
-				fromDate: toIsoDate(fromDate),
-				toDate: toIsoDate(toDate),
-				limit: days, // limit to max requested days just in case
+				fromDate: lookbackDate(days),
+				limit: days,
 			});
 
 			if (logs.length === 0) {
 				return `No daily logs found for the last ${days} days. Suggest the athlete log their metrics.`;
 			}
 
-			// Split into recent (first half of period) and previous (second half)
+			// Split into recent (first half) and previous (second half)
 			// Note: logs are ordered log_date desc (newest first)
 			const midPoint = Math.floor(logs.length / 2);
 			const recentLogs = logs.slice(0, midPoint);
 			const olderLogs = logs.slice(midPoint);
 
-			const calculateAvgs = (logSet: typeof logs) => {
-				let s = 0,
-					sc = 0;
-				let sq = 0,
-					sqc = 0;
-				let h = 0,
-					hc = 0;
-				let rh = 0,
-					rhc = 0;
-				let rp = 0,
-					rpc = 0;
-
-				logSet.forEach((l) => {
-					if (l.sleep_hours != null) {
-						s += l.sleep_hours;
-						sc++;
-					}
-					if (l.sleep_quality != null) {
-						sq += l.sleep_quality;
-						sqc++;
-					}
-					if (l.hrv != null) {
-						h += l.hrv;
-						hc++;
-					}
-					if (l.resting_hr != null) {
-						rh += l.resting_hr;
-						rhc++;
-					}
-					if (l.rpe != null) {
-						rp += l.rpe;
-						rpc++;
-					}
-				});
-
-				return {
-					sleep: sc > 0 ? (s / sc).toFixed(1) : "N/A",
-					sleepQuality: sqc > 0 ? (sq / sqc).toFixed(1) : "N/A",
-					hrv: hc > 0 ? Math.round(h / hc) : "N/A",
-					rhr: rhc > 0 ? Math.round(rh / rhc) : "N/A",
-					rpe: rpc > 0 ? (rp / rpc).toFixed(1) : "N/A",
-				};
-			};
-
-			const overall = calculateAvgs(logs);
-			const recent = calculateAvgs(recentLogs);
-			const older = calculateAvgs(olderLogs);
+			const overall = summarizeLogs(logs);
+			const recent = summarizeLogs(recentLogs);
+			const older = summarizeLogs(olderLogs);
 
 			let analysis = `**Biometric Trends Analysis (${logs.length} days of data recorded within the last ${days} days)**\n\n`;
 
