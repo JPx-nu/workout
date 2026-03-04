@@ -10,7 +10,10 @@ Guidance for coding agents working in this repository.
 - Main workspaces:
   - `apps/web` - Next.js 16 + React 19 frontend
   - `apps/api` - Hono + TypeScript backend
+  - `packages/core` - shared mapping/date/stats business logic
   - `packages/types` - shared TypeScript types
+  - `packages/api-client` - typed client scaffold
+  - `apps/mobile` - Flutter app (not managed by pnpm workspaces)
 
 ## Setup
 
@@ -27,6 +30,7 @@ From repository root:
 - `pnpm dev` - run all dev tasks through Turbo
 - `pnpm build` - build all packages/apps
 - `pnpm lint` - lint configured packages
+- `pnpm check:env-keys` - validate canonical env variable naming
 - `pnpm type-check` - run TypeScript checks
 - `pnpm test` - run tests
 - `pnpm test:e2e` - run end-to-end test tasks (if configured)
@@ -36,6 +40,7 @@ Target a specific workspace when possible:
 - `pnpm --filter web dev`
 - `pnpm --filter @triathlon/api dev`
 - `pnpm --filter @triathlon/api test`
+- `pnpm --filter @triathlon/core test`
 - `pnpm --filter @triathlon/types type-check`
 
 ## Coding guidelines for agents
@@ -57,5 +62,5 @@ Run the smallest meaningful checks for the files you changed, then broaden if ne
 
 ## Notes
 
-- Root formatting uses Prettier (`pnpm format`).
-- Web ESLint config intentionally relaxes some React hooks rules during scaffold stage; do not tighten these without a specific request.
+- Root formatting uses Biome (`pnpm format`).
+- Web and API linting run through Biome; keep rule-level changes explicit and scoped.

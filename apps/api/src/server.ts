@@ -7,11 +7,14 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
+import { validateStartupEnv } from "./config/startup-env.js";
 import { logger } from "./lib/logger.js";
+import { jsonProblem } from "./lib/problem-details.js";
 import { extractClaims, jwtAuth } from "./middleware/auth.js";
 import { RATE_LIMITS, rateLimit } from "./middleware/rate-limit.js";
 import { aiRoutes } from "./routes/ai/chat.js";
 import { aiStreamRoutes } from "./routes/ai/stream.js";
+import { healthRoutes } from "./routes/health/index.js";
 import { integrationRoutes } from "./routes/integrations/index.js";
 import { mcpRoutes } from "./routes/mcp/index.js";
 import { onboardingRoutes } from "./routes/onboarding.js";
@@ -19,18 +22,26 @@ import { plannedWorkoutsRoutes } from "./routes/planned-workouts/index.js";
 import { webhookRoutes } from "./routes/webhooks/index.js";
 import { stopPolling } from "./services/integrations/webhook-queue.js";
 
+validateStartupEnv();
+
 const app = new OpenAPIHono();
 
 // ── Global error handler ───────────────────────────────────────
 app.onError((err, c) => {
 	logger.error({ err, path: c.req.path, method: c.req.method }, "Unhandled error");
-	return c.json(
-		{
-			error: err.message || "Internal Server Error",
-			stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
-		},
-		500,
-	);
+	return jsonProblem(c, 500, "Internal Server Error", {
+		code: "INTERNAL_ERROR",
+		detail: process.env.NODE_ENV === "production" ? undefined : err.message,
+		hint: "Check server logs with requestId for full diagnostics.",
+		type: "https://docs.jpx.nu/problems/internal-error",
+	});
+});
+
+app.notFound((c) => {
+	return jsonProblem(c, 404, "Not Found", {
+		code: "ROUTE_NOT_FOUND",
+		type: "https://docs.jpx.nu/problems/route-not-found",
+	});
 });
 
 // ── Global middleware ──────────────────────────────────────────
@@ -40,7 +51,7 @@ app.use(
 	cors({
 		origin: (origin) => {
 			// Allow known dev ports in development
-			if (origin && /^https?:\/\/localhost:(3000|3001|8787)$/.test(origin)) {
+			if (origin && /^https?:\/\/localhost:(3100|3101|8787)$/.test(origin)) {
 				return origin;
 			}
 			// Allow configured WEB_URL and Azure production domain
@@ -52,7 +63,7 @@ app.use(
 			if (origin && allowed.includes(origin)) {
 				return origin;
 			}
-			return allowed[0] || "http://localhost:3000";
+			return allowed[0] || "http://localhost:3100";
 		},
 		credentials: true,
 	}),
@@ -92,6 +103,7 @@ app.use("/api/ai/*", rateLimit(RATE_LIMITS.aiChat));
 const routes = app
 	.route("/api/ai", aiRoutes)
 	.route("/api/ai", aiStreamRoutes)
+	.route("/api/health", healthRoutes)
 	.route("/api/onboarding", onboardingRoutes)
 	.route("/api/planned-workouts", plannedWorkoutsRoutes)
 	.route("/api/integrations", integrationRoutes);

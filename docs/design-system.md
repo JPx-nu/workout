@@ -100,7 +100,8 @@ Pill-shaped badges with discipline-specific background tints:
 
 ## 6. Typography
 
-- **Font**: Inter (Google Fonts), system-ui fallback
+- **Font setup**: Geist Sans + Geist Mono variables are injected in `layout.tsx`
+- **Body default**: `globals.css` currently sets body font-family to `"Inter", system-ui, -apple-system, sans-serif`
 - **Heading sizes**: Use Tailwind `text-2xl`/`text-lg`/`text-sm`
 - **Font weights**: 400 (body), 500 (medium labels), 600 (semibold buttons), 700 (bold headings)
 - **Text gradient**: `.text-gradient` applies brand gradient as text color

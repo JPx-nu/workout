@@ -105,7 +105,8 @@ Use these predefined classes instead of assembling ad-hoc styles:
 
 ## 4. Typography
 
-- **Primary font:** Inter (loaded via `next/font/google`)
+- **Font variables:** Geist Sans + Geist Mono are configured in `apps/web/src/app/layout.tsx`
+- **Current body font:** `apps/web/src/app/globals.css` sets `"Inter", system-ui, -apple-system, sans-serif`
 - **Mono font:** Geist Mono (for code/data)
 - Use Tailwind text utilities: `text-sm`, `text-base`, `text-lg`, `text-xl`
 

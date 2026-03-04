@@ -5,6 +5,7 @@
 
 import type { Context } from "hono";
 import type { z } from "zod/v4";
+import { jsonProblem } from "../lib/problem-details.js";
 
 /**
  * Validate the JSON request body against a Zod schema.
@@ -19,22 +20,27 @@ export async function parseBody<T extends z.ZodType>(
 		.catch((err: unknown) => (err instanceof SyntaxError ? null : Promise.reject(err)));
 
 	if (body === null) {
-		return c.json({ error: "Invalid JSON body" }, 400);
+		return jsonProblem(c, 400, "Bad Request", {
+			code: "INVALID_JSON_BODY",
+			detail: "Request body is not valid JSON.",
+			type: "https://docs.jpx.nu/problems/invalid-json-body",
+		});
 	}
 
 	const result = schema.safeParse(body);
 
 	if (!result.success) {
-		return c.json(
-			{
-				error: "Validation failed",
+		return jsonProblem(c, 400, "Bad Request", {
+			code: "VALIDATION_FAILED",
+			detail: "Request body failed validation.",
+			extras: {
 				issues: result.error.issues.map((issue) => ({
 					path: issue.path.join("."),
 					message: issue.message,
 				})),
 			},
-			400,
-		);
+			type: "https://docs.jpx.nu/problems/validation-failed",
+		});
 	}
 
 	return result.data as z.infer<T>;

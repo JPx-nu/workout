@@ -1,7 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../data/models/integration_models.dart';
+import '../providers/integration_provider.dart';
 import '../providers/profile_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -19,11 +23,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     'relay': true,
     'recovery': false,
   };
+  final Set<String> _busyProviders = <String>{};
+  static const _appLinkUrl = String.fromEnvironment(
+    'APP_LINK_URL',
+    defaultValue: 'https://jpx.nu/workout/settings',
+  );
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final profileAsync = ref.watch(profileNotifierProvider);
+    final integrationAsync = ref.watch(integrationStatusProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -136,22 +146,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // ── Connected Devices ──
             _SettingsSection(
               title: 'Connected Devices',
-              children: _connectedDevices
-                  .map((device) => _SettingsTile(
-                        icon: device.icon,
-                        title: device.name,
-                        subtitle: device.status,
-                        onTap: null,
-                        trailing: Text(
-                          device.status,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: device.statusColor,
-                          ),
+              children: integrationAsync.when(
+                loading: () => const [
+                  Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ],
+                error: (_, __) => [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Failed to load integration status',
+                          style: TextStyle(color: theme.colorScheme.error),
                         ),
-                      ))
-                  .toList(),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => ref.invalidate(
+                            integrationStatusProvider,
+                          ),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                data: (snapshot) =>
+                    _buildIntegrationTiles(context, snapshot),
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -264,28 +289,277 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+
+  List<Widget> _buildIntegrationTiles(
+    BuildContext context,
+    IntegrationStatusSnapshot snapshot,
+  ) {
+    final theme = Theme.of(context);
+    final integrations = [...snapshot.integrations]
+      ..sort((a, b) => a.provider.compareTo(b.provider));
+
+    final tiles = integrations.map((integration) {
+      final statusLabel = integration.available
+          ? (integration.connected ? 'Connected' : 'Not connected')
+          : 'Pending';
+      final statusColor = integration.available
+          ? (integration.connected
+              ? const Color(0xFF22C55E)
+              : theme.colorScheme.onSurface.withValues(alpha: 0.45))
+          : const Color(0xFFF59E0B);
+
+      String subtitle;
+      subtitle = _integrationSubtitle(integration);
+
+      return _SettingsTile(
+        icon: _providerIcon(integration.provider),
+        title: _providerLabel(integration.provider),
+        subtitle: subtitle,
+        onTap: () => _showIntegrationActions(context, integration),
+        trailing: _busyProviders.contains(integration.provider)
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(
+                statusLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
+              ),
+      );
+    }).toList();
+
+    final queueColor = snapshot.webhookQueueSize > 0
+        ? const Color(0xFFF59E0B)
+        : const Color(0xFF22C55E);
+
+    if (integrations.isEmpty) {
+      tiles.add(
+        _SettingsTile(
+          icon: LucideIcons.shieldCheck,
+          title: 'No providers registered',
+          subtitle: 'No integration providers are available right now.',
+          onTap: null,
+        ),
+      );
+    }
+
+    tiles.add(
+      _SettingsTile(
+        icon: LucideIcons.activity,
+        title: 'Sync Queue',
+        subtitle: 'Pending background webhook sync jobs',
+        onTap: null,
+        trailing: Text(
+          '${snapshot.webhookQueueSize}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: queueColor,
+          ),
+        ),
+      ),
+    );
+
+    return tiles;
+  }
+
+  Future<void> _showIntegrationActions(
+    BuildContext context,
+    IntegrationStatus integration,
+  ) async {
+    final theme = Theme.of(context);
+    final connectLabel = integration.available ? 'Connect' : 'Apply';
+    final connectPath = integration.actions.connect;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                _providerIcon(integration.provider),
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(_providerLabel(integration.provider)),
+              subtitle: Text(_integrationSubtitle(integration)),
+            ),
+            if (!integration.connected)
+              ListTile(
+                leading: const Icon(LucideIcons.link),
+                title: Text(connectLabel),
+                subtitle: Text(integration.available
+                    ? 'Open provider OAuth flow in browser'
+                    : 'Open provider application page'),
+                enabled: connectPath != null || integration.applyUrl != null,
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await _connectIntegration(integration);
+                },
+              ),
+            if (integration.connected) ...[
+              ListTile(
+                leading: const Icon(LucideIcons.refreshCcw),
+                title: const Text('Sync now'),
+                subtitle: const Text('Trigger manual sync immediately'),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await _syncIntegration(integration);
+                },
+              ),
+              ListTile(
+                leading: Icon(
+                  LucideIcons.unlink,
+                  color: theme.colorScheme.error,
+                ),
+                title: Text(
+                  'Disconnect',
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+                subtitle: const Text('Disconnect this provider account'),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  await _disconnectIntegration(integration);
+                },
+              ),
+            ],
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _connectIntegration(IntegrationStatus integration) async {
+    final repo = ref.read(integrationRepositoryProvider);
+    final target = integration.available
+        ? integration.actions.connect
+        : integration.applyUrl;
+    if (target == null || target.isEmpty) {
+      _showSnack('No connect URL available for ${_providerLabel(integration.provider)}');
+      return;
+    }
+
+    final baseUri = repo.buildAbsoluteUri(target);
+    final uri = integration.available
+        ? baseUri.replace(
+            queryParameters: {
+              ...baseUri.queryParameters,
+              'returnTo': _appLinkUrl,
+            },
+          )
+        : baseUri;
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched) {
+      _showSnack('Failed to open browser for ${_providerLabel(integration.provider)}');
+      return;
+    }
+
+    _showSnack('Complete connection in browser, then refresh status.');
+  }
+
+  Future<void> _syncIntegration(IntegrationStatus integration) async {
+    final provider = integration.provider;
+    setState(() => _busyProviders.add(provider));
+    try {
+      await ref.read(integrationRepositoryProvider).syncIntegration(integration);
+      ref.invalidate(integrationStatusProvider);
+      _showSnack('${_providerLabel(provider)} sync started.');
+    } on DioException catch (e) {
+      _showSnack(_extractApiError(e));
+    } catch (_) {
+      _showSnack('Failed to sync ${_providerLabel(provider)}.');
+    } finally {
+      if (mounted) {
+        setState(() => _busyProviders.remove(provider));
+      }
+    }
+  }
+
+  Future<void> _disconnectIntegration(IntegrationStatus integration) async {
+    final provider = integration.provider;
+    setState(() => _busyProviders.add(provider));
+    try {
+      await ref
+          .read(integrationRepositoryProvider)
+          .disconnectIntegration(integration);
+      ref.invalidate(integrationStatusProvider);
+      _showSnack('${_providerLabel(provider)} disconnected.');
+    } on DioException catch (e) {
+      _showSnack(_extractApiError(e));
+    } catch (_) {
+      _showSnack('Failed to disconnect ${_providerLabel(provider)}.');
+    } finally {
+      if (mounted) {
+        setState(() => _busyProviders.remove(provider));
+      }
+    }
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _extractApiError(DioException error) {
+    final data = error.response?.data;
+    if (data is Map<String, dynamic>) {
+      final detail = data['detail'] as String?;
+      final title = data['title'] as String?;
+      final fallback = data['error'] as String?;
+      return detail ?? title ?? fallback ?? 'Request failed.';
+    }
+    return 'Request failed.';
+  }
+
+  String _providerLabel(String provider) {
+    return switch (provider.toUpperCase()) {
+      'STRAVA' => 'Strava',
+      'GARMIN' => 'Garmin',
+      'POLAR' => 'Polar',
+      'WAHOO' => 'Wahoo',
+      _ => provider,
+    };
+  }
+
+  IconData _providerIcon(String provider) {
+    return switch (provider.toUpperCase()) {
+      'STRAVA' => LucideIcons.activity,
+      'GARMIN' => LucideIcons.watch,
+      'POLAR' => LucideIcons.heartPulse,
+      'WAHOO' => LucideIcons.bike,
+      _ => LucideIcons.shieldCheck,
+    };
+  }
+
+  String _integrationSubtitle(IntegrationStatus integration) {
+    if (!integration.available) {
+      return 'Unavailable (${integration.availabilityReason ?? 'pending'})';
+    }
+    if (!integration.connected) return 'Not connected';
+    if (integration.lastSyncAt == null) return 'Connected, waiting for first sync';
+
+    final local = integration.lastSyncAt!.toLocal();
+    final elapsed = DateTime.now().difference(local);
+    if (elapsed.inHours < 6) return 'Synced recently';
+    if (elapsed.inHours < 24) return 'Sync stale (${elapsed.inHours}h ago)';
+    return 'Sync stale (${elapsed.inDays}d ago)';
+  }
 }
 
 // ── Static data ───────────────────────────────────────────
-
-class _DeviceInfo {
-  const _DeviceInfo(this.name, this.icon, this.status, this.statusColor);
-  final String name;
-  final IconData icon;
-  final String status;
-  final Color statusColor;
-}
-
-const _connectedDevices = [
-  _DeviceInfo('Garmin Fenix 8', LucideIcons.watch, 'Connected',
-      Color(0xFF22C55E)),
-  _DeviceInfo('FORM Smart Goggles', LucideIcons.smartphone, 'Connected',
-      Color(0xFF22C55E)),
-  _DeviceInfo(
-      'Wahoo KICKR', LucideIcons.heartPulse, 'Pending', Color(0xFFF59E0B)),
-  _DeviceInfo('Apple Health', LucideIcons.shieldCheck, 'Not connected',
-      Color(0xFF6B7280)),
-];
 
 class _NotifPref {
   const _NotifPref(this.key, this.label, this.description);

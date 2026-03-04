@@ -1,7 +1,9 @@
 # EHDS (European Health Data Space) Architectural Readiness
 
-**Last Updated:** February 2026
-**Status:** Readiness Planning & Phase 1 Compliance
+**Last Updated:** March 2026
+**Status:** Strategy/Readiness planning (not a guaranteed list of shipped features)
+
+> This document is intentionally forward-looking. For implemented API/web/mobile behavior, use `docs/technical-reference.md`.
 
 ## 1. Context & Regulatory Landscape
 

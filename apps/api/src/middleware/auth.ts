@@ -10,6 +10,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { logger } from "../lib/logger.js";
+import { jsonProblem } from "../lib/problem-details.js";
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -18,6 +19,9 @@ export interface AuthContext {
 	clubId: string;
 	role: "athlete" | "coach" | "admin" | "owner";
 }
+
+const VALID_ROLES = new Set<AuthContext["role"]>(["athlete", "coach", "admin", "owner"]);
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ── JWKS Setup ─────────────────────────────────────────────────
 
@@ -38,7 +42,12 @@ export function jwtAuth(): MiddlewareHandler {
 		const authHeader = c.req.header("Authorization");
 
 		if (!authHeader || !authHeader.startsWith("Bearer ")) {
-			return c.json({ error: "Missing or invalid Authorization header" }, 401);
+			return jsonProblem(c, 401, "Unauthorized", {
+				code: "AUTH_HEADER_INVALID",
+				detail: "Missing or invalid Authorization header.",
+				hint: "Provide a valid Bearer token.",
+				type: "https://docs.jpx.nu/problems/auth-header-invalid",
+			});
 		}
 
 		const token = authHeader.slice(7);
@@ -54,7 +63,12 @@ export function jwtAuth(): MiddlewareHandler {
 		} catch (err) {
 			const message = err instanceof Error ? err.message : "Token verification failed";
 			logger.warn({ reason: message }, "JWT verification failed");
-			return c.json({ error: "Invalid or expired token" }, 401);
+			return jsonProblem(c, 401, "Unauthorized", {
+				code: "TOKEN_INVALID",
+				detail: "Token is invalid or expired.",
+				hint: "Re-authenticate and retry the request.",
+				type: "https://docs.jpx.nu/problems/token-invalid",
+			});
 		}
 
 		await next();
@@ -77,15 +91,39 @@ export const extractClaims = createMiddleware(async (c, next) => {
 	const payload = c.get("jwtPayload") as Record<string, unknown>;
 
 	if (!payload?.sub) {
-		return c.json({ error: "Missing user ID in token" }, 401);
+		return jsonProblem(c, 401, "Unauthorized", {
+			code: "TOKEN_SUB_MISSING",
+			detail: "Missing user ID claim in token.",
+			type: "https://docs.jpx.nu/problems/token-sub-missing",
+		});
 	}
 
-	const appMetadata = payload.app_metadata as Record<string, string> | undefined;
+	const appMetadata = payload.app_metadata as Record<string, unknown> | undefined;
+	const clubId = appMetadata?.club_id;
+	const role = appMetadata?.role;
+
+	if (typeof clubId !== "string" || !UUID_PATTERN.test(clubId)) {
+		logger.warn({ userId: payload.sub }, "JWT missing valid app_metadata.club_id");
+		return jsonProblem(c, 401, "Unauthorized", {
+			code: "CLAIM_CLUB_ID_MISSING",
+			detail: "Missing required claim: app_metadata.club_id",
+			type: "https://docs.jpx.nu/problems/claim-club-id-missing",
+		});
+	}
+
+	if (typeof role !== "string" || !VALID_ROLES.has(role as AuthContext["role"])) {
+		logger.warn({ userId: payload.sub, role }, "JWT missing valid app_metadata.role");
+		return jsonProblem(c, 401, "Unauthorized", {
+			code: "CLAIM_ROLE_MISSING",
+			detail: "Missing required claim: app_metadata.role",
+			type: "https://docs.jpx.nu/problems/claim-role-missing",
+		});
+	}
 
 	const auth: AuthContext = {
 		userId: payload.sub as string,
-		clubId: appMetadata?.club_id || "00000000-0000-0000-0000-000000000001",
-		role: (appMetadata?.role || "athlete") as AuthContext["role"],
+		clubId,
+		role: role as AuthContext["role"],
 	};
 
 	c.set("auth", auth);

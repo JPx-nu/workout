@@ -21,6 +21,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      - run: pnpm check:env-keys
       - run: pnpm type-check
       - run: pnpm lint
 

@@ -25,7 +25,8 @@ const provider = getProvider("STRAVA");
 
 stravaRoutes.get("/connect", (c) => {
 	const auth = getAuth(c);
-	return c.redirect(buildAuthorizationUrl(provider, auth.userId));
+	const returnTo = c.req.query("returnTo");
+	return c.redirect(buildAuthorizationUrl(provider, auth.userId, returnTo));
 });
 
 stravaRoutes.get("/callback", (c) => handleProviderOAuthCallback(provider, "strava", c));

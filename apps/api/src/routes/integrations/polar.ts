@@ -20,7 +20,8 @@ const provider = getProvider("POLAR");
 
 polarRoutes.get("/connect", (c) => {
 	const auth = getAuth(c);
-	return c.redirect(buildAuthorizationUrl(provider, auth.userId));
+	const returnTo = c.req.query("returnTo");
+	return c.redirect(buildAuthorizationUrl(provider, auth.userId, returnTo));
 });
 
 polarRoutes.get("/callback", (c) => handleProviderOAuthCallback(provider, "polar", c));

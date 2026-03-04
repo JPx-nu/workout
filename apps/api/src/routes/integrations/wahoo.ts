@@ -20,7 +20,8 @@ const provider = getProvider("WAHOO");
 
 wahooRoutes.get("/connect", (c) => {
 	const auth = getAuth(c);
-	return c.redirect(buildAuthorizationUrl(provider, auth.userId));
+	const returnTo = c.req.query("returnTo");
+	return c.redirect(buildAuthorizationUrl(provider, auth.userId, returnTo));
 });
 
 wahooRoutes.get("/callback", (c) => handleProviderOAuthCallback(provider, "wahoo", c));

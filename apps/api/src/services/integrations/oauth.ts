@@ -11,6 +11,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Context } from "hono";
 import { INTEGRATION_CONFIG } from "../../config/integrations.js";
 import { createLogger } from "../../lib/logger.js";
+import { jsonProblem } from "../../lib/problem-details.js";
 import { getAuth } from "../../middleware/auth.js";
 import { createAdminClient } from "../ai/supabase.js";
 import { decryptToken, encryptToken, isEncrypted } from "./crypto.js";
@@ -22,25 +23,108 @@ import type { IntegrationProvider, ProviderName } from "./types.js";
 
 const log = createLogger({ module: "oauth" });
 
+function defaultSettingsUrl(): string {
+	return `${INTEGRATION_CONFIG.webUrl}/workout/settings`;
+}
+
+function normalizeAllowedOrigin(raw: string): string | null {
+	try {
+		const parsed = new URL(raw);
+		if (!["http:", "https:"].includes(parsed.protocol)) return null;
+		return parsed.origin;
+	} catch {
+		return null;
+	}
+}
+
+function getAllowedReturnOrigins(): string[] {
+	const configured = (process.env.ALLOWED_OAUTH_RETURN_ORIGINS ?? "")
+		.split(",")
+		.map((v) => v.trim())
+		.filter(Boolean);
+
+	const defaults = new Set<string>();
+	try {
+		defaults.add(new URL(INTEGRATION_CONFIG.webUrl).origin);
+	} catch {
+		// no-op
+	}
+
+	// Known local development origins
+	defaults.add("http://localhost:3100");
+	defaults.add("http://localhost:8787");
+
+	for (const item of configured) {
+		const normalized = normalizeAllowedOrigin(item);
+		if (!normalized) {
+			log.warn({ origin: item }, "Ignored invalid ALLOWED_OAUTH_RETURN_ORIGINS entry");
+			continue;
+		}
+		defaults.add(normalized);
+	}
+
+	return [...defaults];
+}
+
+function sanitizeReturnTo(returnToRaw?: string): string {
+	if (!returnToRaw || returnToRaw.trim().length === 0) {
+		return defaultSettingsUrl();
+	}
+
+	try {
+		const parsed = new URL(returnToRaw);
+		if (!["http:", "https:"].includes(parsed.protocol)) {
+			log.warn({ returnTo: returnToRaw }, "Rejected OAuth returnTo unsupported protocol");
+			return defaultSettingsUrl();
+		}
+		const allowedOrigins = new Set(getAllowedReturnOrigins());
+		if (!allowedOrigins.has(parsed.origin)) {
+			log.warn({ returnTo: returnToRaw }, "Rejected OAuth returnTo origin");
+			return defaultSettingsUrl();
+		}
+		// HTTPS-only outside local development origins
+		const local = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+		if (!local && parsed.protocol !== "https:") {
+			log.warn({ returnTo: returnToRaw }, "Rejected non-https OAuth returnTo");
+			return defaultSettingsUrl();
+		}
+		return parsed.toString();
+	} catch {
+		log.warn({ returnTo: returnToRaw }, "Rejected invalid OAuth returnTo URL");
+		return defaultSettingsUrl();
+	}
+}
+
 /**
  * Build the OAuth authorization redirect URL for a provider.
- * State is HMAC-signed with the athleteId + 10-min expiry.
+ * State is HMAC-signed with the athleteId + optional returnTo + 10-min expiry.
  */
-export function buildAuthorizationUrl(provider: IntegrationProvider, athleteId: string): string {
-	const state = createOAuthState(athleteId);
+export function buildAuthorizationUrl(
+	provider: IntegrationProvider,
+	athleteId: string,
+	returnToRaw?: string,
+): string {
+	const returnTo = sanitizeReturnTo(returnToRaw);
+	const state = createOAuthState(athleteId, returnTo);
 	return provider.buildAuthUrl(state);
 }
 
 /**
- * Verify the OAuth callback state and extract the athlete ID.
+ * Verify the OAuth callback state and extract the athlete ID and safe return target.
  * Throws OAuthStateError if tampered or expired.
  */
-export function verifyCallbackState(provider: IntegrationProvider, state: string): string {
+export function verifyCallbackState(
+	provider: IntegrationProvider,
+	state: string,
+): { athleteId: string; returnTo: string } {
 	const result = verifyOAuthState(state);
 	if (!result) {
 		throw new OAuthStateError(provider.name);
 	}
-	return result.athleteId;
+	return {
+		athleteId: result.athleteId,
+		returnTo: sanitizeReturnTo(result.returnTo),
+	};
 }
 
 /**
@@ -150,15 +234,20 @@ export async function handleProviderOAuthCallback(
 	const code = c.req.query("code");
 	const state = c.req.query("state");
 	const error = c.req.query("error");
-	const webUrl = INTEGRATION_CONFIG.webUrl;
+	const fallbackTarget = defaultSettingsUrl();
 
 	if (error || !code || !state) {
 		log.error({ error, provider: providerSlug }, "OAuth callback error");
-		return c.redirect(`${webUrl}/workout/settings?integration=${providerSlug}&error=denied`);
+		const denied = new URL(fallbackTarget);
+		denied.searchParams.set("integration", providerSlug);
+		denied.searchParams.set("error", "denied");
+		return c.redirect(denied.toString());
 	}
 
 	try {
-		const athleteId = verifyCallbackState(provider, state);
+		const callbackState = verifyCallbackState(provider, state);
+		const athleteId = callbackState.athleteId;
+		const redirectTarget = new URL(callbackState.returnTo);
 		const client = createAdminClient();
 		const { data: profile } = await client
 			.from("profiles")
@@ -171,10 +260,15 @@ export async function handleProviderOAuthCallback(
 		}
 
 		await handleOAuthCallback(provider, code, athleteId, profile.club_id, client);
-		return c.redirect(`${webUrl}/workout/settings?integration=${providerSlug}&status=connected`);
+		redirectTarget.searchParams.set("integration", providerSlug);
+		redirectTarget.searchParams.set("status", "connected");
+		return c.redirect(redirectTarget.toString());
 	} catch (err) {
 		log.error({ err, provider: providerSlug }, "OAuth callback failed");
-		return c.redirect(`${webUrl}/workout/settings?integration=${providerSlug}&error=failed`);
+		const failed = new URL(fallbackTarget);
+		failed.searchParams.set("integration", providerSlug);
+		failed.searchParams.set("error", "failed");
+		return c.redirect(failed.toString());
 	}
 }
 
@@ -201,7 +295,12 @@ export async function handleProviderSync(
 		});
 
 		if (!error && (remaining as number) < 0) {
-			return c.json({ error: `Please wait before syncing again` }, 429);
+			return jsonProblem(c, 429, "Too Many Requests", {
+				code: "SYNC_RATE_LIMITED",
+				detail: "Please wait before syncing again.",
+				hint: `Retry after ${cooldownSec} seconds.`,
+				type: "https://docs.jpx.nu/problems/sync-rate-limited",
+			});
 		}
 	} catch {
 		// Fail open — allow sync if rate limit check fails
@@ -210,7 +309,11 @@ export async function handleProviderSync(
 	const connection = await getActiveConnection(providerName, auth.userId, client);
 
 	if (!connection) {
-		return c.json({ error: `${providerName} not connected` }, 400);
+		return jsonProblem(c, 400, "Bad Request", {
+			code: "PROVIDER_NOT_CONNECTED",
+			detail: `${providerName} is not connected for this user.`,
+			type: "https://docs.jpx.nu/problems/provider-not-connected",
+		});
 	}
 
 	const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

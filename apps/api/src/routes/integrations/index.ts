@@ -18,6 +18,45 @@ import { wahooRoutes } from "./wahoo.js";
 
 export const integrationRoutes = new Hono();
 
+const PROVIDER_META = {
+	STRAVA: {
+		slug: "strava",
+		available: true,
+		availabilityReason: null,
+		applyUrl: null,
+	},
+	GARMIN: {
+		slug: "garmin",
+		available: false,
+		availabilityReason: "pending_approval",
+		applyUrl: "https://developer.garmin.com/gc-developer-program/",
+	},
+	POLAR: {
+		slug: "polar",
+		available: true,
+		availabilityReason: null,
+		applyUrl: null,
+	},
+	WAHOO: {
+		slug: "wahoo",
+		available: true,
+		availabilityReason: null,
+		applyUrl: null,
+	},
+} as const;
+
+function getProviderMeta(name: string) {
+	const known = PROVIDER_META[name as keyof typeof PROVIDER_META];
+	if (known) return known;
+	const slug = name.toLowerCase();
+	return {
+		slug,
+		available: false,
+		availabilityReason: "not_configured",
+		applyUrl: null,
+	} as const;
+}
+
 // ── Per-provider routes ──
 integrationRoutes.route("/strava", stravaRoutes);
 integrationRoutes.route("/garmin", garminRoutes);
@@ -33,11 +72,20 @@ integrationRoutes.get("/status", async (c) => {
 	const allProviders = getAllProviderNames();
 	const status = allProviders.map((name) => {
 		const conn = connected.find((item) => item.provider === name);
+		const meta = getProviderMeta(name);
 		return {
 			provider: name,
 			connected: !!conn,
 			lastSyncAt: conn?.lastSyncAt || null,
 			providerUid: conn?.providerUid || null,
+			available: meta.available,
+			availabilityReason: meta.availabilityReason,
+			applyUrl: meta.applyUrl,
+			actions: {
+				connect: `/api/integrations/${meta.slug}/connect`,
+				disconnect: `/api/integrations/${meta.slug}/disconnect`,
+				sync: `/api/integrations/${meta.slug}/sync`,
+			},
 		};
 	});
 

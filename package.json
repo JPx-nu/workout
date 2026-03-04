@@ -8,6 +8,7 @@
 		"dev": "turbo dev",
 		"build": "turbo build",
 		"lint": "biome check .",
+		"check:env-keys": "node scripts/check-env-keys.mjs",
 		"test": "turbo test",
 		"test:e2e": "turbo test:e2e",
 		"type-check": "turbo type-check",

@@ -107,6 +107,68 @@ export const InjuryInput = z.object({
 });
 export type InjuryInput = z.infer<typeof InjuryInput>;
 
+// ── Mobile Health Sync Schemas ────────────────────────────────
+
+export const MobileHealthSource = z.enum(["HEALTHKIT", "HEALTH_CONNECT"]);
+export type MobileHealthSource = z.infer<typeof MobileHealthSource>;
+
+export const MobileWorkoutIngest = z.object({
+	externalId: z.string().max(255).optional(),
+	activityType: ActivityType,
+	source: MobileHealthSource,
+	startedAt: z.iso.datetime({ message: "startedAt must be ISO 8601 datetime" }),
+	durationS: z.number().int().positive(),
+	distanceM: z.number().nonnegative().optional(),
+	avgHr: z.number().int().min(20).max(250).optional(),
+	maxHr: z.number().int().min(20).max(250).optional(),
+	calories: z.number().nonnegative().optional(),
+	rawData: z.record(z.string(), z.unknown()).optional(),
+	notes: sanitizedString.pipe(z.string().max(1000)).optional(),
+});
+export type MobileWorkoutIngest = z.infer<typeof MobileWorkoutIngest>;
+
+export const MobileMetricIngest = z.object({
+	externalId: z.string().max(255).optional(),
+	metricType: z.enum([
+		"SLEEP_HOURS",
+		"SLEEP_STAGES",
+		"HRV",
+		"RESTING_HR",
+		"SPO2",
+		"STEPS",
+		"ACTIVE_CALORIES",
+		"VO2MAX",
+	]),
+	value: z.number(),
+	unit: z.string().max(40).optional(),
+	recordedAt: z.iso.datetime({ message: "recordedAt must be ISO 8601 datetime" }),
+	source: MobileHealthSource,
+	rawData: z.record(z.string(), z.unknown()).optional(),
+});
+export type MobileMetricIngest = z.infer<typeof MobileMetricIngest>;
+
+export const MobileDailyLogIngest = z.object({
+	logDate: z.iso.date(),
+	sleepHours: z.number().min(0).max(24).optional(),
+	sleepQuality: z.number().int().min(1).max(10).optional(),
+	rpe: z.number().int().min(1).max(10).optional(),
+	mood: z.number().int().min(1).max(10).optional(),
+	hrv: z.number().nonnegative().optional(),
+	restingHr: z.number().int().min(20).max(220).optional(),
+	weightKg: z.number().min(20).max(350).optional(),
+	notes: sanitizedString.pipe(z.string().max(1000)).optional(),
+});
+export type MobileDailyLogIngest = z.infer<typeof MobileDailyLogIngest>;
+
+export const MobileHealthIngestInput = z.object({
+	sourcePlatform: MobileHealthSource,
+	syncedAt: z.iso.datetime().optional(),
+	workouts: z.array(MobileWorkoutIngest).max(500).default([]),
+	metrics: z.array(MobileMetricIngest).max(1000).default([]),
+	dailyLogs: z.array(MobileDailyLogIngest).max(60).default([]),
+});
+export type MobileHealthIngestInput = z.infer<typeof MobileHealthIngestInput>;
+
 // ── Planned Workout Schemas ────────────────────────────────────
 
 export const PlannedWorkoutInput = z.object({
@@ -161,7 +223,7 @@ export type WebhookPayload = z.infer<typeof WebhookPayload>;
 
 export const EnvSchema = z.object({
 	NEXT_PUBLIC_SUPABASE_URL: z.url(),
-	NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+	NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
 	SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 	SUPABASE_JWT_SECRET: z.string().min(1),
 	AZURE_OPENAI_ENDPOINT: z.url().optional(),

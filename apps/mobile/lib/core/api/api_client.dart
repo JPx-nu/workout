@@ -15,7 +15,7 @@ final dioProvider = Provider<Dio>((ref) {
     BaseOptions(
       baseUrl: const String.fromEnvironment(
         'API_URL',
-        defaultValue: 'http://localhost:3001',
+        defaultValue: 'http://localhost:8787',
       ),
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 30),

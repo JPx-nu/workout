@@ -13,7 +13,7 @@ export const INTEGRATION_CONFIG = {
 	apiBaseUrl: env("API_URL", "http://localhost:8787"),
 
 	/** Base URL for the web frontend (used for OAuth redirects) */
-	webUrl: env("WEB_URL", "http://localhost:3000"),
+	webUrl: env("WEB_URL", "http://localhost:3100"),
 
 	/** Minimum interval between manual sync requests per athlete (ms) */
 	syncCooldownMs: 5 * 60 * 1000,

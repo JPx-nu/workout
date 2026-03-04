@@ -53,23 +53,14 @@ class HealthRepository {
     final injuryMap = <String, MuscleFatigue>{};
     for (final row in data as List) {
       final r = row as Map<String, dynamic>;
-      final severity = (r['severity'] as num?)?.toInt() ?? 50;
+      final level = _severityToPercent(r['severity'] as num?);
       final bodyPart = r['body_part'] as String? ?? '';
-
-      FatigueLevel status;
-      if (severity >= 70) {
-        status = FatigueLevel.high;
-      } else if (severity >= 40) {
-        status = FatigueLevel.moderate;
-      } else {
-        status = FatigueLevel.low;
-      }
 
       injuryMap[bodyPart] = MuscleFatigue(
         muscle: bodyPart,
         bodyPart: bodyPart,
-        level: severity,
-        status: status,
+        level: level,
+        status: _statusFromLevel(level),
       );
     }
 
@@ -92,5 +83,17 @@ class HealthRepository {
     final raw =
         (log.sleepQuality * 10 + log.mood * 5 + (log.hrv > 0 ? 30 : 0)) / 1.4;
     return raw.round().clamp(0, 100);
+  }
+
+  int _severityToPercent(num? severityRaw) {
+    final severity = (severityRaw ?? 1).toInt();
+    final clamped = severity < 1 ? 1 : (severity > 5 ? 5 : severity);
+    return clamped * 20;
+  }
+
+  FatigueLevel _statusFromLevel(int level) {
+    if (level >= 80) return FatigueLevel.high;
+    if (level >= 40) return FatigueLevel.moderate;
+    return FatigueLevel.low;
   }
 }

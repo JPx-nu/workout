@@ -1,244 +1,115 @@
-# Fitness Platform Integration Library
+# Fitness Integrations — Current Implementation
 
-> **Version:** 1.0.0 · **Last Updated:** 2026-02-27
-> **Domain:** `jpx.nu` · **API:** `jpx-workout-api.azurewebsites.net`
+> **Last Updated:** 2026-03-03  
+> **Code Root:** `apps/api/src/services/integrations`
 
 ---
 
 ## Overview
 
-Provider-agnostic integration library for syncing workout and health data from external fitness platforms. Built for reusability — adding a new provider takes ~2 hours.
+The API uses a provider-agnostic integration layer for OAuth, webhook ingestion, token lifecycle management, and workout/health normalization.
 
-### Supported Platforms
+Core modules:
 
-| Platform | OAuth | Webhooks | Workouts | Health Data | Status |
-|---|---|---|---|---|---|
-| **Strava** | OAuth2 | ✅ | ✅ Swim/Bike/Run + 10 types | — | ✅ Ready |
-| **Garmin** | OAuth 1.0a | ✅ | ✅ | HRV, Sleep, HR, Steps | ⏳ Needs API approval |
-| **Polar** | OAuth2 | ✅ | ✅ | Sleep (Nightly Recharge) | ✅ Ready |
-| **Wahoo** | OAuth2 | ✅ | ✅ + Power data | — | ✅ Ready |
-
----
-
-## Architecture
-
-```
-services/integrations/
-├── types.ts            ← IntegrationProvider interface + normalized types
-├── registry.ts         ← Provider map (getProvider, getAllProviders)
-├── oauth.ts            ← Generic OAuth flow (connect → exchange → backfill)
-├── oauth-state.ts      ← HMAC-SHA256 signed state (CSRF protection)
-├── crypto.ts           ← AES-256-GCM token encryption at rest
-├── normalizer.ts       ← Dedup pipeline + daily_log auto-fill
-├── token-manager.ts    ← Auto-refresh (5-min buffer) + decrypt-on-read
-├── webhook-queue.ts    ← Async job queue with retry (3 attempts)
-├── http.ts             ← fetchWithRetry (exponential backoff + jitter)
-├── errors.ts           ← Typed error hierarchy
-├── index.ts            ← Barrel export
-└── providers/
-    ├── strava.ts       ← Strava API v3
-    ├── garmin.ts       ← Garmin Health API (stub)
-    ├── polar.ts        ← Polar AccessLink API
-    └── wahoo.ts        ← Wahoo Cloud API
-```
-
-### Data Pipeline
-
-```mermaid
-graph LR
-    A[Webhook / Manual Sync] --> B[Verify Signature]
-    B --> C[Enqueue Job]
-    C --> D[Refresh Token]
-    D --> E[Fetch Activity]
-    E --> F[Normalize]
-    F --> G[Dedup Check]
-    G --> H[Insert Workout]
-    H --> I[Auto-fill DailyLog]
-    I --> J[Log to sync_history]
-```
+- `types.ts` — provider contract and normalized data types
+- `registry.ts` — provider registration and lookup
+- `oauth.ts` — shared OAuth connect/callback/disconnect/sync logic
+- `oauth-state.ts` — HMAC-signed OAuth state (CSRF protection)
+- `crypto.ts` — token encryption/decryption at rest
+- `token-manager.ts` — token freshness/refresh pipeline
+- `normalizer.ts` — dedup + table inserts (`workouts`, `health_metrics`, `daily_logs`)
+- `webhook-queue.ts` — durable PostgreSQL queue consumer
 
 ---
 
-## Security
+## Provider Status
 
-| Feature | Implementation |
-|---|---|
-| **CSRF Protection** | OAuth `state` = HMAC-SHA256(athleteId + timestamp), 10-min expiry |
-| **Token Encryption** | AES-256-GCM, 12-byte IV, 16-byte auth tag, stored as base64 |
-| **Webhook Verification** | Provider-specific signature check before processing |
-| **Token Refresh** | Auto-refresh 5 min before expiry, re-encrypted on save |
-| **RLS** | `connected_accounts` + `sync_history` scoped to `auth.uid()` |
-
-### Environment Variables
-
-```env
-# Required for Strava
-STRAVA_CLIENT_ID=your_client_id
-STRAVA_CLIENT_SECRET=your_client_secret
-STRAVA_VERIFY_TOKEN=jpx-triathlon-strava
-
-# Token encryption (generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
-INTEGRATION_ENCRYPTION_KEY=64_char_hex_string
-
-# API base URL (used for OAuth callback URLs)
-API_URL=https://jpx.nu
-```
+| Provider | OAuth | Webhook Handling | Manual Sync | Notes |
+|---|---|---|---|---|
+| Strava | OAuth2 | Yes | Yes | Fully wired |
+| Polar | OAuth2 | Yes (HMAC secret if configured) | Yes | Fully wired |
+| Wahoo | OAuth2 | Yes (header token if configured) | Yes | Fully wired |
+| Garmin | Partial (stubbed route behavior) | Accepts payload, verification TODO | Route exists, returns `503` pending approval | Business approval + OAuth 1.0a work pending |
 
 ---
 
 ## API Endpoints
 
-### OAuth (JWT-protected, under `/api/integrations/`)
+### Auth-protected (`/api/integrations`)
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/:provider/connect` | Redirect to provider OAuth page |
-| `GET` | `/:provider/callback` | OAuth callback (exchanges code, backfills 30 days) |
-| `POST` | `/:provider/disconnect` | Revoke access + delete tokens |
-| `POST` | `/:provider/sync` | Manual sync, last 7 days (5-min cooldown) |
-| `GET` | `/status` | All providers + connection status |
-| `GET` | `/sync-history?limit=20&provider=STRAVA` | Recent sync operations |
+Per-provider routes (`strava`, `polar`, `wahoo`, `garmin`):
 
-### Webhooks (public, under `/webhooks/`)
+- `GET /:provider/connect` (optional `returnTo` absolute URL; `http(s)` origin must be allowlisted)
+- `GET /:provider/callback`
+- `POST /:provider/disconnect`
+- `POST /:provider/sync` (Garmin currently returns `503`)
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/strava` | Activity create events |
-| `GET` | `/strava` | Subscription validation (hub.challenge) |
-| `POST` | `/garmin` | Activity + health events |
-| `POST` | `/polar` | Exercise events |
-| `POST` | `/wahoo` | Workout summary events |
+Shared routes:
 
----
+- `GET /status` — provider connection state + queue size + provider action metadata:
+  - `available`, `availabilityReason`, `applyUrl`
+  - `actions.connect`, `actions.disconnect`, `actions.sync`
+- `GET /sync-history` — recent sync records (limit 1-100)
 
-## Database
+### Public webhooks (`/webhooks`)
 
-### `connected_accounts` (Migration 00014)
-
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid | Primary key |
-| `athlete_id` | uuid FK | References `profiles.id` |
-| `provider` | text | STRAVA, GARMIN, POLAR, WAHOO, SUUNTO |
-| `access_token` | text | AES-256-GCM encrypted |
-| `refresh_token` | text | AES-256-GCM encrypted |
-| `token_expires` | timestamptz | Expiry timestamp |
-| `provider_uid` | text | User ID on provider platform |
-| `scopes` | text[] | Granted OAuth scopes |
-| `last_sync_at` | timestamptz | Last successful sync |
-
-### `sync_history` (Migration 00015)
-
-| Column | Type | Description |
-|---|---|---|
-| `id` | uuid | Primary key |
-| `athlete_id` | uuid FK | References `profiles.id` |
-| `provider` | text | Provider name |
-| `event_type` | text | webhook, backfill, manual_sync |
-| `status` | text | success, failed, skipped |
-| `workouts_added` | int | Count of new workouts |
-| `metrics_added` | int | Count of new metrics |
-| `error_message` | text | Error details (if failed) |
-| `duration_ms` | int | Processing time |
+- `POST /strava`
+- `GET /strava` (subscription challenge)
+- `POST /polar`
+- `POST /wahoo`
+- `POST /garmin`
 
 ---
 
-## Adding a New Provider
+## Security Model
 
-### Step 1: Implement `IntegrationProvider`
-
-Create `providers/coros.ts`:
-
-```typescript
-import type { IntegrationProvider, OAuthConfig, ... } from "../types.js";
-
-export class CorosProvider implements IntegrationProvider {
-  readonly name = "COROS" as const;
-  readonly oauthConfig: OAuthConfig = { ... };
-
-  buildAuthUrl(state: string): string { ... }
-  async exchangeCode(code: string): Promise<OAuthTokens> { ... }
-  async refreshToken(refreshToken: string): Promise<OAuthTokens> { ... }
-  async revokeAccess(accessToken: string): Promise<void> { ... }
-  verifyWebhook(headers, body): boolean { ... }
-  extractOwnerIdFromWebhook(event): string { ... }
-  extractActivityIdFromWebhook(event): string { ... }
-  async fetchActivity(accessToken, id): Promise<NormalizedWorkout> { ... }
-  async fetchActivities(accessToken, since): Promise<NormalizedWorkout[]> { ... }
-  mapActivityType(type: string): ActivityType { ... }
-}
-```
-
-### Step 2: Register
-
-In `registry.ts`:
-
-```typescript
-import { CorosProvider } from "./providers/coros.js";
-// Add to the Map:
-["COROS", new CorosProvider()],
-```
-
-### Step 3: Create Routes
-
-Copy any existing route file (e.g., `strava.ts`) and change the provider name.
-
-### Step 4: Update Infrastructure
-
-- Add webhook route in `webhooks/index.ts`
-- Add provider to `connected_accounts` CHECK constraint
-- Add env vars to `config/integrations.ts`
-- Add to `workouts.source` CHECK constraint
-
-**Estimated time: ~2 hours per provider.**
+- OAuth state is HMAC-signed and time-bound (10-minute TTL).
+- OAuth `returnTo` is carried inside signed state and sanitized against allowlisted `http(s)` origins.
+- Non-`http(s)` callback targets (custom schemes) are intentionally rejected in current implementation.
+- Tokens are encrypted before DB storage (`connected_accounts`).
+- Webhooks are verified per provider when secrets/tokens are configured.
+- Sync calls use DB-backed rate limiting via `check_rate_limit`.
+- Queue jobs are processed asynchronously from `webhook_queue` using SQL claim/complete/fail functions.
 
 ---
 
-## Strava Setup Guide (jpx.nu)
+## Data Flow
 
-1. Go to [strava.com/settings/api](https://www.strava.com/settings/api)
-2. Create application:
-   - **Name:** JPX Workout
-   - **Category:** Data Importer
-   - **Website:** `https://jpx.nu`
-   - **Callback Domain:** `jpx.nu`
-3. Copy **Client ID** and **Client Secret**
-4. Set Azure env vars:
-
-   ```
-   STRAVA_CLIENT_ID=<from Strava>
-   STRAVA_CLIENT_SECRET=<from Strava>
-   STRAVA_VERIFY_TOKEN=jpx-triathlon-strava
-   API_URL=https://jpx.nu
-   ```
-
-5. Register webhook subscription:
-
-   ```bash
-   curl -X POST https://www.strava.com/api/v3/push_subscriptions \
-     -d client_id=YOUR_ID \
-     -d client_secret=YOUR_SECRET \
-     -d callback_url=https://jpx.nu/webhooks/strava \
-     -d verify_token=jpx-triathlon-strava
-   ```
+1. Connect provider and exchange tokens.
+2. Store encrypted tokens in `connected_accounts`.
+3. Backfill/sync pulls provider activities.
+4. Normalize to shared schema and upsert into app tables.
+5. Webhook events enqueue jobs for async processing.
+6. Sync outcomes are tracked in `sync_history`.
 
 ---
 
-## Best Practices & Future Expansion
+## Required Environment Variables
 
-> **Continuously evaluate** emerging fitness APIs and aggregators for expanding platform coverage with minimal effort.
+Global integration:
 
-### Candidate Platforms
+- `INTEGRATION_ENCRYPTION_KEY`
+- `API_URL`
+- `WEB_URL`
+- `ALLOWED_OAUTH_RETURN_ORIGINS` (comma-separated `http(s)` origin allowlist; invalid entries are ignored)
 
-- **Coros** — Growing triathlon community, REST API available
-- **Whoop** — Recovery/strain data, HRV-focused
-- **Oura** — Sleep + readiness rings, strong health data
-- **FORM** — Swim goggles with in-water metrics
-- **Suunto** — Already in our type system, REST API available
+Provider credentials:
 
-### Aggregator Option
+- `STRAVA_CLIENT_ID`
+- `STRAVA_CLIENT_SECRET`
+- `STRAVA_VERIFY_TOKEN`
+- `POLAR_CLIENT_ID`
+- `POLAR_CLIENT_SECRET`
+- `POLAR_WEBHOOK_SECRET`
+- `WAHOO_CLIENT_ID`
+- `WAHOO_CLIENT_SECRET`
+- `WAHOO_WEBHOOK_TOKEN`
+- `GARMIN_CONSUMER_KEY`
+- `GARMIN_CONSUMER_SECRET`
 
-- **Terra API** — Single integration for 20+ providers (Garmin, Whoop, Oura, etc.)
-  - Pro: one integration = many providers
-  - Con: per-user pricing, data latency
-- **ROOK** — Similar aggregator, newer entrant
+---
+
+## Notes
+
+- `ProviderName` type currently includes `SUUNTO`, but no provider implementation is registered in `registry.ts`.
+- Garmin support is intentionally partial until business API access and OAuth 1.0a flow completion.

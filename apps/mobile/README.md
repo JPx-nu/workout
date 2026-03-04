@@ -1,17 +1,43 @@
-# jpx_workout
+# Mobile App (`apps/mobile`)
 
-A new Flutter project.
+Flutter client for triathlon + strength workflows.
 
-## Getting Started
+## Stack
 
-This project is a starting point for a Flutter application.
+- Flutter (Dart SDK `^3.11.0`)
+- Riverpod 3
+- GoRouter
+- Supabase Flutter
+- Dio
+- Local auth + secure storage
 
-A few resources to get you started if this is your first Flutter project:
+## Run locally
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+cd apps/mobile
+flutter pub get
+flutter run \
+  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=your-publishable-key \
+  --dart-define=API_URL=http://localhost:8787 \
+  --dart-define=APP_LINK_URL=https://jpx.nu/workout/settings
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Current app structure
+
+- Auth: login + auth provider/repository
+- Dashboard shell with tab navigation
+- Workouts
+- Training
+- Coach
+- Body map
+- Settings
+
+## Notes
+
+- This app is separate from pnpm/Turbo workflows.
+- Supabase is initialized in `lib/main.dart` via compile-time `--dart-define` values.
+- `API_URL` defaults to `http://localhost:8787` if omitted.
+- `APP_LINK_URL` defines the OAuth return target used by mobile integration connect flows and must be an allowlisted `http(s)` URL.
+- Settings "Connected Devices" reads live data from `GET /api/integrations/status`.
+- Settings integration tiles now support Connect/Sync/Disconnect action sheet per provider.
