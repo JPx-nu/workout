@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
 	return {
-		name: "Triathlon AI — Intelligent Coaching Platform",
+		name: "Triathlon AI - Athlete Cockpit",
 		short_name: "Triathlon AI",
 		description:
-			"AI-powered triathlon coaching with personalised training plans, real-time health insights, and team gamification.",
+			"AI-powered triathlon coaching with workouts, training, recovery tracking, and integration control for athletes.",
 		start_url: "/workout/dashboard",
 		display: "standalone",
 		orientation: "portrait-primary",

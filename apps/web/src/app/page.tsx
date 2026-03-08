@@ -1,4 +1,13 @@
-import { Activity, Bike, Brain, Footprints, Shield, Users, Waves, Zap } from "lucide-react";
+import {
+	Activity,
+	Bike,
+	Brain,
+	Calendar,
+	Footprints,
+	RefreshCcw,
+	Shield,
+	Waves,
+} from "lucide-react";
 import Link from "next/link";
 
 const features = [
@@ -10,37 +19,48 @@ const features = [
 		color: "var(--color-brand)",
 	},
 	{
-		icon: Activity,
-		title: "Smart Training Plans",
-		description: "Auto-adaptive periodization based on real-time fatigue, HRV, and race countdown.",
+		icon: Calendar,
+		title: "Training Calendar",
+		description:
+			"Review planned workouts, update statuses, and keep your weekly schedule visible in one place.",
 		color: "var(--color-success)",
 	},
 	{
-		icon: Zap,
-		title: "Live Health Sync",
-		description: "HealthKit & Health Connect integration for sleep, HRV, resting HR, and VO₂max.",
+		icon: Activity,
+		title: "Workout History",
+		description:
+			"See recorded sessions, filter by discipline, and keep recent training context close to the coach.",
 		color: "var(--color-warning)",
 	},
 	{
-		icon: Users,
-		title: "Virtual Relays",
+		icon: Waves,
+		title: "2D Body Map",
 		description:
-			"Team gamification with baton passes, squad challenges, and real-time leaderboards.",
+			"Track fatigue and injury signals in the supported 2D recovery view backed by current athlete data.",
 		color: "var(--color-swim)",
 	},
 	{
-		icon: Shield,
-		title: "Club-Grade Security",
+		icon: RefreshCcw,
+		title: "Integrations Control",
 		description:
-			"Multi-tenant isolation with Custom Claims JWT and row-level security on every table.",
+			"Connect supported providers, refresh status, and trigger manual syncs from the settings control plane.",
 		color: "var(--color-danger)",
 	},
 	{
-		icon: Waves,
-		title: "3D Body Map",
-		description: "Visualize muscle fatigue and injury risk with an interactive 3D heatmap.",
+		icon: Shield,
+		title: "Secure Athlete Profile",
+		description:
+			"Your onboarding, preferences, and coaching context stay tied to your athlete profile and club claims.",
 		color: "var(--color-strength)",
 	},
+];
+
+const roadmap = [
+	"Native HealthKit and Health Connect sync",
+	"Garmin availability after provider approval",
+	"Squads, relays, and team gamification",
+	"Production-ready data export and deletion flows",
+	"3D body map backed by live athlete data",
 ];
 
 const disciplines = [
@@ -52,9 +72,7 @@ const disciplines = [
 export default function LandingPage() {
 	return (
 		<div className="min-h-screen">
-			{/* Hero */}
 			<header className="relative flex flex-col items-center justify-center min-h-screen px-6 text-center overflow-hidden">
-				{/* Animated glow orbs */}
 				<div className="absolute inset-0 pointer-events-none overflow-hidden">
 					<div
 						className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-3xl"
@@ -71,7 +89,6 @@ export default function LandingPage() {
 				</div>
 
 				<div className="relative z-10 animate-fade-in">
-					{/* Discipline pills */}
 					<div className="flex items-center justify-center gap-3 mb-8">
 						{disciplines.map(({ icon: Icon, label, color }) => (
 							<span
@@ -88,36 +105,35 @@ export default function LandingPage() {
 					<h1 className="text-5xl sm:text-7xl font-bold tracking-tight mb-6 leading-tight">
 						Your AI-Powered
 						<br />
-						<span className="text-gradient">Triathlon Coach</span>
+						<span className="text-gradient">Athlete Cockpit</span>
 					</h1>
 
 					<p
 						className="max-w-2xl mx-auto text-lg sm:text-xl mb-10 leading-relaxed"
 						style={{ color: "var(--color-text-secondary)" }}
 					>
-						Intelligent training plans, real-time health insights, and team gamification — all
-						powered by agentic AI that learns your body and your goals.
+						AI coaching, workouts, training planning, recovery tracking, and integration control for
+						serious triathletes. Team gamification and native health sync remain on the roadmap.
 					</p>
 
 					<div className="flex items-center justify-center gap-4">
 						<Link
-							href="/dashboard"
+							href="/login"
 							className="btn-primary text-base px-8 py-3 inline-flex items-center gap-2"
 						>
-							<Zap size={18} />
-							Enter Dashboard
+							<Brain size={18} />
+							Launch Web Version
 						</Link>
-						<Link
-							href="/dashboard/coach"
+						<a
+							href="#scope"
 							className="btn-ghost text-base px-6 py-3 inline-flex items-center gap-2"
 						>
-							<Brain size={18} />
-							Try AI Coach
-						</Link>
+							<Activity size={18} />
+							See Current Scope
+						</a>
 					</div>
 				</div>
 
-				{/* Scroll indicator */}
 				<div className="absolute bottom-8 animate-bounce opacity-40">
 					<div
 						className="w-6 h-10 rounded-full border-2 flex items-start justify-center p-1"
@@ -131,12 +147,12 @@ export default function LandingPage() {
 				</div>
 			</header>
 
-			{/* Features */}
-			<section className="max-w-6xl mx-auto px-6 py-24">
+			<section id="scope" className="max-w-6xl mx-auto px-6 py-24">
 				<div className="text-center mb-16">
-					<h2 className="text-3xl sm:text-4xl font-bold mb-4">Built for serious athletes</h2>
+					<h2 className="text-3xl sm:text-4xl font-bold mb-4">Built for athlete self-serve</h2>
 					<p style={{ color: "var(--color-text-secondary)" }} className="text-lg max-w-xl mx-auto">
-						Every feature designed around the demands of swim-bike-run training.
+						The current web version is intentionally focused on a reliable athlete cockpit before
+						the proper native app expands the surface area.
 					</p>
 				</div>
 
@@ -163,20 +179,43 @@ export default function LandingPage() {
 				</div>
 			</section>
 
-			{/* CTA */}
+			<section className="max-w-5xl mx-auto px-6 pb-24">
+				<div className="glass-card p-8">
+					<h2 className="text-2xl font-bold mb-3">Roadmap, not shipped</h2>
+					<p className="text-sm mb-6" style={{ color: "var(--color-text-secondary)" }}>
+						These items are intentionally outside the current web-v1 acceptance line.
+					</p>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+						{roadmap.map((item) => (
+							<div
+								key={item}
+								className="rounded-xl px-4 py-3 text-sm"
+								style={{
+									background: "var(--color-glass-bg-subtle)",
+									color: "var(--color-text-secondary)",
+									border: "1px solid var(--color-glass-border)",
+								}}
+							>
+								{item}
+							</div>
+						))}
+					</div>
+				</div>
+			</section>
+
 			<section className="max-w-4xl mx-auto px-6 py-24 text-center">
 				<div className="glass-card p-12">
-					<h2 className="text-3xl font-bold mb-4">Ready to train smarter?</h2>
+					<h2 className="text-3xl font-bold mb-4">Ready to train with more context?</h2>
 					<p className="text-lg mb-8" style={{ color: "var(--color-text-secondary)" }}>
-						Join your club and let AI take your triathlon performance to the next level.
+						Sign in to the current web cockpit for coaching, workouts, training, recovery, and real
+						integration control.
 					</p>
-					<Link href="/dashboard" className="btn-primary text-base px-8 py-3 inline-block">
-						Get Started — It&apos;s Free
+					<Link href="/login" className="btn-primary text-base px-8 py-3 inline-block">
+						Get Started
 					</Link>
 				</div>
 			</section>
 
-			{/* Footer */}
 			<footer
 				className="max-w-6xl mx-auto px-6 py-8 flex items-center justify-between text-sm"
 				style={{ color: "var(--color-text-muted)" }}

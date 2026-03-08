@@ -38,6 +38,7 @@ Optional feature flags:
 - AI coach UI streams through API route `/api/ai/stream`.
 - Planned workouts use API route `/api/planned-workouts`.
 - Auth and profile/dashboard views use Supabase directly from client hooks.
+- In deployed environments, `NEXT_PUBLIC_API_URL` must point at the real API origin. Web CSP `connect-src` is built from that value at build time.
 
 ## Build
 

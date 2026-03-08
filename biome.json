@@ -16,6 +16,7 @@
 			"packages/**/*.ts",
 			"**/*.json",
 			"**/*.css",
+			"!apps/**/public",
 			"!.claude",
 			"!**/dist",
 			"!**/dist-deploy"

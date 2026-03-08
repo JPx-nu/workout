@@ -18,9 +18,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-	title: "Triathlon AI — Intelligent Coaching Platform",
+	title: "Triathlon AI - Athlete Cockpit",
 	description:
-		"AI-powered triathlon coaching with personalized training plans, real-time health insights, and team gamification.",
+		"AI-powered triathlon coaching with workouts, training, recovery tracking, and integration control for athletes.",
 	appleWebApp: {
 		capable: true,
 		statusBarStyle: "black-translucent",

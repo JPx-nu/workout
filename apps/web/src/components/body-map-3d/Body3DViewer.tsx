@@ -1,7 +1,7 @@
 "use client";
 
 import { Html, OrbitControls, useGLTF } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import type { MuscleFatigue } from "@triathlon/core";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -272,9 +272,9 @@ function BodyModel({
 		});
 	}, [hovered, gl]);
 
-	const handlePointerOver = useCallback((e: any) => {
-		e.stopPropagation();
-		const mesh = e.object as THREE.Mesh;
+	const handlePointerOver = useCallback((event: ThreeEvent<PointerEvent>) => {
+		event.stopPropagation();
+		const mesh = event.object as THREE.Mesh;
 		const ud = mesh.userData as { type?: string };
 		if (ud.type === "muscle") setHovered(mesh.uuid);
 	}, []);
@@ -282,9 +282,9 @@ function BodyModel({
 	const handlePointerOut = useCallback(() => setHovered(null), []);
 
 	const handleClick = useCallback(
-		(e: any) => {
-			e.stopPropagation();
-			const mesh = e.object as THREE.Mesh;
+		(event: ThreeEvent<MouseEvent>) => {
+			event.stopPropagation();
+			const mesh = event.object as THREE.Mesh;
 			const ud = mesh.userData as {
 				type?: string;
 				name?: string;

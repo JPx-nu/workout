@@ -268,7 +268,7 @@ Do NOT rewrite the response yourself, just provide the critique.`,
 	}
 
 	/** Route: check if reflection accepted the draft */
-	function checkReflection(state: typeof MessagesAnnotation.State): "llmCall" | typeof END {
+	function checkReflection(_state: typeof MessagesAnnotation.State): "llmCall" | typeof END {
 		graphDecisions += 1;
 
 		// No pending critique means reflection accepted (or provided no actionable feedback).

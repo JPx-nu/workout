@@ -29,6 +29,7 @@ export default function CoachPage() {
 		loadConversation,
 		newConversation,
 		conversationId,
+		error,
 		attachedFiles,
 		attachFile,
 		removeFile,
@@ -72,6 +73,19 @@ export default function CoachPage() {
 				{/* Messages */}
 				<div className="flex-1 overflow-y-auto space-y-5 pb-4 min-h-0 scrollbar-hide">
 					<div className="max-w-4xl mx-auto w-full space-y-5">
+						{error && (
+							<div
+								className="rounded-lg px-4 py-3 text-sm"
+								style={{
+									background: "oklch(0.40 0.12 25 / 0.15)",
+									color: "oklch(0.70 0.15 25)",
+									border: "1px solid oklch(0.40 0.12 25 / 0.25)",
+								}}
+							>
+								{error}
+							</div>
+						)}
+
 						{messages.map((msg) => (
 							<div
 								key={msg.id}

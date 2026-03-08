@@ -8,7 +8,7 @@
 import { type MappedPlannedWorkout, mapPlannedWorkoutRow } from "@triathlon/core";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/supabase-provider";
-import { API_URL } from "@/lib/constants";
+import { getApiConfigurationError, getApiUrl } from "@/lib/constants";
 
 export type PlannedWorkout = MappedPlannedWorkout;
 
@@ -28,7 +28,12 @@ export function usePlannedWorkouts(from: string, to: string) {
 		setError(null);
 
 		try {
-			const res = await fetch(`${API_URL}/api/planned-workouts?from=${from}&to=${to}`, {
+			const configError = getApiConfigurationError();
+			if (configError) {
+				throw new Error(configError);
+			}
+
+			const res = await fetch(getApiUrl(`/api/planned-workouts?from=${from}&to=${to}`), {
 				headers: {
 					Authorization: `Bearer ${session.access_token}`,
 					"Content-Type": "application/json",
@@ -49,7 +54,7 @@ export function usePlannedWorkouts(from: string, to: string) {
 	}, [session?.access_token, from, to]);
 
 	useEffect(() => {
-		fetchWorkouts();
+		void fetchWorkouts();
 	}, [fetchWorkouts]);
 
 	// ── Mutations ──────────────────────────────────────────────
@@ -62,7 +67,12 @@ export function usePlannedWorkouts(from: string, to: string) {
 			if (!session?.access_token) return;
 
 			try {
-				const res = await fetch(`${API_URL}/api/planned-workouts/${id}`, {
+				const configError = getApiConfigurationError();
+				if (configError) {
+					throw new Error(configError);
+				}
+
+				const res = await fetch(getApiUrl(`/api/planned-workouts/${id}`), {
 					method: "PATCH",
 					headers: {
 						Authorization: `Bearer ${session.access_token}`,
@@ -91,7 +101,12 @@ export function usePlannedWorkouts(from: string, to: string) {
 			if (!session?.access_token) return;
 
 			try {
-				const res = await fetch(`${API_URL}/api/planned-workouts/${id}`, {
+				const configError = getApiConfigurationError();
+				if (configError) {
+					throw new Error(configError);
+				}
+
+				const res = await fetch(getApiUrl(`/api/planned-workouts/${id}`), {
 					method: "DELETE",
 					headers: {
 						Authorization: `Bearer ${session.access_token}`,

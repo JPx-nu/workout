@@ -6,7 +6,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { API_URL } from "@/lib/constants";
+import { getApiConfigurationError, getApiUrl } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { type Message, suggestedPrompts } from "@/lib/types";
 
@@ -68,13 +68,27 @@ export function useCoach() {
 		stop,
 	} = useChat({
 		transport: new DefaultChatTransport({
-			api: `${API_URL}/api/ai/stream`,
+			api: getApiUrl("/api/ai/stream"),
 			headers: () => ({
 				Authorization: `Bearer ${tokenRef.current}`,
 			}),
 			body: () => ({ conversationId: conversationIdRef.current }),
 			fetch: async (url, init) => {
 				const response = await globalThis.fetch(url, init);
+				if (!response.ok) {
+					let message = "Failed to reach AI Coach.";
+					try {
+						const data = (await response.clone().json()) as {
+							content?: string;
+							error?: string;
+							detail?: string;
+						};
+						message = data.content ?? data.detail ?? data.error ?? message;
+					} catch {
+						// Ignore parse failures and use the fallback message.
+					}
+					throw new Error(message);
+				}
 				// Capture conversationId from response header
 				const convId = response.headers.get("X-Conversation-Id");
 				if (convId) {
@@ -129,12 +143,18 @@ export function useCoach() {
 	// ── Load conversations list ──────────────────────────────
 	const loadConversations = useCallback(async () => {
 		try {
+			const configError = getApiConfigurationError();
+			if (configError) {
+				setError(configError);
+				return;
+			}
+
 			const {
 				data: { session },
 			} = await supabase.auth.getSession();
 			if (!session?.access_token) return;
 
-			const res = await fetch(`${API_URL}/api/ai/conversations`, {
+			const res = await fetch(getApiUrl("/api/ai/conversations"), {
 				headers: { Authorization: `Bearer ${session.access_token}` },
 			});
 
@@ -149,7 +169,7 @@ export function useCoach() {
 
 	// Load on mount
 	useEffect(() => {
-		loadConversations();
+		void loadConversations();
 	}, [loadConversations]);
 
 	// ── Load a specific conversation's messages ──────────────
@@ -287,6 +307,12 @@ export function useCoach() {
 			const text = (prefilledText ?? input).trim();
 			if (!text) return;
 
+			const configError = getApiConfigurationError();
+			if (configError) {
+				setError(configError);
+				return;
+			}
+
 			// Refresh auth token
 			const {
 				data: { session },
@@ -296,6 +322,7 @@ export function useCoach() {
 				return;
 			}
 			tokenRef.current = session.access_token;
+			const originalInput = text;
 
 			// Handle file uploads if any
 			const filesToUpload = [...attachedFiles];
@@ -315,21 +342,36 @@ export function useCoach() {
 			}
 
 			// Send via AI SDK useChat — handles streaming automatically
-			if (imageUrls.length > 0) {
-				aiSendMessage({
-					text,
-					files: imageUrls.map((url) => ({
-						type: "file" as const,
-						mediaType: "image/jpeg",
-						url,
-					})),
-				});
-			} else {
-				aiSendMessage({ text });
-			}
+			try {
+				if (imageUrls.length > 0) {
+					await Promise.resolve(
+						aiSendMessage({
+							text,
+							files: imageUrls.map((url) => ({
+								type: "file" as const,
+								mediaType: "image/jpeg",
+								url,
+							})),
+						}),
+					);
+				} else {
+					await Promise.resolve(aiSendMessage({ text }));
+				}
 
-			// Refresh conversations list after backend has had time to save
-			setTimeout(() => loadConversations(), 2000);
+				// Refresh conversations list after backend has had time to save
+				setTimeout(() => {
+					void loadConversations();
+				}, 2000);
+			} catch (err) {
+				if (!prefilledText) {
+					setInput(originalInput);
+				}
+				setError(
+					err instanceof Error
+						? err.message
+						: "Failed to reach AI Coach. You can keep going without chat.",
+				);
+			}
 		},
 		[
 			input,

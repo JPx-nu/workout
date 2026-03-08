@@ -108,9 +108,11 @@ export async function extractMemories(
 		const embeddingsModel = createEmbeddings();
 
 		// Get embeddings for existing memories that have them
-		const existingEmbeddings = existingMemories
-			.filter((m) => m.embedding && m.embedding.length > 0)
-			.map((m) => ({ content: m.content, embedding: m.embedding! }));
+		const existingEmbeddings = existingMemories.flatMap((memory) =>
+			memory.embedding && memory.embedding.length > 0
+				? [{ content: memory.content, embedding: memory.embedding }]
+				: [],
+		);
 
 		for (const candidate of candidates) {
 			try {

@@ -12,7 +12,7 @@ import type { OnboardingDraft, OnboardingLevel } from "@/components/onboarding/t
 import { WelcomeStep } from "@/components/onboarding/welcome-step";
 import { useAuth } from "@/components/supabase-provider";
 import { useProfile } from "@/hooks/use-profile";
-import { API_URL } from "@/lib/constants";
+import { getApiConfigurationError, getApiUrl } from "@/lib/constants";
 
 const steps = ["welcome", "focus", "level", "goal", "coach"] as const;
 type StepId = (typeof steps)[number];
@@ -28,7 +28,14 @@ function parseGoal(value: unknown): string | null {
 export default function OnboardingPage() {
 	const router = useRouter();
 	const { user, session } = useAuth();
-	const { profile, isLoading: profileLoading, refetch } = useProfile();
+	const {
+		profile,
+		isLoading: profileLoading,
+		refetch,
+		updateDefaultView,
+		updatePreferences,
+		updateProfile,
+	} = useProfile();
 
 	const [stepIndex, setStepIndex] = useState(0);
 	const [draft, setDraft] = useState<OnboardingDraft>({
@@ -73,15 +80,32 @@ export default function OnboardingPage() {
 		setStepIndex((prev) => Math.max(prev - 1, 0));
 	};
 
+	const persistOnboardingDirectly = async () => {
+		const nextDisplayName = draft.displayName.trim();
+		const nextGoal = draft.primaryGoal?.trim();
+
+		if (nextDisplayName && nextDisplayName !== profile.displayName) {
+			await updateProfile({ displayName: nextDisplayName });
+		}
+
+		if (draft.defaultView && draft.defaultView !== profile.defaultView) {
+			await updateDefaultView(draft.defaultView);
+		}
+
+		await updatePreferences({
+			...(draft.level ? { level: draft.level } : {}),
+			...(nextGoal ? { primary_goal: nextGoal } : {}),
+			onboarding_completed: true,
+		});
+	};
+
 	const completeOnboarding = async () => {
-		if (!session?.access_token) {
-			setError("Your session expired. Please sign in again.");
+		if (isSaving) {
 			return;
 		}
 
 		setIsSaving(true);
 		setError(null);
-
 		const payload: OnboardingData & {
 			onboardingCompleted: boolean;
 			saveMemories: boolean;
@@ -95,34 +119,50 @@ export default function OnboardingPage() {
 		};
 
 		try {
-			const response = await fetch(`${API_URL}/api/onboarding`, {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${session.access_token}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(payload),
-			});
+			const configError = getApiConfigurationError();
+			if (!configError && session?.access_token) {
+				const response = await fetch(getApiUrl("/api/onboarding"), {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${session.access_token}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(payload),
+				});
 
-			if (!response.ok) {
-				let message = "Failed to save onboarding details.";
-				try {
-					const data = (await response.json()) as { error?: string };
-					if (data.error) message = data.error;
-				} catch {
-					// Use fallback message when JSON parsing fails.
+				if (!response.ok) {
+					let message = "Failed to save onboarding details.";
+					try {
+						const data = (await response.json()) as { error?: string; detail?: string };
+						message = data.detail ?? data.error ?? message;
+					} catch {
+						// Use fallback message when JSON parsing fails.
+					}
+					throw new Error(message);
 				}
-				throw new Error(message);
+			} else {
+				await persistOnboardingDirectly();
 			}
-
-			await refetch();
-			router.replace("/dashboard");
-		} catch (err) {
-			const message = err instanceof Error ? err.message : "Something went wrong.";
-			setError(message);
-		} finally {
-			setIsSaving(false);
+		} catch {
+			try {
+				await persistOnboardingDirectly();
+			} catch (fallbackErr) {
+				const message =
+					fallbackErr instanceof Error ? fallbackErr.message : "Failed to save onboarding details.";
+				setError(message);
+				setIsSaving(false);
+				return;
+			}
 		}
+
+		try {
+			await refetch();
+		} catch {
+			// Redirect even if the profile refetch misses the immediate write.
+		}
+
+		setIsSaving(false);
+		router.replace("/dashboard");
 	};
 
 	const handleSkip = () => {

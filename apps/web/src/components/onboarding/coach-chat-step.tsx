@@ -21,7 +21,7 @@ export function CoachChatStep({
 	onSkip,
 	isSaving,
 }: CoachChatStepProps) {
-	const { messages, isTyping, input, setInput, sendMessage } = useCoach();
+	const { messages, isTyping, input, setInput, sendMessage, error } = useCoach();
 
 	useEffect(() => {
 		if (hasSeeded || !seedMessage.trim()) return;
@@ -52,9 +52,22 @@ export function CoachChatStep({
 				className="rounded-xl border p-3 space-y-3 overflow-y-auto"
 				style={{ borderColor: "var(--color-glass-border)", maxHeight: "22rem" }}
 			>
+				{error && (
+					<div
+						className="rounded-lg px-3 py-2 text-xs"
+						style={{
+							background: "oklch(0.40 0.12 25 / 0.15)",
+							color: "oklch(0.70 0.15 25)",
+							border: "1px solid oklch(0.40 0.12 25 / 0.25)",
+						}}
+					>
+						{error} You can still skip chat and finish onboarding.
+					</div>
+				)}
+
 				{messages.length === 0 ? (
 					<p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-						Starting your onboarding chat...
+						{error ? "Coach is unavailable right now." : "Starting your onboarding chat..."}
 					</p>
 				) : (
 					messages.map((message) => (

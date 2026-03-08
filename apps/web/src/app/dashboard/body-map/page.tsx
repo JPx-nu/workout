@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Heart, Moon, Zap } from "lucide-react";
+import { Activity, Heart, Moon, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
 import BodySvg from "@/components/body-map/BodySvg";
 import { useHealth } from "@/hooks/use-health";
@@ -11,27 +11,27 @@ export default function BodyMapPage() {
 
 	return (
 		<div className="space-y-6 animate-fade-in">
-			<div className="flex items-center justify-between">
+			<div className="flex items-center justify-between gap-4">
 				<div>
 					<h1 className="text-2xl font-bold">Body Map</h1>
 					<p className="mt-1 text-sm" style={{ color: "var(--color-text-secondary)" }}>
-						Muscle fatigue & recovery tracking
+						Supported 2D recovery view backed by daily logs and active injuries.
 					</p>
 				</div>
 				<Link
 					href="/dashboard/body-map-3d"
-					className="px-4 py-2 rounded-full text-sm font-semibold transition-all"
+					className="px-4 py-2 rounded-full text-sm font-semibold transition-all inline-flex items-center gap-2"
 					style={{
 						background: "var(--color-glass-bg)",
-						border: "1px solid var(--color-border)",
+						border: "1px solid var(--color-glass-border)",
 						color: "var(--color-text-primary)",
 					}}
 				>
-					Switch to 3D →
+					<Sparkles size={14} />
+					Experimental 3D Preview
 				</Link>
 			</div>
 
-			{/* Health summary cards */}
 			<div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
 				{[
 					{
@@ -53,7 +53,7 @@ export default function BodyMapPage() {
 						color: "var(--color-swim)",
 					},
 					{
-						label: "VO₂max",
+						label: "VO2max",
 						value: `${healthSnapshot.vo2max}`,
 						icon: Zap,
 						color: "var(--color-warning)",
@@ -69,12 +69,15 @@ export default function BodyMapPage() {
 				))}
 			</div>
 
-			{/* Interactive Body Map (SVG) */}
 			<div className="glass-card p-6">
 				<BodySvg fatigueData={fatigueData} />
 			</div>
 
-			{/* Daily logs */}
+			<div className="glass-card p-4 text-xs" style={{ color: "var(--color-text-muted)" }}>
+				The 2D body map is the supported recovery view for the current web version. The separate 3D
+				preview remains experimental until it uses live athlete data instead of sample mapping.
+			</div>
+
 			<div className="glass-card p-6">
 				<h3 className="text-sm font-semibold mb-4" style={{ color: "var(--color-text-secondary)" }}>
 					Daily Wellness Log
@@ -124,7 +127,7 @@ export default function BodyMapPage() {
 									<td className="py-2.5 text-center">{log.rpe}/10</td>
 									<td className="py-2.5 text-center">{log.mood}/10</td>
 									<td className="py-2.5" style={{ color: "var(--color-text-muted)" }}>
-										{log.notes ?? "—"}
+										{log.notes ?? "-"}
 									</td>
 								</tr>
 							))}

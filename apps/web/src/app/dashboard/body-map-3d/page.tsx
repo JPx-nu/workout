@@ -1,10 +1,10 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { defaultFatigueData } from "@/lib/types";
 
-/* Dynamic import — WebGL/Three.js cannot SSR */
 const Body3DViewer = dynamic(() => import("@/components/body-map-3d/Body3DViewer"), {
 	ssr: false,
 	loading: () => (
@@ -14,12 +14,12 @@ const Body3DViewer = dynamic(() => import("@/components/body-map-3d/Body3DViewer
 					className="w-10 h-10 mx-auto mb-3 rounded-full"
 					style={{
 						border: "3px solid rgba(255,255,255,0.1)",
-						borderTopColor: "var(--color-accent, #6366f1)",
+						borderTopColor: "var(--color-brand)",
 						animation: "spin 0.8s linear infinite",
 					}}
 				/>
 				<p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-					Loading 3D viewer…
+					Loading 3D preview…
 				</p>
 			</div>
 		</div>
@@ -29,14 +29,13 @@ const Body3DViewer = dynamic(() => import("@/components/body-map-3d/Body3DViewer
 export default function BodyMap3DPage() {
 	return (
 		<div className="space-y-6 p-6">
-			{/* Header */}
-			<div className="flex items-center justify-between">
+			<div className="flex items-center justify-between gap-4">
 				<div>
 					<h1 className="text-2xl font-bold" style={{ color: "var(--color-text-primary)" }}>
-						Body Map — 3D View
+						Body Map - 3D Preview
 					</h1>
 					<p className="text-sm mt-1" style={{ color: "var(--color-text-muted)" }}>
-						Interactive 3D anatomy view
+						Experimental anatomy preview using sample mapping data.
 					</p>
 				</div>
 				<Link
@@ -44,25 +43,41 @@ export default function BodyMap3DPage() {
 					className="px-4 py-2 rounded-full text-sm font-semibold transition-all"
 					style={{
 						background: "var(--color-glass-bg)",
-						border: "1px solid var(--color-border)",
+						border: "1px solid var(--color-glass-border)",
 						color: "var(--color-text-primary)",
 					}}
 				>
-					← Switch to 2D
+					Back to 2D
 				</Link>
 			</div>
 
-			{/* 3D Viewer */}
+			<div
+				className="glass-card p-4 text-sm flex items-start gap-3"
+				style={{
+					border: "1px solid var(--color-glass-border)",
+					color: "var(--color-text-secondary)",
+				}}
+			>
+				<AlertTriangle
+					size={16}
+					className="shrink-0 mt-0.5"
+					style={{ color: "var(--color-warning)" }}
+				/>
+				<p>
+					This 3D page is not part of the supported web-v1 product surface yet. It currently renders
+					sample fatigue data and should be treated as an experimental preview only.
+				</p>
+			</div>
+
 			<Body3DViewer fatigueData={defaultFatigueData} />
 
-			{/* Attribution */}
 			<p className="text-xs text-center" style={{ color: "var(--color-text-muted)" }}>
 				3D model from{" "}
 				<a
 					href="https://github.com/hpfrei/body-anatomy-3d-viewer"
 					target="_blank"
 					rel="noopener noreferrer"
-					style={{ color: "var(--color-accent)" }}
+					style={{ color: "var(--color-brand)" }}
 				>
 					hpfrei/body-anatomy-3d-viewer
 				</a>{" "}

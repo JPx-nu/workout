@@ -127,7 +127,12 @@ export class WahooProvider implements IntegrationProvider {
 	}
 
 	async revokeAccess(accessToken: string): Promise<void> {
-		await fetch(this.oauthConfig.revokeUrl!, {
+		const revokeUrl = this.oauthConfig.revokeUrl;
+		if (!revokeUrl) {
+			return;
+		}
+
+		await fetch(revokeUrl, {
 			method: "POST",
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 			body: new URLSearchParams({

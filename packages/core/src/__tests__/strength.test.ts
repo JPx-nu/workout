@@ -10,6 +10,15 @@ import {
 	summarizeStrengthWorkout,
 } from "../strength/index";
 
+function expectNumber(value: number | null): number {
+	expect(value).not.toBeNull();
+	if (value === null) {
+		throw new Error("Expected number result");
+	}
+
+	return value;
+}
+
 describe("estimate1RM", () => {
 	it("returns identity for 1 rep", () => {
 		expect(estimate1RM(100, 1)).toBe(100);
@@ -29,27 +38,27 @@ describe("estimate1RM", () => {
 
 	it("uses Brzycki for 1-6 reps", () => {
 		// Brzycki: 100 / (1.0278 - 0.0278 * 5) = 100 / 0.8888 ≈ 112.5
-		const result = estimate1RM(100, 5)!;
+		const result = expectNumber(estimate1RM(100, 5));
 		expect(result).toBeGreaterThan(112);
 		expect(result).toBeLessThan(113);
 	});
 
 	it("uses Epley for 7-10 reps", () => {
 		// Epley: 80 * (1 + 8/30) = 80 * 1.2667 ≈ 101.3
-		const result = estimate1RM(80, 8)!;
+		const result = expectNumber(estimate1RM(80, 8));
 		expect(result).toBeGreaterThan(101);
 		expect(result).toBeLessThan(102);
 	});
 
 	it("uses Lombardi for >10 reps", () => {
 		// Lombardi: 60 * 12^0.10
-		const result = estimate1RM(60, 12)!;
+		const result = expectNumber(estimate1RM(60, 12));
 		expect(result).toBeGreaterThan(60);
 		expect(result).toBeLessThan(80);
 	});
 
 	it("returns results rounded to 1 decimal", () => {
-		const result = estimate1RM(100, 5)!;
+		const result = expectNumber(estimate1RM(100, 5));
 		expect(result.toString()).toMatch(/^\d+\.?\d?$/);
 	});
 });
