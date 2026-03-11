@@ -31,13 +31,19 @@ flutter run \
 - Training
 - Coach
 - Body map
-- Settings
+- Settings with live integration status/actions
+
+## Current behavior notes
+
+- Settings "Connected Devices" reads live data from `GET /api/integrations/status`.
+- Settings integration tiles support Connect/Sync/Disconnect or apply flow per provider.
+- `APP_LINK_URL` must be an allowlisted absolute `http(s)` URL because API OAuth `returnTo` rejects custom schemes.
+- Local notification toggles, appearance, and biometric lock rows are UI scaffolds only; they are not persisted yet.
+- The mobile health ingest contract exists at `POST /api/health/ingest`, but HealthKit / Health Connect permission UX is not shipped yet.
 
 ## Notes
 
 - This app is separate from pnpm/Turbo workflows.
 - Supabase is initialized in `lib/main.dart` via compile-time `--dart-define` values.
 - `API_URL` defaults to `http://localhost:8787` if omitted.
-- `APP_LINK_URL` defines the OAuth return target used by mobile integration connect flows and must be an allowlisted `http(s)` URL.
-- Settings "Connected Devices" reads live data from `GET /api/integrations/status`.
-- Settings integration tiles now support Connect/Sync/Disconnect action sheet per provider.
+- `APP_LINK_URL` defines the OAuth return target used by mobile integration connect flows.

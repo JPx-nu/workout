@@ -1,167 +1,140 @@
-import { Brain, Database, Lock, MapPin, Shield } from "lucide-react";
+import { Brain, Database, Lock, Shield, Watch } from "lucide-react";
+
+function SectionHeading({
+	icon: Icon,
+	children,
+}: {
+	icon: typeof Brain;
+	children: React.ReactNode;
+}) {
+	return (
+		<h2
+			className="mb-4 flex items-center gap-2 text-xl font-bold"
+			style={{ color: "var(--color-text-primary)" }}
+		>
+			<Icon size={20} style={{ color: "var(--color-brand)" }} />
+			{children}
+		</h2>
+	);
+}
 
 export default function PrivacyPolicyPage() {
 	return (
-		<div className="max-w-4xl mx-auto py-12 px-4 animate-fade-in space-y-8">
+		<div className="mx-auto max-w-4xl space-y-8 px-4 py-12 animate-fade-in">
 			<div>
-				<h1 className="text-4xl font-bold tracking-tight mb-2">Privacy Policy</h1>
-				<p style={{ color: "var(--color-text-secondary)" }}>Last Updated: February 21, 2026</p>
+				<h1
+					className="mb-2 text-4xl font-bold tracking-tight"
+					style={{ color: "var(--color-text-primary)" }}
+				>
+					Privacy Policy
+				</h1>
+				<p style={{ color: "var(--color-text-secondary)" }}>Last Updated: March 11, 2026</p>
 			</div>
 
 			<div
-				className="glass-card p-6 lg:p-10 space-y-8 text-sm leading-relaxed"
+				className="glass-card space-y-8 p-6 text-sm leading-relaxed lg:p-10"
 				style={{ color: "var(--color-text-secondary)" }}
 			>
 				<section>
-					<h2 className="text-xl font-bold text-white mb-4">
-						1. Introduction & Commitment to Privacy
+					<h2 className="mb-4 text-xl font-bold" style={{ color: "var(--color-text-primary)" }}>
+						1. Scope
 					</h2>
 					<p>
-						At JPx (operated by JPx AB, Gothenburg, Sweden), we build elite triathlon and endurance
-						training software. We believe your physiological data belongs to you. This Privacy
-						Policy explains how we collect, use, and critically protect your personal and biometric
-						information when you use the JPx AI Coach and platform.
-					</p>
-					<p className="mt-2">
-						We are fully committed to the General Data Protection Regulation (GDPR), the upcoming
-						European Health Data Space (EHDS) interoperability standards, and the EU AI Act
-						classification for High-Risk AI systems.
+						This page describes the current data handling for the shipped JPX product surface: the
+						web app, the mobile companion app, the API, the AI Coach, and supported device
+						integrations. It is intended to match the product as implemented today.
 					</p>
 				</section>
 
 				<section>
-					<h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-						<Database className="text-brand" size={20} />
-						2. Data We Collect
-					</h2>
-					<p>
-						To provide personalized AI coaching and 3D movement analysis, we process the following
-						categories of data with your explicit consent:
-					</p>
-					<ul className="list-disc pl-5 mt-2 space-y-2">
+					<SectionHeading icon={Database}>2. Data We Currently Collect</SectionHeading>
+					<ul className="list-disc space-y-2 pl-5">
 						<li>
-							<strong>Identity & Profile Data:</strong> Name, email address, timezone, and club
-							affiliation.
+							<strong>Account and profile data:</strong> name, email address, timezone, club
+							affiliation, dashboard preference, and onboarding preferences.
 						</li>
 						<li>
-							<strong>Biometric & Health Telemetry:</strong> Heart Rate (HR), Heart Rate Variability
-							(HRV), Sleep Stages, Resting Heart Rate (RHR), weight, and estimated VO2 Max.
+							<strong>Training and recovery data:</strong> workouts, planned workouts, daily logs,
+							injury records, and sync history used by the dashboard, body map, and coaching flows.
 						</li>
 						<li>
-							<strong>Training Data:</strong> GPS coordinates from activities, power output,
-							cadence, perceived exertion (RPE), and injury logs.
-						</li>
-					</ul>
-					<p className="mt-4 italic">
-						* Note: We exclusively process fitness and wellness telemetry. JPx does not collect
-						medical records or process data for medical diagnosis.
-					</p>
-				</section>
-
-				<section>
-					<h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-						<Brain className="text-brand" size={20} />
-						3. How We Use the Data (The AI Coach)
-					</h2>
-					<p>
-						Your data is primarily used to power the JPx AI Coach. The AI analyzes your readiness
-						(e.g., HRV) to dynamically adjust your planned workouts, optimize recovery, and build
-						structured training plans.
-					</p>
-					<div
-						className="mt-4 p-4 rounded-xl border"
-						style={{
-							borderColor: "var(--color-glass-border)",
-							background: "var(--color-glass-bg-subtle)",
-						}}
-					>
-						<h3 className="font-bold text-white mb-2 text-xs uppercase tracking-wider">
-							EU AI Act Guarantee (Human Oversight)
-						</h3>
-						<p className="text-xs">
-							As a High-Risk AI system under the EU AI Act (2026), JPx provides full transparency
-							when AI alters your schedule. While the AI generates suggestions, <strong>you</strong>{" "}
-							retain the final say on execution. Our AI does <strong>not</strong> make binding
-							medical or health decisions.
-						</p>
-					</div>
-				</section>
-
-				<section>
-					<h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-						<MapPin className="text-brand" size={20} />
-						4. Where Your Data Lives
-					</h2>
-					<p>
-						Because data sovereignty matters,{" "}
-						<strong>100% of JPx databases are hosted within the European Union (Sweden)</strong> via
-						Microsoft Azure and Supabase. We do not transfer your raw biometric databases outside of
-						the EU/EEA.
-					</p>
-				</section>
-
-				<section>
-					<h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-						<Shield className="text-brand" size={20} />
-						5. Sub-Processors & Data Sharing
-					</h2>
-					<p>
-						We do not. We never sell your data to third parties. We utilize a highly vetted list of
-						enterprise sub-processors to deliver the service:
-					</p>
-					<ul className="list-disc pl-5 mt-2 space-y-2">
-						<li>
-							<strong>Microsoft Azure (EU):</strong> Primary cloud hosting and infrastructure.
+							<strong>Coach data:</strong> AI conversation history and any images you upload to the
+							coach chat.
 						</li>
 						<li>
-							<strong>Supabase (EU):</strong> PostgreSQL database hosting with strict Row-Level
-							Security preventing unauthorized access.
+							<strong>Integration data:</strong> provider connection state, provider user IDs,
+							encrypted OAuth tokens, webhook metadata, and sync results for supported providers.
 						</li>
 						<li>
-							<strong>Azure OpenAI (EU):</strong> Provides the LLM reasoning for the AI Coach. We
-							operate under a strict <strong>Zero Data Retention</strong> agreement. Your prompts
-							and biometric data are NEVER used to train foundational models and are discarded
-							immediately after inference.
-						</li>
-						<li>
-							<strong>Junction:</strong> Health API aggregation layer (routes Garmin/Oura data to
-							our secure enclave).
+							<strong>Mobile ingest data:</strong> workouts, metrics, and daily logs sent to
+							`/api/health/ingest` when the mobile app sync flow is used.
 						</li>
 					</ul>
 				</section>
 
 				<section>
-					<h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-						<Lock className="text-brand" size={20} />
-						6. Your Rights (Data Control Center)
-					</h2>
-					<p>
-						Under GDPR, you have the absolute right to control your data. Within the JPx App via the{" "}
-						<strong>Data Control Center</strong> (Settings &gt; Privacy & Integrations), you can
-						instantly:
-					</p>
-					<ul className="list-disc pl-5 mt-2 space-y-2">
+					<SectionHeading icon={Brain}>3. How We Use That Data</SectionHeading>
+					<ul className="list-disc space-y-2 pl-5">
+						<li>Authenticate you and load the correct athlete profile and club context.</li>
+						<li>Show your dashboard, workouts, training calendar, body map, and settings state.</li>
 						<li>
-							<strong>Disconnect OAuth integrations</strong> to stop data flow.
+							Generate AI Coach responses, save conversation history, and extract coaching memories.
 						</li>
 						<li>
-							<strong>Export your data</strong> in a machine-readable JSON format (Right to
-							Portability).
+							Run provider syncs, webhook processing, and normalization into shared workout/health
+							tables.
 						</li>
 						<li>
-							<strong>Delete your account and all telemetry</strong> permanently (Right to be
-							Forgotten). This triggers an immediate cascading database drop.
+							Monitor service health, investigate failures, and protect the platform from abuse.
 						</li>
 					</ul>
 				</section>
 
 				<section>
-					<h2 className="text-xl font-bold text-white mb-4">
-						7. Contact the Data Protection Officer
-					</h2>
+					<SectionHeading icon={Watch}>
+						4. Current Processors and Product Integrations
+					</SectionHeading>
+					<ul className="list-disc space-y-2 pl-5">
+						<li>
+							<strong>Microsoft Azure:</strong> current app hosting and related infrastructure.
+						</li>
+						<li>
+							<strong>Supabase:</strong> authentication, PostgreSQL data storage, and coach image
+							storage.
+						</li>
+						<li>
+							<strong>Azure OpenAI:</strong> AI inference for the coach when AI features are
+							enabled.
+						</li>
+						<li>
+							<strong>Connected providers:</strong> Strava, Polar, and Wahoo when you explicitly
+							start an integration flow. Garmin remains pending approval and is not an active
+							end-user integration.
+						</li>
+					</ul>
+					<p className="mt-4">
+						The shipped product does not currently rely on Junction or other external aggregation
+						layers for live consumer integrations.
+					</p>
+				</section>
+
+				<section>
+					<SectionHeading icon={Shield}>5. Current User Controls</SectionHeading>
+					<ul className="list-disc space-y-2 pl-5">
+						<li>Update display name, timezone, and dashboard preference from settings.</li>
+						<li>Redo onboarding to refresh profile preferences and coaching context.</li>
+						<li>Disconnect supported OAuth integrations from settings.</li>
+					</ul>
+					<p className="mt-4">
+						Self-serve export and delete-account flows are not currently exposed in the shipped UI.
+						If you need help with a privacy request, contact us directly.
+					</p>
+				</section>
+
+				<section>
+					<SectionHeading icon={Lock}>6. Contact</SectionHeading>
 					<p>
-						If you have questions about this policy, or wish to exercise your rights manually,
-						please contact our Data Protection Officer at:
+						If you have questions about this page or need help with a privacy request, contact:
 						<br />
 						<br />
 						<strong>Email:</strong> privacy@jpx.nu

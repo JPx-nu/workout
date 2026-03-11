@@ -2,45 +2,45 @@
 
 Living backlog of implementation debt and sequencing.
 
-Last updated: 2026-03-03
+Last updated: 2026-03-11
 
 ---
 
 ## High Priority
 
-- [ ] **Garmin integration completion plan**  
+- [ ] **Garmin integration completion plan**
       OAuth 1.0a flow and webhook verification are still partial/stubbed in provider + route layer.
 
-- [ ] **Webhook provider signature parity**  
+- [ ] **Webhook provider signature parity**
       Strava has structural payload validation (not signed payloads); Garmin currently accepts all events pending approval flow.
 
 ---
 
 ## Medium Priority
 
-- [ ] **Refactor large web components**  
+- [ ] **Refactor large web components**
       `apps/web/src/components/body-map-3d/Body3DViewer.tsx` remains very large and mixes rendering/state logic.
 
-- [ ] **Tool/service consistency cleanup**  
+- [ ] **Tool/service consistency cleanup**
       `generate-workout-plan` still bypasses shared service helpers in places; align with `services/ai/supabase.ts` patterns.
 
-- [ ] **Memory extraction dedup cost**  
+- [ ] **Memory extraction dedup cost**
       Current cosine dedup compares candidate embeddings against in-memory vectors (O(n*m)); evaluate DB-side vector similarity for scale.
 
-- [ ] **`@triathlon/api-client` adoption**  
+- [ ] **`@triathlon/api-client` adoption**
       Package exists but is not consumed by web/mobile. Either integrate intentionally or remove.
 
 ---
 
 ## Pre-Test/Freeze Cleanup (Recommended Before New Tests)
 
-- [ ] **Demo auth claims verification pass**  
+- [ ] **Demo auth claims verification pass**
       Ensure all beta/demo users are issued JWTs with valid `app_metadata.club_id` + `app_metadata.role` after strict claim enforcement.
 
-- [ ] **Rollout check for migration `00021`**  
+- [ ] **Rollout check for migration `00021`**
       Confirm migration ordering and rollback notes for new `external_id` unique indexes before schema freeze.
 
-- [ ] **Optional legacy backfill decision**  
+- [ ] **Optional legacy backfill decision**
       Decide whether to backfill `external_id` for historical `workouts`/`health_metrics` rows or keep idempotency enforced only for newly ingested mobile records.
 
 ---
@@ -49,7 +49,7 @@ Last updated: 2026-03-03
 
 1. **Permissions and consent foundation**
    - Implement platform-specific consent UX for Apple HealthKit and Android Health Connect.
-   - Persist granted scopes and show clear “connected/partially connected/not connected” states.
+   - Persist granted scopes and show clear connected/partially connected/not connected states.
 2. **Read-only health ingestion (MVP)**
    - Pull core metrics first: sleep duration, resting HR, HRV, workouts.
    - Normalize and write into existing API/Supabase tables (`health_metrics`, `daily_logs`, `workouts`).
@@ -64,17 +64,14 @@ Last updated: 2026-03-03
 
 ## Documentation and Process
 
-- [ ] **Add a root README**  
-      Repo has app/docs references but lacks a concise root onboarding doc for humans.
-
-- [ ] **Define doc ownership cadence**  
-      Technical docs drifted heavily from implementation. Add a simple “update docs on route/config changes” step to PR checklist.
+- [ ] **Legal copy review**
+      Privacy/terms pages now match the current shipped product surface more closely, but they still need formal legal review before they should be treated as final legal text.
 
 ---
 
 ## Conflicts Requiring Owner Confirmation
 
-- [ ] **Mobile OAuth callback target policy**  
+- [ ] **Mobile OAuth callback target policy**
       Current implementation allows only allowlisted `http(s)` `returnTo` URLs. Confirm if external beta should stay on HTTPS universal/app links only, or if custom-scheme deep links must be supported.
 
 ---
@@ -100,7 +97,7 @@ Last updated: 2026-03-03
 
 Reference detail doc: `docs/external-beta-step1-3-plan.md` (source-backed tasks and acceptance gates for steps 1-3).
 
-### Phase 1 — API hardening baseline (Week 1)
+### Phase 1 - API hardening baseline (Week 1)
 
 - Finalize env strictness matrix (local/demo/prod) and fail-fast behavior on missing critical keys.
 - Complete webhook verification parity plan per provider (including explicit Garmin gap handling).
@@ -110,7 +107,7 @@ Reference detail doc: `docs/external-beta-step1-3-plan.md` (source-backed tasks 
   - All integration endpoints return documented error shapes.
   - `docs/technical-reference.md` and `docs/integrations.md` reflect final behavior.
 
-### Phase 2 — Mobile integration UX and control plane (Week 1-2)
+### Phase 2 - Mobile integration UX and control plane (Week 1-2)
 
 - Keep settings integration status live via `/api/integrations/status` (implemented).
 - Add connect/disconnect/sync-now actions per provider from mobile settings.
@@ -119,7 +116,7 @@ Reference detail doc: `docs/external-beta-step1-3-plan.md` (source-backed tasks 
   - A user can start provider OAuth from mobile and see post-callback status update.
   - Queue depth and last-sync state are visible and understandable in settings.
 
-### Phase 3 — Health ecosystem ingestion MVP (Week 2-3)
+### Phase 3 - Health ecosystem ingestion MVP (Week 2-3)
 
 - Implement Apple HealthKit + Android Health Connect permission onboarding.
 - Pull read-only core metrics: sleep duration, resting HR, HRV, workouts.
@@ -128,7 +125,7 @@ Reference detail doc: `docs/external-beta-step1-3-plan.md` (source-backed tasks 
   - At least one successful end-to-end sync path on iOS and Android test devices.
   - Data appears in body-map/dashboard flows without manual DB intervention.
 
-### Phase 4 — Background sync and resilience (Week 3)
+### Phase 4 - Background sync and resilience (Week 3)
 
 - Add periodic sync scheduler for mobile and retry strategy for transient failures.
 - Persist local sync cursor and queued writes for offline/poor-network scenarios.
@@ -137,7 +134,7 @@ Reference detail doc: `docs/external-beta-step1-3-plan.md` (source-backed tasks 
   - Sync recovers after offline periods and app restarts.
   - Failures are observable via logs/metrics with actionable reasons.
 
-### Phase 5 — Pre-freeze cleanup and tests (Week 4)
+### Phase 5 - Pre-freeze cleanup and tests (Week 4)
 
 - Add route-level integration tests (`/api/ai/*`, `/api/planned-workouts/*`, `/api/integrations/*`).
 - Add mobile smoke checks for settings status rendering and body-map severity mapping.
@@ -146,7 +143,7 @@ Reference detail doc: `docs/external-beta-step1-3-plan.md` (source-backed tasks 
   - CI passes on targeted critical-path tests.
   - No P0/P1 defects remain in beta scope.
 
-### Phase 6 — External beta/demo readiness (Week 4+)
+### Phase 6 - External beta/demo readiness (Week 4+)
 
 - Prepare demo tenant seed data and role-complete JWT issuance.
 - Run security and abuse-review checklist (rate limit behavior, auth claim coverage, webhook spoof checks).
@@ -159,6 +156,8 @@ Reference detail doc: `docs/external-beta-step1-3-plan.md` (source-backed tasks 
 
 ## Recently Resolved (Condensed)
 
+- Added a root `README.md` and refreshed implementation-truth docs (`docs/technical-reference.md`, `docs/integrations.md`, `docs/web-v1-feature-matrix.md`).
+- Added explicit repo guidance to keep docs in sync with route/env/product-surface changes.
 - Canonicalized env schema to `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for web clients.
 - Confirmed `/api/doc` and `/api/reference` stay JWT-protected for now.
 - Added API startup env validation for critical + optional feature groups.

@@ -5,6 +5,8 @@ node_modules/
 .next/
 dist/
 .turbo/
+apps/api/dist-deploy/
+apps/web/public/sw.js
 
 # Environment
 .env
@@ -47,3 +49,9 @@ build_log.txt
 
 # npm lockfile (this is a pnpm workspace)
 package-lock.json
+
+# Azure deployment log downloads
+*-logs/
+
+# Generated deploy zips
+web-deploy-*.zip

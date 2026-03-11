@@ -1,9 +1,10 @@
 # Web v1 Feature Matrix
 
-Last Updated: 2026-03-08
+Last Updated: 2026-03-11
 
 | Area | Status | Notes |
 |---|---|---|
+| Landing page | Shipped | `/workout/` markets the current athlete-first web scope |
 | Auth and sessions | Shipped | Supabase auth with web login and guarded dashboard routes |
 | Onboarding flow | Shipped | Completion now falls back to direct profile persistence if API transport fails |
 | Dashboard views | Shipped | Triathlon and strength default views backed by live profile state |
@@ -17,6 +18,8 @@ Last Updated: 2026-03-08
 | Dashboard default view setting | Shipped | Triathlon and strength |
 | Onboarding redo | Shipped | Available from settings |
 | Sign out | Shipped | Web sign-out form action |
+| Theme toggle | Shipped | Dashboard shell supports dark/light theme switching |
+| PWA manifest / install prompt | Shipped | Serwist manifest and install prompt are wired for supported browsers |
 | Integrations status | Shipped | Uses live `/api/integrations/status` contract |
 | Strava connect/sync/disconnect | Shipped | Available via settings control plane |
 | Polar connect/sync/disconnect | Shipped | Available via settings control plane |

@@ -7,6 +7,11 @@ Guidance for coding agents working in this repository.
 - Monorepo name: `triathlon-app`
 - Package manager: `pnpm` (`pnpm@10.29.2`)
 - Task runner: `turbo`
+- Primary reference docs:
+  - `README.md` - repo entry point and current shipped scope
+  - `docs/technical-reference.md` - implementation truth
+  - `docs/integrations.md` - provider and OAuth control-plane details
+  - `FOLLOWUP.md` - living backlog
 - Main workspaces:
   - `apps/web` - Next.js 16 + React 19 frontend
   - `apps/api` - Hono + TypeScript backend
@@ -50,7 +55,8 @@ Target a specific workspace when possible:
 - Reuse shared contracts from `packages/types` for cross-app data shapes.
 - Keep imports/package boundaries clear (each app has its own `@/*` alias).
 - Do not commit secrets, `.env` files, or generated build outputs.
-- Update docs when behavior, environment requirements, or workflows change.
+- `apps/api/dist-deploy` is generated output from `build:deploy`, not source.
+- Update docs in the same change when routes, env requirements, feature flags, or user-facing scope change.
 
 ## Validation before handoff
 
