@@ -116,7 +116,7 @@ jobs:
           KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           DEP: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
           SUPA_URL: ${{ secrets.SUPABASE_URL }}
-          SUPA_ANON: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          SUPA_ANON: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPA_SVC: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           WEB: ${{ secrets.WEB_URL }}
         run: |
