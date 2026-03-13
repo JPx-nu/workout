@@ -21,9 +21,21 @@ export interface AuthContext {
 }
 
 type AuthRole = AuthContext["role"];
+type PartialAuthContext = Partial<Pick<AuthContext, "clubId" | "role">>;
+type AuthLookupTable = "conversations" | "daily_logs" | "injuries" | "training_plans" | "workouts";
 
 const VALID_ROLES = new Set<AuthRole>(["athlete", "coach", "admin", "owner"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const CLUB_ID_DERIVATION_SOURCES: Array<{
+	table: AuthLookupTable;
+	orderedBy: string;
+}> = [
+	{ table: "daily_logs", orderedBy: "log_date" },
+	{ table: "workouts", orderedBy: "started_at" },
+	{ table: "training_plans", orderedBy: "created_at" },
+	{ table: "conversations", orderedBy: "created_at" },
+	{ table: "injuries", orderedBy: "created_at" },
+];
 
 const supabaseUrl = process.env.SUPABASE_URL;
 if (!supabaseUrl) {
@@ -47,16 +59,50 @@ function isValidRole(value: unknown): value is AuthRole {
 	return typeof value === "string" && VALID_ROLES.has(value as AuthRole);
 }
 
-async function loadProfileAuthContext(
-	userId: string,
-	userJwt: string,
-): Promise<Pick<AuthContext, "clubId" | "role"> | null> {
-	const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+function createAuthLookupClient(userJwt: string) {
+	return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 		auth: { persistSession: false },
 		global: {
 			headers: { Authorization: `Bearer ${userJwt}` },
 		},
 	});
+}
+
+async function deriveClubIdFromOwnedData(
+	client: ReturnType<typeof createAuthLookupClient>,
+	userId: string,
+): Promise<string | null> {
+	for (const source of CLUB_ID_DERIVATION_SOURCES) {
+		const { data, error } = await client
+			.from(source.table)
+			.select("club_id")
+			.eq("athlete_id", userId)
+			.order(source.orderedBy, { ascending: false })
+			.limit(1)
+			.maybeSingle();
+
+		if (error) {
+			logger.warn(
+				{ userId, table: source.table, reason: error.message },
+				"Failed to derive club_id from owned athlete data",
+			);
+			continue;
+		}
+
+		const clubId = (data as { club_id?: unknown } | null)?.club_id;
+		if (isValidClubId(clubId)) {
+			return clubId;
+		}
+	}
+
+	return null;
+}
+
+async function loadProfileAuthContext(
+	userId: string,
+	userJwt: string,
+): Promise<PartialAuthContext> {
+	const client = createAuthLookupClient(userJwt);
 
 	const { data, error } = await client
 		.from("profiles")
@@ -69,13 +115,31 @@ async function loadProfileAuthContext(
 	}
 
 	const profile = data as { club_id?: unknown; role?: unknown } | null;
-	if (!profile || !isValidClubId(profile.club_id) || !isValidRole(profile.role)) {
-		return null;
+	const role = isValidRole(profile?.role) ? profile.role : undefined;
+	let clubId = isValidClubId(profile?.club_id) ? profile.club_id : undefined;
+
+	if (!clubId) {
+		clubId = (await deriveClubIdFromOwnedData(client, userId)) ?? undefined;
+		if (clubId) {
+			const { error: updateError } = await client
+				.from("profiles")
+				.update({ club_id: clubId })
+				.eq("id", userId);
+
+			if (updateError) {
+				logger.warn(
+					{ userId, clubId, reason: updateError.message },
+					"Failed to backfill missing profile club_id from owned data",
+				);
+			} else {
+				logger.info({ userId, clubId }, "Backfilled missing profile club_id from owned data");
+			}
+		}
 	}
 
 	return {
-		clubId: profile.club_id,
-		role: profile.role,
+		...(clubId ? { clubId } : {}),
+		...(role ? { role } : {}),
 	};
 }
 
@@ -142,17 +206,10 @@ export const extractClaims = createMiddleware(async (c, next) => {
 	const appMetadata = payload.app_metadata as Record<string, unknown> | undefined;
 	const claimClubId = appMetadata?.club_id;
 	const claimRole = appMetadata?.role;
+	let clubId = isValidClubId(claimClubId) ? claimClubId : undefined;
+	let role = isValidRole(claimRole) ? claimRole : undefined;
 
-	let auth: AuthContext | null =
-		isValidClubId(claimClubId) && isValidRole(claimRole)
-			? {
-					userId,
-					clubId: claimClubId,
-					role: claimRole,
-				}
-			: null;
-
-	if (!auth) {
+	if (!clubId || !role) {
 		if (!token) {
 			logger.error({ userId }, "Auth middleware missing raw JWT for profile fallback");
 			return jsonProblem(c, 500, "Internal Server Error", {
@@ -164,19 +221,20 @@ export const extractClaims = createMiddleware(async (c, next) => {
 
 		try {
 			const profileAuth = await loadProfileAuthContext(userId, token);
-			if (profileAuth) {
-				auth = {
-					userId,
-					clubId: profileAuth.clubId,
-					role: profileAuth.role,
-				};
+			if (!clubId && profileAuth.clubId) {
+				clubId = profileAuth.clubId;
+			}
+			if (!role && profileAuth.role) {
+				role = profileAuth.role;
+			}
+			if (clubId || role) {
 				logger.info(
 					{
 						userId,
-						missingClubIdClaim: !isValidClubId(claimClubId),
-						missingRoleClaim: !isValidRole(claimRole),
+						resolvedClubIdFromFallback: Boolean(profileAuth.clubId),
+						resolvedRoleFromFallback: Boolean(profileAuth.role),
 					},
-					"Resolved auth context from profile fallback",
+					"Resolved auth context from profile or owned-data fallback",
 				);
 			}
 		} catch (err) {
@@ -190,7 +248,7 @@ export const extractClaims = createMiddleware(async (c, next) => {
 		}
 	}
 
-	if (!auth) {
+	if (!clubId || !role) {
 		logger.warn(
 			{
 				userId,
@@ -206,6 +264,12 @@ export const extractClaims = createMiddleware(async (c, next) => {
 			type: "https://docs.jpx.nu/problems/auth-context-missing",
 		});
 	}
+
+	const auth: AuthContext = {
+		userId,
+		clubId,
+		role,
+	};
 
 	c.set("auth", auth);
 	await next();

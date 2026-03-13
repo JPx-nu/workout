@@ -107,7 +107,7 @@ Global behavior:
   - `/api/*`: 2 MB
   - `/api/ai/*`: 12 MB
 - Supabase JWT verification uses JWKS via `jose`.
-- Protected route auth context prefers JWT `app_metadata.club_id` and `app_metadata.role`, then falls back to the authenticated `profiles` row when those custom claims are stale.
+- Protected route auth context prefers JWT `app_metadata.club_id` and `app_metadata.role`, then falls back to the authenticated `profiles` row and athlete-owned data when those custom claims or `profile.club_id` are stale.
 - AI routes use PostgreSQL-backed rate limiting.
 - problem responses use `application/problem+json`.
 
