@@ -84,3 +84,4 @@ The following commands are safe to run without user approval (`SafeToAutoRun: tr
 
 - Root formatting uses Biome (`pnpm format`).
 - Web and API linting run through Biome; keep rule-level changes explicit and scoped.
+qw

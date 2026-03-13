@@ -7,7 +7,8 @@
 	"scripts": {
 		"dev": "turbo dev",
 		"build": "turbo build",
-		"lint": "biome check .",
+		"lint": "biome check . && pnpm check:web-public-env-access",
+		"check:web-public-env-access": "node scripts/check-web-public-env-access.mjs",
 		"check:env-keys": "node scripts/check-env-keys.mjs",
 		"test": "turbo test",
 		"test:e2e": "turbo test:e2e",

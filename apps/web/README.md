@@ -29,6 +29,10 @@ Default port: `3100`.
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_WEB_URL`
 
+Important implementation note:
+- In `apps/web/src`, read public env values with static access like `process.env.NEXT_PUBLIC_SUPABASE_URL`.
+- Do not use dynamic access like `process.env[name]` in browser/shared modules. Next standalone may not inline those values into client bundles, which can break production even when Azure app settings are correct.
+
 Optional feature flags:
 
 - `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH`
