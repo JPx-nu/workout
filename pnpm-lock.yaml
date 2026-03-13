@@ -224,8 +224,8 @@ importers:
   packages/api-client:
     dependencies:
       hono:
-        specifier: ^4.12.3
-        version: 4.12.3
+        specifier: ^4.12.7
+        version: 4.12.7
     devDependencies:
       '@triathlon/api':
         specifier: workspace:*
@@ -1976,10 +1976,6 @@ packages:
 
   hls.js@1.6.15:
     resolution: {integrity: sha512-E3a5VwgXimGHwpRGV+WxRTKeSp2DW5DI5MWv34ulL3t5UNmyJWCQ1KmLEHbYzcfThfXG8amBL+fCYPneGHC4VA==}
-
-  hono@4.12.3:
-    resolution: {integrity: sha512-SFsVSjp8sj5UumXOOFlkZOG6XS9SJDKw0TbwFeV+AJ8xlST8kxK5Z/5EYa111UY8732lK2S/xB653ceuaoGwpg==}
-    engines: {node: '>=16.9.0'}
 
   hono@4.12.7:
     resolution: {integrity: sha512-jq9l1DM0zVIvsm3lv9Nw9nlJnMNPOcAtsbsgiUhWcFzPE99Gvo6yRTlszSLLYacMeQ6quHD6hMfId8crVHvexw==}
@@ -4526,8 +4522,6 @@ snapshots:
       function-bind: 1.1.2
 
   hls.js@1.6.15: {}
-
-  hono@4.12.3: {}
 
   hono@4.12.7: {}
 
