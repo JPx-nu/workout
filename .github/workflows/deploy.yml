@@ -6,72 +6,64 @@ on:
       - main
   workflow_dispatch:
 
+# Keep mainline deploys serialized so stale pushes cannot roll out after newer ones.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: "24"
+  AZURE_NODE_RUNTIME: "NODE:24-lts"
+  API_APP_NAME: "jpx-workout-api"
+  WEB_APP_NAME: "jpx-workout-web"
+  API_HEALTH_PATH: "/health"
+  WEB_HEALTH_PATH: "/workout/health"
+  API_BASE_URL: "https://jpx-workout-api.azurewebsites.net"
+  WEB_BASE_URL: "https://jpx-workout-web.azurewebsites.net"
 
 jobs:
-  build-and-deploy-web:
-    name: Build & Deploy Frontend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # ── Build Next.js ────────────────────────────────
-      - name: Build Web App
-        run: pnpm --filter web build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_WEB_URL: ${{ secrets.WEB_URL }}
-          NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: "true"
-
-      # ── Prepare Deployment Package ───────────────────
-      - name: Prepare Standalone Deployment Package
-        run: |
-          cp -r apps/web/.next/standalone deploy-web
-          cp -r apps/web/public deploy-web/apps/web/public
-          mkdir -p deploy-web/apps/web/.next/static
-          cp -r apps/web/.next/static deploy-web/apps/web/.next/
-
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Configure Web App Settings
-        env:
-          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          WEB: ${{ secrets.WEB_URL }}
-        run: |
-          az webapp config appsettings set \
-            --resource-group "$RG" \
-            --name jpx-workout-web \
-            --settings \
-              WEB_URL="$WEB" \
-              NEXT_PUBLIC_WEB_URL="$WEB"
-
-      - name: Deploy Frontend to Azure
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: "jpx-workout-web"
-          package: "./deploy-web"
-
   build-and-deploy-api:
     name: Build & Deploy Backend (API)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Fail before mutating Azure if required repo secrets are missing.
+      - name: Preflight API deploy configuration
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          EP: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          DEP: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+          SUPA_URL: ${{ secrets.SUPABASE_URL }}
+          SUPA_PUBLISHABLE: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          SUPA_SVC: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WEB: ${{ secrets.WEB_URL }}
+          API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}
+        run: |
+          declare -A required=(
+            [RG]="AZURE_RESOURCE_GROUP"
+            [EP]="AZURE_OPENAI_ENDPOINT"
+            [KEY]="AZURE_OPENAI_API_KEY"
+            [DEP]="AZURE_OPENAI_DEPLOYMENT"
+            [SUPA_URL]="SUPABASE_URL"
+            [SUPA_PUBLISHABLE]="NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+            [SUPA_SVC]="SUPABASE_SERVICE_ROLE_KEY"
+            [WEB]="WEB_URL"
+            [API_URL]="NEXT_PUBLIC_API_URL"
+          )
+          missing=()
+          for var_name in "${!required[@]}"; do
+            if [ -z "${!var_name:-}" ]; then
+              missing+=("${required[$var_name]}")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required API deploy configuration: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
 
       - uses: pnpm/action-setup@v4
 
@@ -105,9 +97,26 @@ jobs:
           cd deploy-api && npm install --omit=dev
 
       - name: Login to Azure
+        id: api_azure_login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Configure API runtime and health checks
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: |
+          # Manage runtime + health path in deploy so Azure cannot drift from repo expectations.
+          az webapp config set \
+            --resource-group "$RG" \
+            --name "$API_APP_NAME" \
+            --runtime "$AZURE_NODE_RUNTIME" \
+            --always-on true \
+            --startup-file "node server.js"
+          az webapp config set \
+            --resource-group "$RG" \
+            --name "$API_APP_NAME" \
+            --generic-configurations "healthCheckPath=$API_HEALTH_PATH"
 
       - name: Configure API App Settings
         env:
@@ -115,35 +124,259 @@ jobs:
           EP: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           DEP: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
           SUPA_URL: ${{ secrets.SUPABASE_URL }}
-          SUPA_ANON: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPA_PUBLISHABLE: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           SUPA_SVC: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           WEB: ${{ secrets.WEB_URL }}
+          API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}
         run: |
+          # GitHub remains the source of truth for build-critical/public settings.
+          # Runtime-only API secrets can stay Azure-managed in dev unless a secret override is provided here.
+          settings=(
+            "AZURE_OPENAI_ENDPOINT=$EP"
+            "AZURE_OPENAI_API_KEY=$KEY"
+            "AZURE_OPENAI_DEPLOYMENT=$DEP"
+            "SUPABASE_URL=$SUPA_URL"
+            "SUPABASE_ANON_KEY=$SUPA_PUBLISHABLE"
+            "SUPABASE_SERVICE_ROLE_KEY=$SUPA_SVC"
+            "WEB_URL=$WEB"
+            "API_URL=$API_URL"
+            "WEBSITE_RUN_FROM_PACKAGE=0"
+          )
+
+          if [ -n "${API_VERSION:-}" ]; then
+            settings+=("AZURE_OPENAI_API_VERSION=$API_VERSION")
+          else
+            echo "AZURE_OPENAI_API_VERSION not provided via GitHub secrets; preserving Azure app setting or code default."
+          fi
+
+          if [ -n "${INTEGRATION_KEY:-}" ]; then
+            settings+=("INTEGRATION_ENCRYPTION_KEY=$INTEGRATION_KEY")
+          else
+            echo "INTEGRATION_ENCRYPTION_KEY not provided via GitHub secrets; preserving existing Azure app setting."
+          fi
+
           az webapp config appsettings set \
             --resource-group "$RG" \
-            --name jpx-workout-api \
-            --settings \
-              AZURE_OPENAI_ENDPOINT="$EP" \
-              AZURE_OPENAI_API_KEY="$KEY" \
-              AZURE_OPENAI_DEPLOYMENT="$DEP" \
-              SUPABASE_URL="$SUPA_URL" \
-              SUPABASE_ANON_KEY="$SUPA_ANON" \
-              SUPABASE_SERVICE_ROLE_KEY="$SUPA_SVC" \
-              WEB_URL="$WEB" \
-              WEBSITE_RUN_FROM_PACKAGE="0"
-
-      - name: Configure API Startup Command
-        env:
-          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
-        run: |
-          az webapp config set \
-            --resource-group "$RG" \
-            --name jpx-workout-api \
-            --startup-file "node server.js"
+            --name "$API_APP_NAME" \
+            --settings "${settings[@]}"
 
       - name: Deploy Backend to Azure
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "jpx-workout-api"
+          app-name: ${{ env.API_APP_NAME }}
           package: "./deploy-api"
+
+      - name: Smoke test API health
+        run: |
+          # Wait for the newly deployed API to become healthy before the web app rolls out.
+          url="${API_BASE_URL}${API_HEALTH_PATH}"
+          for attempt in {1..18}; do
+            status=$(curl -sS -o /tmp/api-health.json -w "%{http_code}" "$url" || true)
+            if [ "$status" = "200" ]; then
+              cat /tmp/api-health.json
+              exit 0
+            fi
+            echo "API health check attempt $attempt failed with status ${status:-unreachable}; retrying..."
+            sleep 10
+          done
+          echo "API smoke test failed for $url" >&2
+          if [ -f /tmp/api-health.json ]; then
+            cat /tmp/api-health.json >&2
+          fi
+          exit 1
+
+      - name: API diagnostics on failure
+        if: failure() && steps.api_azure_login.outcome == 'success'
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: |
+          echo "API runtime and health configuration:"
+          az webapp config show \
+            --resource-group "$RG" \
+            --name "$API_APP_NAME" \
+            --query "{runtime:linuxFxVersion,alwaysOn:alwaysOn,healthCheckPath:healthCheckPath,startupFile:appCommandLine}" \
+            -o yaml
+
+          echo "Critical API app settings:"
+          existing_names=$(az webapp config appsettings list \
+            --resource-group "$RG" \
+            --name "$API_APP_NAME" \
+            --query "[].name" \
+            -o tsv)
+          for name in \
+            AZURE_OPENAI_ENDPOINT \
+            AZURE_OPENAI_API_KEY \
+            AZURE_OPENAI_DEPLOYMENT \
+            AZURE_OPENAI_API_VERSION \
+            SUPABASE_URL \
+            SUPABASE_ANON_KEY \
+            SUPABASE_SERVICE_ROLE_KEY \
+            WEB_URL \
+            API_URL \
+            INTEGRATION_ENCRYPTION_KEY
+          do
+            if printf '%s\n' "$existing_names" | grep -qx "$name"; then
+              echo "present  $name"
+            else
+              echo "missing  $name"
+            fi
+          done
+
+  build-and-deploy-web:
+    name: Build & Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: build-and-deploy-api
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fail before mutating Azure if required repo secrets are missing.
+      - name: Preflight web deploy configuration
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          WEB: ${{ secrets.WEB_URL }}
+        run: |
+          declare -A required=(
+            [RG]="AZURE_RESOURCE_GROUP"
+            [PUBLIC_SUPABASE_URL]="NEXT_PUBLIC_SUPABASE_URL"
+            [PUBLIC_SUPABASE_KEY]="NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+            [PUBLIC_API_URL]="NEXT_PUBLIC_API_URL"
+            [WEB]="WEB_URL"
+          )
+          missing=()
+          for var_name in "${!required[@]}"; do
+            if [ -z "${!var_name:-}" ]; then
+              missing+=("${required[$var_name]}")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required web deploy configuration: %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Web App
+        run: pnpm --filter web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_WEB_URL: ${{ secrets.WEB_URL }}
+          NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: "true"
+
+      - name: Prepare Standalone Deployment Package
+        run: |
+          cp -r apps/web/.next/standalone deploy-web
+          cp -r apps/web/public deploy-web/apps/web/public
+          mkdir -p deploy-web/apps/web/.next/static
+          cp -r apps/web/.next/static deploy-web/apps/web/.next/
+
+      - name: Login to Azure
+        id: web_azure_login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Configure web runtime and health checks
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: |
+          # Manage runtime + health path in deploy so Azure cannot drift from repo expectations.
+          az webapp config set \
+            --resource-group "$RG" \
+            --name "$WEB_APP_NAME" \
+            --runtime "$AZURE_NODE_RUNTIME" \
+            --always-on true
+          az webapp config set \
+            --resource-group "$RG" \
+            --name "$WEB_APP_NAME" \
+            --generic-configurations "healthCheckPath=$WEB_HEALTH_PATH"
+
+      - name: Configure Web App Settings
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          WEB: ${{ secrets.WEB_URL }}
+        run: |
+          az webapp config appsettings set \
+            --resource-group "$RG" \
+            --name "$WEB_APP_NAME" \
+            --settings \
+              WEB_URL="$WEB" \
+              NEXT_PUBLIC_WEB_URL="$WEB" \
+              NEXT_PUBLIC_SUPABASE_URL="$PUBLIC_SUPABASE_URL" \
+              NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="$PUBLIC_SUPABASE_KEY" \
+              NEXT_PUBLIC_API_URL="$PUBLIC_API_URL"
+
+      - name: Deploy Frontend to Azure
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEB_APP_NAME }}
+          package: "./deploy-web"
+
+      - name: Smoke test web root
+        run: |
+          # Wait for the newly deployed standalone app to come up before marking deploy green.
+          url="${WEB_BASE_URL}/workout/"
+          for attempt in {1..12}; do
+            status=$(curl -sS -L -o /tmp/web-root.html -w "%{http_code}" "$url" || true)
+            if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+              echo "Web root responded with $status"
+              exit 0
+            fi
+            echo "Web smoke test attempt $attempt failed with status ${status:-unreachable}; retrying..."
+            sleep 10
+          done
+          echo "Web smoke test failed for $url with status ${status:-unreachable}" >&2
+          if [ -f /tmp/web-root.html ]; then
+            head -n 40 /tmp/web-root.html >&2
+          fi
+          exit 1
+
+      - name: Web diagnostics on failure
+        if: failure() && steps.web_azure_login.outcome == 'success'
+        env:
+          RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: |
+          echo "Web runtime and health configuration:"
+          az webapp config show \
+            --resource-group "$RG" \
+            --name "$WEB_APP_NAME" \
+            --query "{runtime:linuxFxVersion,alwaysOn:alwaysOn,healthCheckPath:healthCheckPath}" \
+            -o yaml
+
+          echo "Required web app settings:"
+          existing_names=$(az webapp config appsettings list \
+            --resource-group "$RG" \
+            --name "$WEB_APP_NAME" \
+            --query "[].name" \
+            -o tsv)
+          for name in \
+            WEB_URL \
+            NEXT_PUBLIC_WEB_URL \
+            NEXT_PUBLIC_SUPABASE_URL \
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY \
+            NEXT_PUBLIC_API_URL
+          do
+            if printf '%s\n' "$existing_names" | grep -qx "$name"; then
+              echo "present  $name"
+            else
+              echo "missing  $name"
+            fi
+          done

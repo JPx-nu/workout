@@ -1,6 +1,6 @@
 # Fitness Integrations - Current Implementation
 
-> Last Updated: 2026-03-11
+> Last Updated: 2026-03-13
 > Code Root: `apps/api/src/services/integrations`
 > Current consumers: web settings, mobile settings, webhook handlers
 
@@ -69,6 +69,7 @@ Shared routes:
 - OAuth state is HMAC-signed and time-bound (10-minute TTL).
 - `returnTo` is carried inside signed state and sanitized against `ALLOWED_OAUTH_RETURN_ORIGINS`.
 - Tokens are encrypted before DB storage in `connected_accounts`.
+- Demo/prod integrations rely on `INTEGRATION_ENCRYPTION_KEY`; local/dev can fall back to `APP_SIGNING_SECRET`.
 - Sync calls use DB-backed rate limiting via `check_rate_limit`.
 - Queue jobs are processed asynchronously from `webhook_queue` using SQL claim/complete/fail functions.
 - Webhook verification is provider-specific:
@@ -91,9 +92,15 @@ Shared routes:
 Global integration:
 
 - `INTEGRATION_ENCRYPTION_KEY`
+- `APP_SIGNING_SECRET` (optional local/dev fallback only)
 - `API_URL`
 - `WEB_URL`
 - `ALLOWED_OAUTH_RETURN_ORIGINS`
+
+Deploy note:
+- On Azure, the API app must receive `API_URL` explicitly. The current GitHub deploy workflow sources that value from the repo secret `NEXT_PUBLIC_API_URL` so the public web origin and API self-origin stay aligned.
+- `INTEGRATION_ENCRYPTION_KEY` remains runtime-required, but the dev deploy workflow preserves the existing Azure app setting when no GitHub override is configured.
+- Supabase auth verification uses JWKS, so integrations do not require a `SUPABASE_JWT_SECRET`.
 
 Provider credentials:
 

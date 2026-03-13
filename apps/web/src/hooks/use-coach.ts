@@ -15,6 +15,7 @@ const MAX_IMAGES = 3;
 const MAX_SIZE_MB = 10;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const STREAM_TIMEOUT_MS = 120_000;
+type CoachActivity = "idle" | "connecting" | "typing";
 
 /**
  * AI Coach hook with Vercel AI SDK 6 streaming.
@@ -99,11 +100,16 @@ export function useCoach() {
 		}),
 	});
 
-	const isTyping = status === "streaming" || status === "submitted";
+	// Map low-level AI SDK transport states to the user-facing chat states shown in the UI.
+	const coachActivity: CoachActivity =
+		status === "submitted" ? "connecting" : status === "streaming" ? "typing" : "idle";
+	const isConnecting = coachActivity === "connecting";
+	const isTyping = coachActivity === "typing";
+	const isResponding = isConnecting || isTyping;
 
-	// Stop requests that never complete to avoid zombie streaming sessions.
+	// Protect both the connect phase and active streaming from hanging forever.
 	useEffect(() => {
-		if (status !== "streaming") {
+		if (!isResponding) {
 			if (streamTimeoutRef.current) {
 				clearTimeout(streamTimeoutRef.current);
 				streamTimeoutRef.current = null;
@@ -113,7 +119,7 @@ export function useCoach() {
 
 		streamTimeoutRef.current = setTimeout(() => {
 			stop();
-			setError("The response took too long and was stopped. Please try again.");
+			setError("AI Coach took too long to respond. Please try again.");
 		}, STREAM_TIMEOUT_MS);
 
 		return () => {
@@ -122,7 +128,7 @@ export function useCoach() {
 				streamTimeoutRef.current = null;
 			}
 		};
-	}, [status, stop]);
+	}, [isResponding, stop]);
 
 	// ── Convert AI SDK UIMessages → our Message format ───────
 	const messages: Message[] = useMemo(
@@ -392,7 +398,10 @@ export function useCoach() {
 	return {
 		// State
 		messages,
+		coachActivity,
+		isConnecting,
 		isTyping,
+		isResponding,
 		isLoading: false,
 		input,
 		setInput,

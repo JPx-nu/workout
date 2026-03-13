@@ -4,6 +4,9 @@
 	"private": true,
 	"description": "Triathlon AI SaaS — Club-Agnostic AI Coaching Platform",
 	"packageManager": "pnpm@10.29.2",
+	"engines": {
+		"node": "24.x"
+	},
 	"scripts": {
 		"dev": "turbo dev",
 		"build": "turbo build",

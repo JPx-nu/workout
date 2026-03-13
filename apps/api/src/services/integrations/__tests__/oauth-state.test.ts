@@ -2,9 +2,11 @@ import { createHmac } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createOAuthState, verifyOAuthState } from "../oauth-state.js";
 
+const TEST_KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
 // Use a stable signing key for tests
 beforeEach(() => {
-	vi.stubEnv("SUPABASE_JWT_SECRET", "test-secret-key-for-unit-tests-only");
+	vi.stubEnv("APP_SIGNING_SECRET", "test-secret-key-for-unit-tests-only");
 });
 
 afterEach(() => {
@@ -113,9 +115,25 @@ describe("verifyOAuthState", () => {
 	it("fails when signing key differs", () => {
 		const state = createOAuthState("user-abc");
 		// Change the signing key
-		vi.stubEnv("SUPABASE_JWT_SECRET", "different-key");
+		vi.stubEnv("APP_SIGNING_SECRET", "different-key");
 		const result = verifyOAuthState(state);
 		expect(result).toBeNull();
+	});
+
+	it("accepts states signed with INTEGRATION_ENCRYPTION_KEY", () => {
+		vi.stubEnv("APP_SIGNING_SECRET", "");
+		vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", TEST_KEY);
+
+		const payloadB64 = Buffer.from(
+			JSON.stringify({ a: "user-hex", t: Date.now() }),
+			"utf8",
+		).toString("base64url");
+		const hmac = createHmac("sha256", Buffer.from(TEST_KEY, "hex"))
+			.update(payloadB64)
+			.digest("hex")
+			.slice(0, 32);
+
+		expect(verifyOAuthState(`${payloadB64}.${hmac}`)).toEqual({ athleteId: "user-hex" });
 	});
 
 	it("accepts valid legacy-format state payloads", () => {

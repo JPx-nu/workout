@@ -1,7 +1,7 @@
 # Triathlon App Technical Reference
 
 > Version: 0.6.0
-> Last Updated: 2026-03-11
+> Last Updated: 2026-03-13
 > Scope: implementation truth only, not roadmap intent
 
 ## 1. Repository Snapshot
@@ -96,6 +96,7 @@ Frontend behavior notes:
 - The 3D body map route remains accessible but is labeled experimental and still renders sample fatigue data.
 - Serwist generates the service worker and manifest; service worker registration is disabled in development.
 - Web CSP `connect-src` is built from `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WEB_URL` at build time.
+- The web app exposes `GET /health`, which is served as `/workout/health` in deployed environments because the web `basePath` is `/workout`.
 
 ## 5. API Surface
 
@@ -146,6 +147,12 @@ Protected routes:
 
 Build/deploy note:
 - `pnpm --filter @triathlon/api build:deploy` bundles `src/server.ts` into `apps/api/dist-deploy` for deployment packaging.
+- GitHub Actions serializes `main` deploys with workflow concurrency.
+- Deploy preflight fails before Azure mutation if required repo secrets resolve to empty.
+- GitHub Actions deploys API first, waits for `GET /health`, then deploys web and smoke-tests `/workout/`.
+- Azure App Service uses Node `24.x`, `alwaysOn`, and Health Check paths `/health` (API) and `/workout/health` (web).
+- The deploy workflow maps API `API_URL` from `NEXT_PUBLIC_API_URL` and API `SUPABASE_ANON_KEY` from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- GitHub is the deploy source of truth for build-critical/public values, while Azure can remain the source of truth for runtime-only API secrets in dev.
 
 ## 6. Integrations Status
 
@@ -221,7 +228,6 @@ API:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_JWT_SECRET`
 - `WEB_URL`
 - `API_URL`
 - `APP_ENV`
@@ -232,9 +238,42 @@ API:
 - Azure OpenAI variables
 - integration provider credentials
 - `INTEGRATION_ENCRYPTION_KEY`
+- `APP_SIGNING_SECRET` (optional local/dev fallback when `INTEGRATION_ENCRYPTION_KEY` is unset)
 - `LOG_LEVEL` (optional)
 - `OTEL_EXPORTER_OTLP_ENDPOINT` (optional)
 - `PORT` (optional, defaults to `8787`)
+
+Deploy-managed GitHub secrets:
+- `AZURE_CREDENTIALS`
+- `AZURE_RESOURCE_GROUP`
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_API_KEY`
+- `AZURE_OPENAI_DEPLOYMENT`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `WEB_URL`
+- `NEXT_PUBLIC_API_URL`
+
+Azure-managed runtime app settings:
+- `INTEGRATION_ENCRYPTION_KEY`
+- integration provider credentials such as `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, and `STRAVA_VERIFY_TOKEN`
+- `AZURE_OPENAI_API_VERSION` only when you need to override the code default
+
+Deploy mapping notes:
+- API `API_URL` is sourced from the repo secret `NEXT_PUBLIC_API_URL`.
+- API `SUPABASE_ANON_KEY` is sourced from the repo secret `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Web `NEXT_PUBLIC_WEB_URL` is sourced from the repo secret `WEB_URL`.
+- API `AZURE_OPENAI_API_VERSION` falls back to the code default `2024-12-01-preview` when no Azure or GitHub override is set.
+- API `INTEGRATION_ENCRYPTION_KEY` stays Azure-managed in dev unless a GitHub secret override is provided.
+- Supabase access tokens are verified via JWKS; the deploy workflow does not manage a legacy shared JWT secret.
+
+Deployment recovery checklist:
+- verify the expected GitHub secrets are present and non-empty
+- confirm Azure runtime is Node `24.x`
+- confirm Health Check paths are `/health` and `/workout/health`
+- hit the deployed API `/health` before investigating the web app
 
 Mobile compile-time defines:
 - `SUPABASE_URL`

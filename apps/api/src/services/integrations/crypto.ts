@@ -13,8 +13,8 @@ const TAG_LENGTH = 16; // 128-bit auth tag
 function getEncryptionKey(): Buffer {
 	const keyHex = process.env.INTEGRATION_ENCRYPTION_KEY;
 	if (!keyHex || keyHex.length !== 64) {
-		// In development, derive a key from JWT_SECRET
-		const fallback = process.env.SUPABASE_JWT_SECRET || process.env.JWT_SECRET || "dev-key";
+		// Local/dev fallback only. Supabase auth uses JWKS and does not depend on this value.
+		const fallback = process.env.APP_SIGNING_SECRET || "dev-key";
 		// SHA-256 of the secret gives us exactly 32 bytes
 		return createHash("sha256").update(fallback).digest();
 	}

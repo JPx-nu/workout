@@ -19,7 +19,8 @@ import { useCoach } from "@/hooks/use-coach";
 export default function CoachPage() {
 	const {
 		messages,
-		isTyping,
+		isConnecting,
+		isResponding,
 		input,
 		setInput,
 		sendMessage,
@@ -158,7 +159,7 @@ export default function CoachPage() {
 							</div>
 						))}
 
-						{isTyping && (
+						{isResponding && (
 							<div className="flex gap-3">
 								<div
 									className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -170,7 +171,7 @@ export default function CoachPage() {
 									<Bot size={14} />
 								</div>
 								<div className="glass-card p-4">
-									<div className="flex gap-1.5">
+									<div className="flex gap-1.5 mb-2">
 										<span
 											className="w-2 h-2 rounded-full animate-bounce"
 											style={{
@@ -192,6 +193,9 @@ export default function CoachPage() {
 												animationDelay: "300ms",
 											}}
 										/>
+									</div>
+									<div className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+										{isConnecting ? "Connecting to AI coach..." : "Coach is typing..."}
 									</div>
 								</div>
 							</div>
@@ -345,7 +349,7 @@ export default function CoachPage() {
 						className="glass-input flex-1"
 					/>
 					{/* Context-aware send/stop button */}
-					{isTyping && !input.trim() ? (
+					{isResponding && !input.trim() ? (
 						<button
 							type="button"
 							onClick={stopStreaming}
@@ -361,7 +365,7 @@ export default function CoachPage() {
 							onClick={() => void sendMessage()}
 							disabled={!input.trim()}
 							className="btn-primary px-4 disabled:opacity-40 disabled:cursor-not-allowed"
-							aria-label={isTyping ? "Send and interrupt" : "Send message"}
+							aria-label={isResponding ? "Send and interrupt" : "Send message"}
 						>
 							<Send size={18} />
 						</button>

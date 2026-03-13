@@ -21,7 +21,7 @@ export const AI_CONFIG = {
 		/** Deployment name for the embeddings model (e.g. "text-embedding-3-small") */
 		embeddingsDeployment:
 			process.env.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT || "text-embedding-3-small",
-		/** API version — preview (supports gpt-5-mini on AIServices) */
+		/** API version — optional env override; defaults in code for smoother dev deploys */
 		apiVersion: process.env.AZURE_OPENAI_API_VERSION || "2024-12-01-preview",
 	},
 

@@ -8,17 +8,14 @@ const REQUIRED_ENV_KEYS = [
 	"SUPABASE_URL",
 	"SUPABASE_ANON_KEY",
 	"SUPABASE_SERVICE_ROLE_KEY",
-	"SUPABASE_JWT_SECRET",
 	"WEB_URL",
 	"API_URL",
 ] as const;
 
-const AI_ENV_KEYS = [
-	"AZURE_OPENAI_API_KEY",
-	"AZURE_OPENAI_DEPLOYMENT",
-	"AZURE_OPENAI_API_VERSION",
-] as const;
+const AI_ENV_KEYS = ["AZURE_OPENAI_API_KEY", "AZURE_OPENAI_DEPLOYMENT"] as const;
 
+// Supabase auth is verified via JWKS in middleware/auth.ts, so integrations use
+// their own app-owned key instead of a legacy Supabase shared-secret env.
 const INTEGRATION_REQUIRED_KEYS = ["INTEGRATION_ENCRYPTION_KEY"] as const;
 
 const INTEGRATION_PROVIDER_KEYS = [

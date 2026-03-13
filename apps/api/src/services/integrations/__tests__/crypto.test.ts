@@ -84,9 +84,9 @@ describe("isEncrypted", () => {
 });
 
 describe("fallback key derivation", () => {
-	it("uses JWT_SECRET when no encryption key is set", () => {
+	it("uses APP_SIGNING_SECRET when no encryption key is set", () => {
 		vi.stubEnv("INTEGRATION_ENCRYPTION_KEY", "");
-		vi.stubEnv("SUPABASE_JWT_SECRET", "my-jwt-secret");
+		vi.stubEnv("APP_SIGNING_SECRET", "my-app-signing-secret");
 
 		const encrypted = encryptToken("fallback-test");
 		const decrypted = decryptToken(encrypted);

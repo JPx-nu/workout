@@ -21,7 +21,7 @@ export function CoachChatStep({
 	onSkip,
 	isSaving,
 }: CoachChatStepProps) {
-	const { messages, isTyping, input, setInput, sendMessage, error } = useCoach();
+	const { messages, isConnecting, isResponding, input, setInput, sendMessage, error } = useCoach();
 
 	useEffect(() => {
 		if (hasSeeded || !seedMessage.trim()) return;
@@ -67,7 +67,11 @@ export function CoachChatStep({
 
 				{messages.length === 0 ? (
 					<p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-						{error ? "Coach is unavailable right now." : "Starting your onboarding chat..."}
+						{error
+							? "Coach is unavailable right now."
+							: isConnecting
+								? "Connecting to AI coach..."
+								: "Starting your onboarding chat..."}
 					</p>
 				) : (
 					messages.map((message) => (
@@ -102,12 +106,13 @@ export function CoachChatStep({
 					))
 				)}
 
-				{isTyping && (
+				{isResponding && (
 					<div
 						className="text-xs flex items-center gap-1"
 						style={{ color: "var(--color-text-muted)" }}
 					>
-						<Sparkles size={12} /> Coach is typing...
+						<Sparkles size={12} />
+						{isConnecting ? "Connecting to AI coach..." : "Coach is typing..."}
 					</div>
 				)}
 			</div>

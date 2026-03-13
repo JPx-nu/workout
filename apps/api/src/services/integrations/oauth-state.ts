@@ -14,12 +14,14 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 /** 128-bit truncated HMAC for compact but strong CSRF state signatures */
 const STATE_SIGNATURE_HEX_CHARS = 32;
 
-function getSigningKey(): string {
-	const key =
-		process.env.SUPABASE_JWT_SECRET ||
-		process.env.JWT_SECRET ||
-		"fallback-dev-key-change-in-production";
-	return key;
+function getSigningKey(): Buffer | string {
+	const keyHex = process.env.INTEGRATION_ENCRYPTION_KEY;
+	if (keyHex && keyHex.length === 64) {
+		return Buffer.from(keyHex, "hex");
+	}
+
+	// Local/dev fallback only. Production should set INTEGRATION_ENCRYPTION_KEY.
+	return process.env.APP_SIGNING_SECRET || "fallback-dev-key-change-in-production";
 }
 
 /**
