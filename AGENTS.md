@@ -60,11 +60,25 @@ Target a specific workspace when possible:
 
 ## Validation before handoff
 
+
+## Validation before handoff
+
 Run the smallest meaningful checks for the files you changed, then broaden if needed:
 
 - Web changes: `pnpm --filter web lint` and/or `pnpm --filter web build`
 - API changes: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`
 - Cross-cutting changes: `pnpm type-check` (and `pnpm test` when relevant)
+
+## Safe auto-run commands
+
+The following commands are safe to run without user approval (`SafeToAutoRun: true`):
+
+- `pnpm lint`, `pnpm type-check`, `pnpm test`, `pnpm audit`, `pnpm list`, `pnpm why`, `pnpm check:env-keys`
+- `pnpm --filter <workspace> lint`, `pnpm --filter <workspace> type-check`, `pnpm --filter <workspace> test`
+- `pnpm install`, `pnpm install --frozen-lockfile`
+- `gh run list`, `gh run view`, `gh api`, `gh secret list`
+- `git status`, `git log`, `git diff`, `git fetch`, `git show`
+- `az webapp config appsettings list`, `az webapp list`, `az webapp log tail`
 
 ## Notes
 

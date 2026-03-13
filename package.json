@@ -21,5 +21,10 @@
 		"@types/node": "^22.19.12",
 		"husky": "^9.1.7",
 		"turbo": "^2.8.11"
+	},
+	"pnpm": {
+		"overrides": {
+			"express-rate-limit": ">=8.2.2"
+		}
 	}
 }

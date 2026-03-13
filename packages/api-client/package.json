@@ -6,7 +6,7 @@
 	"main": "./src/index.ts",
 	"types": "./src/index.ts",
 	"dependencies": {
-		"hono": "^4.12.3"
+		"hono": "^4.12.7"
 	},
 	"devDependencies": {
 		"@triathlon/api": "workspace:*"
