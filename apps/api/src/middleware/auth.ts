@@ -1,18 +1,18 @@
 /**
- * Auth Middleware — JWT validation using jose JWKS verification
+ * Auth middleware: JWKS-backed JWT verification plus app-specific auth context.
  *
- * Validates Supabase JWTs (ES256) from the Authorization header using
- * the project's JWKS endpoint for public key discovery.
- * Extracts `club_id` and `role` from `app_metadata` custom claims.
+ * Supabase access tokens are verified via JWKS. We prefer `app_metadata.club_id`
+ * and `app_metadata.role` when present, but some live sessions can lag behind the
+ * latest custom claims. In that case, fall back to the authenticated `profiles`
+ * row so valid sessions do not fail with a 401 during AI/API requests.
  */
 
+import { createClient } from "@supabase/supabase-js";
 import type { Context, MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { logger } from "../lib/logger.js";
 import { jsonProblem } from "../lib/problem-details.js";
-
-// ── Types ──────────────────────────────────────────────────────
 
 export interface AuthContext {
 	userId: string;
@@ -20,21 +20,67 @@ export interface AuthContext {
 	role: "athlete" | "coach" | "admin" | "owner";
 }
 
-const VALID_ROLES = new Set<AuthContext["role"]>(["athlete", "coach", "admin", "owner"]);
+type AuthRole = AuthContext["role"];
+
+const VALID_ROLES = new Set<AuthRole>(["athlete", "coach", "admin", "owner"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// ── JWKS Setup ─────────────────────────────────────────────────
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-if (!SUPABASE_URL) {
+const supabaseUrl = process.env.SUPABASE_URL;
+if (!supabaseUrl) {
 	throw new Error("SUPABASE_URL environment variable is required");
 }
+const SUPABASE_URL = supabaseUrl;
+
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+if (!supabaseAnonKey) {
+	throw new Error("SUPABASE_ANON_KEY environment variable is required");
+}
+const SUPABASE_ANON_KEY = supabaseAnonKey;
+
 const JWKS = createRemoteJWKSet(new URL(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
 
-// ── JWT Verification ───────────────────────────────────────────
+function isValidClubId(value: unknown): value is string {
+	return typeof value === "string" && UUID_PATTERN.test(value);
+}
+
+function isValidRole(value: unknown): value is AuthRole {
+	return typeof value === "string" && VALID_ROLES.has(value as AuthRole);
+}
+
+async function loadProfileAuthContext(
+	userId: string,
+	userJwt: string,
+): Promise<Pick<AuthContext, "clubId" | "role"> | null> {
+	const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+		auth: { persistSession: false },
+		global: {
+			headers: { Authorization: `Bearer ${userJwt}` },
+		},
+	});
+
+	const { data, error } = await client
+		.from("profiles")
+		.select("club_id, role")
+		.eq("id", userId)
+		.maybeSingle();
+
+	if (error) {
+		throw new Error(`Failed to load profile auth context: ${error.message}`);
+	}
+
+	const profile = data as { club_id?: unknown; role?: unknown } | null;
+	if (!profile || !isValidClubId(profile.club_id) || !isValidRole(profile.role)) {
+		return null;
+	}
+
+	return {
+		clubId: profile.club_id,
+		role: profile.role,
+	};
+}
 
 /**
- * Validates the Supabase JWT using JWKS (ES256 public key verification).
+ * Validates the Supabase JWT using JWKS public key verification.
  * Must be applied before `extractClaims`.
  */
 export function jwtAuth(): MiddlewareHandler {
@@ -57,7 +103,6 @@ export function jwtAuth(): MiddlewareHandler {
 				issuer: `${SUPABASE_URL}/auth/v1`,
 			});
 
-			// Store the raw JWT and payload for downstream middleware
 			c.set("jwt", token);
 			c.set("jwtPayload", payload);
 		} catch (err) {
@@ -75,20 +120,15 @@ export function jwtAuth(): MiddlewareHandler {
 	});
 }
 
-// ── Claims Extraction ──────────────────────────────────────────
-
 /**
- * Extracts `club_id` and `role` from the validated JWT's `app_metadata`
- * and sets them as Hono context variables.
+ * Resolves app-specific auth context from token claims first, then from the
+ * authenticated profile row if the token is valid but the custom claims are stale.
  *
  * Must be used after `jwtAuth()`.
- *
- * Usage in routes:
- *   const auth = getAuth(c);
- *   const { userId, clubId, role } = auth;
  */
 export const extractClaims = createMiddleware(async (c, next) => {
 	const payload = c.get("jwtPayload") as Record<string, unknown>;
+	const token = c.get("jwt") as string | undefined;
 
 	if (!payload?.sub) {
 		return jsonProblem(c, 401, "Unauthorized", {
@@ -98,48 +138,87 @@ export const extractClaims = createMiddleware(async (c, next) => {
 		});
 	}
 
+	const userId = payload.sub as string;
 	const appMetadata = payload.app_metadata as Record<string, unknown> | undefined;
-	const clubId = appMetadata?.club_id;
-	const role = appMetadata?.role;
+	const claimClubId = appMetadata?.club_id;
+	const claimRole = appMetadata?.role;
 
-	if (typeof clubId !== "string" || !UUID_PATTERN.test(clubId)) {
-		logger.warn({ userId: payload.sub }, "JWT missing valid app_metadata.club_id");
-		return jsonProblem(c, 401, "Unauthorized", {
-			code: "CLAIM_CLUB_ID_MISSING",
-			detail: "Missing required claim: app_metadata.club_id",
-			type: "https://docs.jpx.nu/problems/claim-club-id-missing",
-		});
+	let auth: AuthContext | null =
+		isValidClubId(claimClubId) && isValidRole(claimRole)
+			? {
+					userId,
+					clubId: claimClubId,
+					role: claimRole,
+				}
+			: null;
+
+	if (!auth) {
+		if (!token) {
+			logger.error({ userId }, "Auth middleware missing raw JWT for profile fallback");
+			return jsonProblem(c, 500, "Internal Server Error", {
+				code: "AUTH_CONTEXT_LOOKUP_FAILED",
+				detail: "The server could not complete the authentication lookup.",
+				type: "https://docs.jpx.nu/problems/auth-context-lookup-failed",
+			});
+		}
+
+		try {
+			const profileAuth = await loadProfileAuthContext(userId, token);
+			if (profileAuth) {
+				auth = {
+					userId,
+					clubId: profileAuth.clubId,
+					role: profileAuth.role,
+				};
+				logger.info(
+					{
+						userId,
+						missingClubIdClaim: !isValidClubId(claimClubId),
+						missingRoleClaim: !isValidRole(claimRole),
+					},
+					"Resolved auth context from profile fallback",
+				);
+			}
+		} catch (err) {
+			const message = err instanceof Error ? err.message : "Profile auth context lookup failed";
+			logger.error({ message, userId }, "Failed to resolve auth context from profile");
+			return jsonProblem(c, 500, "Internal Server Error", {
+				code: "AUTH_CONTEXT_LOOKUP_FAILED",
+				detail: "The server could not resolve the authenticated user context.",
+				type: "https://docs.jpx.nu/problems/auth-context-lookup-failed",
+			});
+		}
 	}
 
-	if (typeof role !== "string" || !VALID_ROLES.has(role as AuthContext["role"])) {
-		logger.warn({ userId: payload.sub, role }, "JWT missing valid app_metadata.role");
+	if (!auth) {
+		logger.warn(
+			{
+				userId,
+				missingClubIdClaim: !isValidClubId(claimClubId),
+				missingRoleClaim: !isValidRole(claimRole),
+			},
+			"Authenticated user is missing both JWT and profile auth context",
+		);
 		return jsonProblem(c, 401, "Unauthorized", {
-			code: "CLAIM_ROLE_MISSING",
-			detail: "Missing required claim: app_metadata.role",
-			type: "https://docs.jpx.nu/problems/claim-role-missing",
+			code: "AUTH_CONTEXT_MISSING",
+			detail: "The authenticated user is missing required club or role context.",
+			hint: "Refresh your session or complete profile setup, then retry.",
+			type: "https://docs.jpx.nu/problems/auth-context-missing",
 		});
 	}
-
-	const auth: AuthContext = {
-		userId: payload.sub as string,
-		clubId,
-		role: role as AuthContext["role"],
-	};
 
 	c.set("auth", auth);
 	await next();
 });
 
-// ── Helper ─────────────────────────────────────────────────────
-
 /**
  * Retrieves the authenticated user context from a Hono request.
- * Throws if auth middleware hasn't run (programming error).
+ * Throws if auth middleware has not run.
  */
 export function getAuth(c: Context): AuthContext {
 	const auth = c.get("auth") as AuthContext | undefined;
 	if (!auth) {
-		throw new Error("getAuth() called without auth middleware — check route middleware stack");
+		throw new Error("getAuth() called without auth middleware; check route middleware stack");
 	}
 	return auth;
 }

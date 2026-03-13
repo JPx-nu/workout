@@ -69,3 +69,4 @@ Not currently shipped as supported product surface:
 - `AZURE_OPENAI_API_VERSION` defaults in code to `2024-12-01-preview` unless explicitly overridden.
 - `INTEGRATION_ENCRYPTION_KEY` remains runtime-required for integrations, but the dev deploy workflow preserves the existing Azure value when no GitHub override is set.
 - Supabase access tokens are verified through JWKS; the repo does not manage a legacy `SUPABASE_JWT_SECRET`.
+- Protected API routes prefer `app_metadata.club_id` and `app_metadata.role`, but fall back to the authenticated `profiles` row so valid Supabase sessions keep working when custom claims are stale.
