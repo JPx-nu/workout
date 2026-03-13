@@ -182,7 +182,7 @@ Return flow behavior:
 Agent architecture:
 - LangGraph `StateGraph`
 - loop: `llmCall -> tools -> llmCall`
-- optional single reflection pass
+- optional single reflection pass, currently disabled by default in the streamed web UX to avoid leaking internal review text
 - same tool factories are bridged into MCP
 
 Current tool surface:

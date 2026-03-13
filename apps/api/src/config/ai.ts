@@ -56,8 +56,8 @@ export const AI_CONFIG = {
 	features: {
 		/** Enable SSE streaming responses */
 		streaming: true,
-		/** Enable internal self-review pass (guarded by loop/cost limits) */
-		reflectionEnabled: true,
+		/** Keep self-review off by default until the streamed UX is robust enough to hide it fully */
+		reflectionEnabled: false,
 		/** Enable RAG document retrieval (future) */
 		ragEnabled: false,
 		/** Require user confirmation before write operations */

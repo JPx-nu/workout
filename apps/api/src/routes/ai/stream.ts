@@ -1,12 +1,11 @@
 // ============================================================
 // AI SDK Streaming Endpoint — LangGraph → AI SDK bridge
-// Uses @ai-sdk/langchain adapter for standard UI message streaming
+// Streams only user-safe assistant text to the browser client.
 // ============================================================
 
-import { toUIMessageStream } from "@ai-sdk/langchain";
 import { HumanMessage } from "@langchain/core/messages";
 import { ChatMessageInput } from "@triathlon/types";
-import { createUIMessageStreamResponse, type UIMessage } from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai";
 import { Hono } from "hono";
 import { AI_CONFIG, validateAIConfig } from "../../config/ai.js";
 import { createLogger } from "../../lib/logger.js";
@@ -27,11 +26,9 @@ const log = createLogger({ module: "ai-stream" });
 
 export const aiStreamRoutes = new Hono();
 
-// ── AI Coach streaming endpoint (AI SDK protocol) ────────────
 aiStreamRoutes.post("/stream", async (c) => {
 	const body = await c.req.json();
 
-	// Extract last user message from AI SDK UIMessage format
 	const uiMessages: UIMessage[] = body.messages ?? [];
 	const lastUserMsg = uiMessages.filter((m) => m.role === "user").pop();
 
@@ -43,7 +40,6 @@ aiStreamRoutes.post("/stream", async (c) => {
 
 	const reqConversationId: string | undefined = body.conversationId;
 
-	// Extract image URLs from file parts (AI SDK uses FileUIPart with type: 'file')
 	const imageUrls: string[] =
 		lastUserMsg?.parts
 			?.filter(
@@ -54,7 +50,6 @@ aiStreamRoutes.post("/stream", async (c) => {
 			)
 			.map((p) => p.url) ?? [];
 
-	// ── Input validation ─────────────────────────────────────
 	const parsed = ChatMessageInput.safeParse({
 		message: messageText,
 		conversationId: reqConversationId,
@@ -76,7 +71,6 @@ aiStreamRoutes.post("/stream", async (c) => {
 
 	const { message, conversationId } = parsed.data;
 
-	// ── Safety check ─────────────────────────────────────────
 	const safetyCheck = checkInput(message);
 	if (safetyCheck.blocked) {
 		return c.json({
@@ -87,7 +81,6 @@ aiStreamRoutes.post("/stream", async (c) => {
 		});
 	}
 
-	// ── Validate AI config ───────────────────────────────────
 	const configCheck = validateAIConfig();
 	if (!configCheck.valid) {
 		return c.json({
@@ -97,11 +90,9 @@ aiStreamRoutes.post("/stream", async (c) => {
 		});
 	}
 
-	// ── Auth & Supabase client ───────────────────────────────
 	const auth = getAuth(c);
 	const client = createUserClient(getJwt(c));
 
-	// ── Conversation persistence ─────────────────────────────
 	const conversation = await getOrCreateConversation(
 		client,
 		auth.userId,
@@ -110,7 +101,6 @@ aiStreamRoutes.post("/stream", async (c) => {
 	);
 	const history = await loadHistory(client, conversation.id, AI_CONFIG.model.historyLimit);
 
-	// Save user message and conditionally update title concurrently
 	const userMsgMetadata = imageUrls.length > 0 ? { imageUrls } : undefined;
 	await Promise.all([
 		saveMessages(client, conversation.id, [
@@ -121,10 +111,7 @@ aiStreamRoutes.post("/stream", async (c) => {
 			: Promise.resolve(),
 	]);
 
-	// ── Intent classification ────────────────────────────────
 	const intent = classifyIntent(message);
-
-	// ── Create agent and prepare messages ─────────────────────
 	const agent = await createAgent(client, auth.userId, auth.clubId, message);
 	const runStartedAt = Date.now();
 	const requestAbortController = new AbortController();
@@ -134,7 +121,6 @@ aiStreamRoutes.post("/stream", async (c) => {
 	);
 	const historyMessages = toBaseMessages(history);
 
-	// Build multimodal user content if images attached
 	const userContent =
 		imageUrls.length > 0
 			? [
@@ -148,21 +134,97 @@ aiStreamRoutes.post("/stream", async (c) => {
 
 	const inputMessages = [...historyMessages, new HumanMessage({ content: userContent })];
 
-	// ── Stream with AI SDK adapter ───────────────────────────
 	try {
-		const graphStream = await agent.stream(
-			{ messages: inputMessages },
-			{
-				streamMode: ["values", "messages"] as const,
-				recursionLimit: AI_CONFIG.agent.maxGraphSteps,
-				signal: requestAbortController.signal,
-			},
-		);
+		const stream = createUIMessageStream({
+			originalMessages: uiMessages,
+			execute: async ({ writer }) => {
+				const responseMessageId = crypto.randomUUID();
+				let startedText = false;
+				let fullResponse = "";
 
-		return createUIMessageStreamResponse({
-			stream: toUIMessageStream(graphStream, {
-				onFinal: async (completion) => {
-					clearTimeout(requestTimeoutId);
+				writer.write({
+					type: "message-metadata",
+					messageMetadata: {
+						conversationId: conversation.id,
+						intent,
+						athleteId: auth.userId,
+					},
+				});
+
+				try {
+					const agentStream = await agent.stream(
+						{ messages: inputMessages },
+						{
+							streamMode: "messages",
+							recursionLimit: AI_CONFIG.agent.maxGraphSteps,
+							signal: requestAbortController.signal,
+						},
+					);
+
+					for await (const [msgChunk, metadata] of agentStream) {
+						// Only forward assistant text from the main LLM node.
+						// This keeps internal reflection/tool chatter out of the UI.
+						if (
+							metadata.langgraph_node !== "llmCall" ||
+							typeof msgChunk.content !== "string" ||
+							msgChunk.content.length === 0
+						) {
+							continue;
+						}
+
+						if (!startedText) {
+							writer.write({ type: "text-start", id: responseMessageId });
+							startedText = true;
+						}
+
+						fullResponse += msgChunk.content;
+						writer.write({
+							type: "text-delta",
+							id: responseMessageId,
+							delta: msgChunk.content,
+						});
+					}
+
+					const processed = processOutput(fullResponse, {
+						confidence: 0.85,
+						hasMedicalContent: intent === "medical",
+					});
+
+					if (!startedText) {
+						writer.write({ type: "text-start", id: responseMessageId });
+						startedText = true;
+					}
+
+					// Output safety only appends disclaimers today, so the suffix is safe to stream.
+					if (processed.content !== fullResponse && processed.content.startsWith(fullResponse)) {
+						const suffix = processed.content.slice(fullResponse.length);
+						if (suffix.length > 0) {
+							writer.write({
+								type: "text-delta",
+								id: responseMessageId,
+								delta: suffix,
+							});
+						}
+					}
+
+					writer.write({ type: "text-end", id: responseMessageId });
+
+					await saveMessages(client, conversation.id, [
+						{
+							role: "assistant",
+							content: processed.content,
+							metadata: {
+								model: AI_CONFIG.azure.deploymentName,
+								intent,
+								disclaimerAdded: processed.disclaimerAdded,
+							},
+						},
+					]);
+
+					extractMemories(client, auth.userId, message, processed.content).catch((err) =>
+						log.warn({ err }, "Background memory extraction failed"),
+					);
+
 					const stats = agent.getExecutionStats();
 					log.info(
 						{
@@ -173,35 +235,37 @@ aiStreamRoutes.post("/stream", async (c) => {
 						},
 						"AI agent execution completed",
 					);
+				} catch (err) {
+					const errorMessage = getAgentErrorMessage(err);
+					log.error(
+						{
+							err,
+							userId: auth.userId,
+							conversationId: conversation.id,
+						},
+						"AI stream execution failed",
+					);
 
-					// Post-processing: save the assistant response and extract memories
-					if (!completion) return;
-					try {
-						const processed = processOutput(completion, {
-							confidence: 0.85,
-							hasMedicalContent: intent === "medical",
-						});
+					writer.write({
+						type: "error",
+						errorText: errorMessage,
+					});
 
-						await saveMessages(client, conversation.id, [
-							{
-								role: "assistant",
-								content: processed.content,
-								metadata: {
-									model: AI_CONFIG.azure.deploymentName,
-									intent,
-									disclaimerAdded: processed.disclaimerAdded,
-								},
-							},
-						]);
+					await saveMessages(client, conversation.id, [
+						{
+							role: "assistant",
+							content: errorMessage,
+							metadata: { error: true, phase: "stream" },
+						},
+					]);
+				} finally {
+					clearTimeout(requestTimeoutId);
+				}
+			},
+		});
 
-						extractMemories(client, auth.userId, message, processed.content).catch((err) =>
-							log.warn({ err }, "Background memory extraction failed"),
-						);
-					} catch (err) {
-						log.error({ err }, "Post-stream processing failed");
-					}
-				},
-			}),
+		return createUIMessageStreamResponse({
+			stream,
 			headers: {
 				"X-Accel-Buffering": "no",
 				"Cache-Control": "no-cache, no-transform",
