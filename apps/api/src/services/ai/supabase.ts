@@ -352,6 +352,24 @@ export async function insertWorkout(
 	return data;
 }
 
+export async function updateWorkout(
+	client: SupabaseClient,
+	workoutId: string,
+	userId: string,
+	updates: Partial<Pick<Workout, "avg_hr" | "notes" | "tss" | "raw_data">>,
+): Promise<Workout> {
+	const { data, error } = await client
+		.from("workouts")
+		.update(updates)
+		.eq("id", workoutId)
+		.eq("athlete_id", userId)
+		.select()
+		.single();
+
+	if (error) throw new Error(`Failed to update workout: ${error.message}`);
+	return data;
+}
+
 export async function insertMemory(
 	client: SupabaseClient,
 	memory: Omit<AthleteMemory, "id" | "created_at" | "updated_at">,

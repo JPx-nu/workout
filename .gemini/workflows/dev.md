@@ -1,34 +1,36 @@
 ---
-description: How to run the development environment and common development tasks
+description: Development workflow for the current triathlon-app repo
 ---
 
-// turbo-all
+# Development Workflow
 
-## Start Dev Environment
+## Start Services
 
-1. Start all services (web + api) from the monorepo root:
+From repo root:
+
 ```bash
-npm run dev
+pnpm dev
 ```
 
-## Common Tasks
+Target a single workspace when needed:
 
-2. Install a dependency in a specific workspace:
 ```bash
-pnpm --filter web add <package>
+pnpm --filter web dev
+pnpm --filter @triathlon/api dev
 ```
 
-3. Run type checking:
-```bash
-pnpm --filter web tsc --noEmit
-```
+Local defaults:
+- Web: `http://localhost:3100/workout`
+- API: `http://localhost:8787`
 
-4. Run linting:
-```bash
-pnpm --filter web run lint
-```
+## Validation
 
-5. Run production build (with webpack for Serwist):
-```bash
-pnpm --filter web run build
-```
+- Web: `pnpm --filter web lint`
+- API: `pnpm --filter @triathlon/api test && pnpm --filter @triathlon/api type-check`
+- Shared packages: targeted `pnpm --filter ... test` and `pnpm --filter ... type-check`
+- Cross-cutting: `pnpm check:env-keys`, `pnpm type-check`, `pnpm test`
+
+## Notes
+
+- Web uses live Supabase/API data. Do not add mock-data fallbacks.
+- Mobile is a separate Flutter app under `apps/mobile`, not part of `pnpm dev`.

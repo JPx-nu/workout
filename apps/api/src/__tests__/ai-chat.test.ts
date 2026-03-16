@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const createUserClientMock = vi.hoisted(() => vi.fn());
 const getOrCreateConversationMock = vi.hoisted(() => vi.fn());
 const loadHistoryMock = vi.hoisted(() => vi.fn());
+const listConversationsMock = vi.hoisted(() => vi.fn());
 const saveMessagesMock = vi.hoisted(() => vi.fn());
 const updateConversationTitleMock = vi.hoisted(() => vi.fn());
 const createAgentMock = vi.hoisted(() => vi.fn());
@@ -42,6 +43,7 @@ vi.mock("../services/ai/supabase.js", () => ({
 
 vi.mock("../services/ai/conversation.js", () => ({
 	getOrCreateConversation: getOrCreateConversationMock,
+	listConversations: listConversationsMock,
 	loadHistory: loadHistoryMock,
 	saveMessages: saveMessagesMock,
 	updateConversationTitle: updateConversationTitleMock,
@@ -61,18 +63,19 @@ vi.mock("../services/ai/quick-workout-log.js", () => ({
 	tryHandleQuickWorkoutLogFollowUp: tryHandleQuickWorkoutLogFollowUpMock,
 }));
 
-import { aiStreamRoutes } from "../routes/ai/stream.js";
+import { aiRoutes } from "../routes/ai/chat.js";
 
 function createAuthedApp() {
 	const app = new Hono();
-	app.route("/api/ai", aiStreamRoutes);
+	app.route("/api/ai", aiRoutes);
 	return app;
 }
 
-describe("aiStreamRoutes", () => {
+describe("aiRoutes /chat", () => {
 	beforeEach(() => {
 		createUserClientMock.mockReset();
 		getOrCreateConversationMock.mockReset();
+		listConversationsMock.mockReset();
 		loadHistoryMock.mockReset();
 		saveMessagesMock.mockReset();
 		updateConversationTitleMock.mockReset();
@@ -85,15 +88,16 @@ describe("aiStreamRoutes", () => {
 		getOrCreateConversationMock.mockResolvedValue({
 			id: "conversation-1",
 		});
+		listConversationsMock.mockResolvedValue([]);
 		loadHistoryMock.mockResolvedValue([]);
 		saveMessagesMock.mockResolvedValue(undefined);
 		updateConversationTitleMock.mockResolvedValue(undefined);
 		extractMemoriesMock.mockResolvedValue(undefined);
-		tryHandleQuickWorkoutLogFollowUpMock.mockResolvedValue(null);
 		tryHandleQuickWorkoutLogMock.mockResolvedValue(null);
+		tryHandleQuickWorkoutLogFollowUpMock.mockResolvedValue(null);
 	});
 
-	it("bypasses the agent for a quick completed workout log", async () => {
+	it("bypasses the agent for a quick completed workout log over SSE", async () => {
 		tryHandleQuickWorkoutLogMock.mockResolvedValue({
 			content:
 				"Logged your 30-minute 5 km run from yesterday. If you want, send a note or average HR and I'll add it.",
@@ -105,17 +109,11 @@ describe("aiStreamRoutes", () => {
 		});
 
 		const app = createAuthedApp();
-		const response = await app.request("/api/ai/stream", {
+		const response = await app.request("/api/ai/chat", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
-				messages: [
-					{
-						id: "user-1",
-						role: "user",
-						parts: [{ type: "text", text: "log a 30 minute 5km run from yesterday" }],
-					},
-				],
+				message: "log a 30 minute 5km run from yesterday",
 			}),
 		});
 
@@ -135,53 +133,44 @@ describe("aiStreamRoutes", () => {
 		]);
 	});
 
-	it("streams only llmCall text and filters internal graph chatter", async () => {
-		createAgentMock.mockResolvedValue({
-			stream: async function* () {
-				yield [{ content: "Clean" }, { langgraph_node: "llmCall" }];
-				yield [{ content: " ACCEPT" }, { langgraph_node: "reflectNode" }];
-				yield [{ name: "schedule_workout" }, { langgraph_node: "tools" }];
-				yield [{ content: " answer" }, { langgraph_node: "llmCall" }];
+	it("bypasses the agent for quick log follow-up details", async () => {
+		loadHistoryMock.mockResolvedValue([
+			{
+				id: "assistant-1",
+				conversation_id: "conversation-1",
+				role: "assistant",
+				content: "Logged your run.",
+				metadata: {
+					fastPath: "quick_workout_log",
+					loggedWorkoutId: "workout-1",
+					loggedActivityType: "RUN",
+					awaitingOptionalDetails: true,
+				},
+				created_at: "2026-03-16T10:00:00Z",
 			},
-			getExecutionStats: () => ({
-				graphDecisions: 2,
-				toolCallCount: 1,
-				reflectionRevisions: 0,
-				endedByToolCap: false,
-				endedByRepeatedToolSignature: false,
-				endedByReflectionCap: false,
-			}),
+		]);
+		tryHandleQuickWorkoutLogFollowUpMock.mockResolvedValue({
+			content: "Added that note to your run.",
+			metadata: {
+				model: "fast-path",
+				intent: "training",
+				fastPath: "quick_workout_log_follow_up",
+			},
 		});
 
 		const app = createAuthedApp();
-		const response = await app.request("/api/ai/stream", {
+		const response = await app.request("/api/ai/chat", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
-				messages: [
-					{
-						id: "user-1",
-						role: "user",
-						parts: [{ type: "text", text: "why so weird?" }],
-					},
-				],
+				message: "just standard maintenance",
 			}),
 		});
 
 		expect(response.status).toBe(200);
-		expect(response.headers.get("X-Conversation-Id")).toBe("conversation-1");
+		expect(createAgentMock).not.toHaveBeenCalled();
 
 		const body = await response.text();
-		expect(body).toContain("Clean");
-		expect(body).toContain("answer");
-		expect(body).not.toContain("Self-Evaluation");
-		expect(body).not.toContain("ACCEPT");
-
-		expect(saveMessagesMock).toHaveBeenCalledWith({}, "conversation-1", [
-			expect.objectContaining({
-				role: "assistant",
-				content: "Clean answer",
-			}),
-		]);
+		expect(body).toContain("Added that note to your run.");
 	});
 });

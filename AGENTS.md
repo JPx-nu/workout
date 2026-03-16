@@ -1,77 +1,85 @@
 # AGENTS.md
 
-Guidance for coding agents working in this repository.
+Repository guidance for coding agents working in `c:\git\jpx\workout`.
 
-## Repository overview
+## Start Here
 
-- Monorepo name: `triathlon-app`
-- Package manager: `pnpm` (`pnpm@10.29.2`)
+Read these files before making assumptions:
+
+1. `README.md`
+2. This file
+3. `docs/technical-reference.md`
+4. `docs/integrations.md` when touching OAuth, providers, webhooks, or mobile/web integration settings
+5. `FOLLOWUP.md` when checking known debt, open decisions, or unresolved scope gaps
+6. The nearest nested `AGENTS.md` in the subtree you are editing
+
+## Repo Snapshot
+
+- Monorepo: `triathlon-app`
+- Package manager: `pnpm@10.29.2`
 - Task runner: `turbo`
-- Primary reference docs:
-  - `README.md` - repo entry point and current shipped scope
-  - `docs/technical-reference.md` - implementation truth
-  - `docs/integrations.md` - provider and OAuth control-plane details
-  - `FOLLOWUP.md` - living backlog
+- Shared runtime target: Node `24.x`
 - Main workspaces:
-  - `apps/web` - Next.js 16 + React 19 frontend
-  - `apps/api` - Hono + TypeScript backend
-  - `packages/core` - shared mapping/date/stats business logic
-  - `packages/types` - shared TypeScript types
-  - `packages/api-client` - typed client scaffold
-  - `apps/mobile` - Flutter app (not managed by pnpm workspaces)
+  - `apps/web` - Next.js 16 + React 19 web app, dev port `3100`, basePath `/workout`
+  - `apps/api` - Hono + TypeScript API, dev port `8787`
+  - `packages/types` - shared contracts and Zod schemas
+  - `packages/core` - shared pure business logic
+  - `packages/api-client` - typed Hono RPC client scaffold
+  - `apps/mobile` - Flutter app outside pnpm/Turbo
 
-## Setup
+## Working Rules
 
-1. Install dependencies:
-   - `pnpm install`
-2. Create local environment file:
-   - `cp .env.example .env`
-3. Fill required environment variables (Supabase, Azure OpenAI, webhook keys).
-
-## Common commands
-
-From repository root:
-
-- `pnpm dev` - run all dev tasks through Turbo
-- `pnpm build` - build all packages/apps
-- `pnpm lint` - lint configured packages
-- `pnpm check:env-keys` - validate canonical env variable naming
-- `pnpm type-check` - run TypeScript checks
-- `pnpm test` - run tests
-- `pnpm test:e2e` - run end-to-end test tasks (if configured)
-
-Target a specific workspace when possible:
-
-- `pnpm --filter web dev`
-- `pnpm --filter @triathlon/api dev`
-- `pnpm --filter @triathlon/api test`
-- `pnpm --filter @triathlon/core test`
-- `pnpm --filter @triathlon/types type-check`
-
-## Coding guidelines for agents
-
-- Keep changes focused and minimal; avoid broad refactors unless requested.
+- Keep changes focused and minimal unless the user explicitly asks for a broader refactor.
 - Prefer strict, explicit TypeScript types over `any`.
-- Reuse shared contracts from `packages/types` for cross-app data shapes.
-- Keep imports/package boundaries clear (each app has its own `@/*` alias).
-- Do not commit secrets, `.env` files, or generated build outputs.
-- `apps/api/dist-deploy` is generated output from `build:deploy`, not source.
-- Update docs in the same change when routes, env requirements, feature flags, or user-facing scope change.
+- Put shared contracts and validation schemas in `packages/types`.
+- Put shared pure logic in `packages/core`.
+- Keep app-local aliases local. `@/*` is for `apps/web` only.
+- Do not author generated output such as `apps/api/dist`, `apps/api/dist-deploy`, `apps/web/.next`, or mobile build artifacts.
+- Web hooks and settings use live Supabase/API data. Do not reintroduce mock-data fallbacks.
+- In `apps/web/src`, read public env keys with static `process.env.NEXT_PUBLIC_*` property access only. Dynamic `process.env[name]` access is blocked by `scripts/check-web-public-env-access.mjs`.
+- API routes should validate inputs at the boundary, keep protected routes under `/api/*`, and use `application/problem+json` responses through the existing helpers.
+- Supabase access tokens are verified through JWKS. Do not reintroduce a legacy shared JWT-secret flow.
+- OAuth `returnTo` targets must remain allowlisted absolute `http(s)` URLs. Mobile uses `APP_LINK_URL`.
+- Update docs and agent guidance in the same change when routes, env vars, feature flags, deploy behavior, or supported product surface change.
 
-## Validation before handoff
+## Current Supported Product Surface
 
+- Web: landing page, auth, onboarding, dashboard, workouts, training calendar, AI Coach, 2D body map, settings, integrations, and PWA install.
+- API: AI routes, onboarding, planned workouts, integrations, mobile health ingest, MCP bridge, and provider webhooks.
+- Mobile: login, dashboard, workouts, training, coach, body map, and settings backed by live API contracts.
 
-## Validation before handoff
+Not currently shipped as supported product surface:
+
+- Garmin end-user availability
+- HealthKit / Health Connect permission UX
+- Live-data 3D body map
+- Self-serve export/delete-account UI
+- Team relays or squad features
+
+## Validation Before Handoff
 
 Run the smallest meaningful checks for the files you changed, then broaden if needed:
 
-- Web changes: `pnpm --filter web lint` and/or `pnpm --filter web build`
+- Web changes: `pnpm --filter web lint`
+- Web route/config/env changes: `pnpm --filter web build`
 - API changes: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`
-- Cross-cutting changes: `pnpm type-check` (and `pnpm test` when relevant)
+- Shared package changes:
+  - `pnpm --filter @triathlon/types test`
+  - `pnpm --filter @triathlon/types type-check`
+  - `pnpm --filter @triathlon/core test`
+  - `pnpm --filter @triathlon/core type-check`
+- Cross-cutting changes: `pnpm check:env-keys`, `pnpm type-check`, and `pnpm test` as appropriate
 
-## Safe auto-run commands
+## Agent Guidance Surfaces
 
-The following commands are safe to run without user approval (`SafeToAutoRun: true`):
+- Root and nested `AGENTS.md` files are the primary repo guidance for coding agents.
+- `CLAUDE.md` mirrors the repo entry guidance for Claude-based agents.
+- `.gemini/rules.md` and `.gemini/workflows/*` should stay aligned with the repo docs and nested `AGENTS.md` files.
+- `.agent/workflows/*` contains local workflow recipes and must reflect current scripts, ports, and deploy flow.
+
+## Safe Auto-Run Commands
+
+The following commands are safe to run without extra approval:
 
 - `pnpm lint`, `pnpm type-check`, `pnpm test`, `pnpm audit`, `pnpm list`, `pnpm why`, `pnpm check:env-keys`
 - `pnpm --filter <workspace> lint`, `pnpm --filter <workspace> type-check`, `pnpm --filter <workspace> test`
@@ -82,6 +90,6 @@ The following commands are safe to run without user approval (`SafeToAutoRun: tr
 
 ## Notes
 
-- Root formatting uses Biome (`pnpm format`).
-- Web and API linting run through Biome; keep rule-level changes explicit and scoped.
-qw
+- Root formatting uses Biome: `pnpm format`.
+- Web and API linting run through Biome. Keep rule-level changes explicit and scoped.
+- The repo-level env consistency guard lives in `scripts/check-env-keys.mjs`.

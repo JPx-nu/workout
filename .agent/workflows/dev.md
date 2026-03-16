@@ -1,70 +1,77 @@
 ---
-description: How to run the development environment and common development tasks
+description: Current development workflow for the triathlon-app monorepo
 ---
 
 # Development Workflow
 
-## Starting the Dev Environment
+## Root Tasks
 
-// turbo-all
-
-1. Install dependencies (if needed):
+1. Install dependencies:
 ```bash
 pnpm install
 ```
 
-2. Start both web and API dev servers:
+2. Start the repo in development mode:
 ```bash
 pnpm dev
 ```
-This runs `turbo dev` which starts:
-- **Web**: `http://localhost:3000` (Next.js)
-- **API**: `http://localhost:8787` (Hono)
 
-## Adding a New Dashboard Page
+Target a single workspace when you do not need the full repo:
+- Web: `pnpm --filter web dev`
+- API: `pnpm --filter @triathlon/api dev`
 
-1. Create the page file at `apps/web/src/app/dashboard/<page-name>/page.tsx`
-2. Add `'use client'` directive at top
-3. Add the route to the `navItems` array in `apps/web/src/app/dashboard/layout.tsx`
-4. Create a data hook at `apps/web/src/hooks/use-<feature>.ts` with `@mock` annotation
-5. Create mock data at `apps/web/src/lib/mock/<feature>.ts` and export from `apps/web/src/lib/mock/index.ts`
-6. Use Liquid Glass design system classes: `glass-card`, `btn-primary`, `badge-*`
-7. Use CSS variables for all colors — never hardcode
+Local defaults:
+- Web: `http://localhost:3100/workout`
+- API: `http://localhost:8787`
 
-## Adding a New API Route
+## Web Changes
 
-1. Create the route file at `apps/api/src/routes/<group>/<route>.ts`
-2. Export a `Hono` instance with route handlers
-3. Add Zod input validation using schemas from `@triathlon/types/validation`
-4. Register the route in `apps/api/src/server.ts` via `app.route()`
-5. Add auth middleware for protected routes
-
-## Creating a Database Migration
-
-1. Create a new SQL file: `supabase/migrations/NNNNN_description.sql`
-2. Use sequential numbering (next after the highest existing)
-3. Always add RLS policies using `club_id = (select public.requesting_club_id())`
-4. Add matching TypeScript types in `packages/types/src/index.ts`
-5. Test locally with `supabase db reset`
-
-## Running Tests
-
-1. Run all tests:
+1. Add or update routes under `apps/web/src/app`.
+2. Reuse live hooks under `apps/web/src/hooks` instead of reintroducing mock layers.
+3. Keep public env reads inside `apps/web/src` as static `process.env.NEXT_PUBLIC_*` access.
+4. Validate with:
 ```bash
-pnpm test
+pnpm --filter web lint
+```
+5. Add a production build check for route, config, CSP, or env changes:
+```bash
+pnpm --filter web build
 ```
 
-2. Run type checking:
+## API Changes
+
+1. Add or update route groups under `apps/api/src/routes`.
+2. Reuse shared schemas from `@triathlon/types` at the route boundary.
+3. Register route groups in `apps/api/src/server.ts` when adding a new surface.
+4. Keep protected routes under `/api/*`; `/health` and `/webhooks/*` are the public entry points.
+5. Validate with:
 ```bash
-pnpm type-check
+pnpm --filter @triathlon/api test
+pnpm --filter @triathlon/api type-check
 ```
 
-3. Run linting:
+## Shared Package Changes
+
+- Types:
 ```bash
-pnpm lint
+pnpm --filter @triathlon/types test
+pnpm --filter @triathlon/types type-check
 ```
 
-4. Run the full CI pipeline locally:
+- Core:
 ```bash
-pnpm type-check && pnpm lint && pnpm test && pnpm build
+pnpm --filter @triathlon/core test
+pnpm --filter @triathlon/core type-check
 ```
+
+## Mobile
+
+The Flutter app is separate from pnpm/Turbo:
+
+```bash
+cd apps/mobile
+flutter pub get
+flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=API_URL=http://localhost:8787 --dart-define=APP_LINK_URL=https://jpx.nu/workout/settings
+```
+
+`APP_LINK_URL` must be an allowlisted absolute `http(s)` URL.

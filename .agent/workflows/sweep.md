@@ -1,72 +1,64 @@
 ---
-description: Full codebase sweep — dependency audit, dead code removal, security checks, and best practice alignment
+description: Full repo sweep for dependency drift, stale guidance, dead code, and validation
 ---
 
-# /sweep — Full Codebase Sweep
+# Full Codebase Sweep
 
-Run this workflow periodically (after major features, before releases) to keep the codebase in pristine condition.
-
-// turbo-all
-
-## 1. Dependency Audit
+## 1. Dependency and Security Review
 
 ```bash
 pnpm outdated --recursive
+pnpm audit
 ```
 
-- Check each outdated package against its changelog for breaking changes
-- Research latest versions on Context7 and npm for critical frameworks (Next.js, Hono, LangChain, Supabase)
-- Look for **security advisories** (especially Hono, Supabase, jose)
-- Update packages: `pnpm update --recursive` for patch/minor, manual for major
+- Review critical framework, auth, and deploy dependencies before upgrading.
+- Prefer targeted upgrades over broad churn unless the sweep is explicitly for a larger refresh.
 
-## 2. Dead Code Scan
+## 2. Guidance Drift Check
 
-- Search for unused imports: `grep -r "from.*mock" apps/web/src/`
-- Search for unreferenced files: check every file in `lib/` has at least one import
-- Look for empty directories (scaffolded but never implemented)
-- Check for TODO/FIXME comments that should be resolved
-- Verify all exports in `packages/types/` are actually used
+Compare these sources and keep them aligned:
+- `README.md`
+- `AGENTS.md`
+- nested `AGENTS.md` files
+- `CLAUDE.md`
+- `.gemini/rules.md`
+- `.gemini/workflows/*`
+- `.agent/workflows/*`
+- `docs/technical-reference.md`
+- `docs/integrations.md`
 
-## 3. Framework Best Practices
+## 3. Stale Reference Search
 
-- **Next.js**: Check the [upgrade guide](https://nextjs.org/docs/app/building-your-application/upgrading) for missed features
-- **Hono**: Verify middleware patterns match [latest docs](https://hono.dev/docs)
-- **LangGraph**: Check for new agent patterns, streaming improvements
-- **Supabase**: Verify RLS policies, check for new Auth features
-- Use Context7 to query latest docs for each framework
-
-## 4. Security Checklist
-
-- [ ] CSP headers up to date (no unnecessary `unsafe-*`)
-- [ ] All API inputs validated with Zod
-- [ ] No secrets in client-side code (search for `SUPABASE_SERVICE_ROLE`, API keys)
-- [ ] Rate limiting active on all public endpoints
-- [ ] CORS origins correct (check for hardcoded dev URLs in production)
-- [ ] Dependency audit: `pnpm audit`
-
-## 5. Build & Type Safety
+Useful searches:
 
 ```bash
+rg -n "NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_JWT_SECRET|lib/mock|npm run dev|http://localhost:3000|Capacitor" .
+rg -n "TODO|FIXME" apps packages scripts
+```
+
+- Remove stale env names, old ports, and obsolete architecture guidance when you find them.
+- Keep mock-data references out of the current web data layer docs and workflow files.
+
+## 4. Validation
+
+```bash
+pnpm check:env-keys
 pnpm lint
 pnpm type-check
-pnpm build
+pnpm test
 ```
 
-- Fix ALL lint warnings (not just errors)
-- Resolve any TypeScript `any` types that crept in
+Add targeted builds when relevant:
+- `pnpm --filter web build`
+- `pnpm --filter @triathlon/api build:deploy`
 
-## 6. Documentation Sync
+## 5. Docs and Scope
 
-- Update `docs/technical-reference.md` version and date
-- Verify all endpoints listed match actual routes
-- Verify all pages listed match actual routes
-- Update GitHub Secrets table if any changed
-- Check that `.env.example` matches actual env vars used
+- Verify the documented shipped surface still matches the current product.
+- Keep unsupported or experimental items clearly marked.
+- Update env, route, and deploy notes when behavior changed.
 
-## 7. Commit & Deploy
+## 6. Handoff
 
-```bash
-git add -A
-git commit -m "chore: full codebase sweep — deps, cleanup, security"
-git push
-```
+- Summarize findings, fixes, and any residual risks.
+- Do not auto-commit or auto-push as part of the sweep unless explicitly requested.

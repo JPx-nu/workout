@@ -1,55 +1,64 @@
 ---
-description: How to deploy the application to Azure App Service
+description: Current Azure deployment workflow for the triathlon-app monorepo
 ---
 
 # Deployment Workflow
 
-## Prerequisites
-- Azure CLI installed and logged in
-- GitHub secrets configured: `AZURE_CREDENTIALS`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-- Azure App Service instances: `jpx-workout-web`, `jpx-workout-api`
-- Azure App Setting `WEBSITE_RUN_FROM_PACKAGE=1` set on both services
+## Source of Truth
 
-## Automatic Deployment (CI/CD)
+- The deploy pipeline lives in `.github/workflows/deploy.yml`.
+- Preferred entry points are a push to `main` or `workflow_dispatch`.
+- Keep repo docs and Azure behavior aligned through the workflow instead of hand-maintaining drift in Azure.
 
-Push to `main` branch triggers automatic deployment via GitHub Actions:
-1. `ci.yml` — runs lint, type-check, test, build, security audit
-2. `deploy.yml` — builds and deploys web + API to Azure
+## Required GitHub Secrets
 
-## Manual Deployment
+- `AZURE_CREDENTIALS`
+- `AZURE_RESOURCE_GROUP`
+- `AZURE_OPENAI_ENDPOINT`
+- `AZURE_OPENAI_API_KEY`
+- `AZURE_OPENAI_DEPLOYMENT`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `WEB_URL`
+- `NEXT_PUBLIC_API_URL`
 
-// turbo-all
+Optional override secrets:
+- `AZURE_OPENAI_API_VERSION`
+- `INTEGRATION_ENCRYPTION_KEY`
 
-1. Build the project:
+## What the Workflow Does
+
+1. Builds the API with:
 ```bash
-pnpm build
+pnpm --filter @triathlon/api build:deploy
 ```
-
-2. Prepare web deployment package:
+2. Packages `apps/api/dist-deploy` and installs only deployment dependencies.
+3. Configures the API app to Node `24.x`, `alwaysOn`, startup file `node server.js`, and health check `/health`.
+4. Applies API app settings, mapping:
+   - `API_URL` <- `NEXT_PUBLIC_API_URL`
+   - `SUPABASE_ANON_KEY` <- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+5. Smoke-tests `GET /health` before deploying the web app.
+6. Builds the web app with:
 ```bash
-cp -r apps/web/.next/standalone deploy-web
-cp -r apps/web/public deploy-web/apps/web/public
-mkdir -p deploy-web/apps/web/.next/static
-cp -r apps/web/.next/static deploy-web/apps/web/.next/
+pnpm --filter web build
 ```
+7. Packages the Next standalone output.
+8. Configures the web app to Node `24.x`, `alwaysOn`, and health check `/workout/health`.
+9. Smoke-tests `https://jpx-workout-web.azurewebsites.net/workout/`.
 
-3. Prepare API deployment package:
-```bash
-mkdir deploy-api
-cp -r apps/api/dist deploy-api/
-cp apps/api/package.json deploy-api/
-cd deploy-api && npm install --omit=dev
-```
+## Notes
 
-4. Deploy to Azure:
-```bash
-az webapp deploy --resource-group <rg> --name jpx-workout-web --src-path ./deploy-web --type zip
-az webapp deploy --resource-group <rg> --name jpx-workout-api --src-path ./deploy-api --type zip
-```
+- `apps/api/dist-deploy` is generated output, not source.
+- `INTEGRATION_ENCRYPTION_KEY` remains Azure-managed unless a GitHub override secret is intentionally provided.
+- `AZURE_OPENAI_API_VERSION` falls back to the code default `2024-12-01-preview` when not overridden.
 
-## Post-Deployment Checks
+## Verification Commands
 
-1. Verify web app is running: `https://jpx-workout-web.azurewebsites.net`
-2. Verify API health: `https://jpx-workout-api.azurewebsites.net/health`
-3. Check security headers in browser DevTools → Network tab
-4. Verify Supabase connectivity via dashboard page load
+- `gh run list`
+- `gh run view <run-id>`
+- `az webapp config appsettings list --name jpx-workout-api --resource-group <rg>`
+- `az webapp config appsettings list --name jpx-workout-web --resource-group <rg>`
+- `az webapp log tail --name jpx-workout-api --resource-group <rg>`
+- `az webapp log tail --name jpx-workout-web --resource-group <rg>`

@@ -18,6 +18,10 @@ import {
 } from "../../services/ai/conversation.js";
 import { createAgent, toBaseMessages } from "../../services/ai/graph.js";
 import { extractMemories } from "../../services/ai/memory-extractor.js";
+import {
+	tryHandleQuickWorkoutLog,
+	tryHandleQuickWorkoutLogFollowUp,
+} from "../../services/ai/quick-workout-log.js";
 import { checkInput, classifyIntent, processOutput } from "../../services/ai/safety.js";
 import { createUserClient } from "../../services/ai/supabase.js";
 import { getAgentErrorMessage } from "../../services/ai/utils/agent-errors.js";
@@ -110,6 +114,63 @@ aiStreamRoutes.post("/stream", async (c) => {
 			? updateConversationTitle(client, conversation.id, message)
 			: Promise.resolve(),
 	]);
+
+	const quickWorkoutLogFollowUp = await tryHandleQuickWorkoutLogFollowUp({
+		client,
+		userId: auth.userId,
+		message,
+		history,
+	});
+	const quickWorkoutLog =
+		quickWorkoutLogFollowUp ??
+		(await tryHandleQuickWorkoutLog({
+		client,
+		userId: auth.userId,
+		clubId: auth.clubId,
+		message,
+	}));
+	if (quickWorkoutLog) {
+		await saveMessages(client, conversation.id, [
+			{
+				role: "assistant",
+				content: quickWorkoutLog.content,
+				metadata: quickWorkoutLog.metadata,
+			},
+		]);
+
+		const stream = createUIMessageStream({
+			originalMessages: uiMessages,
+			execute: async ({ writer }) => {
+				const responseMessageId = crypto.randomUUID();
+
+				writer.write({
+					type: "message-metadata",
+					messageMetadata: {
+						conversationId: conversation.id,
+						intent: "training",
+						athleteId: auth.userId,
+						fastPath: "quick_workout_log",
+					},
+				});
+				writer.write({ type: "text-start", id: responseMessageId });
+				writer.write({
+					type: "text-delta",
+					id: responseMessageId,
+					delta: quickWorkoutLog.content,
+				});
+				writer.write({ type: "text-end", id: responseMessageId });
+			},
+		});
+
+		return createUIMessageStreamResponse({
+			stream,
+			headers: {
+				"X-Accel-Buffering": "no",
+				"Cache-Control": "no-cache, no-transform",
+				"X-Conversation-Id": conversation.id,
+			},
+		});
+	}
 
 	const intent = classifyIntent(message);
 	const agent = await createAgent(client, auth.userId, auth.clubId, message);

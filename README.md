@@ -21,7 +21,7 @@ Not currently shipped as supported product surface:
 - `apps/web` - Next.js 16 + React 19 web app on port `3100`
 - `apps/api` - Hono + TypeScript API on port `8787`
 - `packages/types` - shared contracts and Zod schemas
-- `packages/core` - shared pure mapping/date/stats/strength logic
+- `packages/core` - shared mapping/date/stats/strength logic
 - `packages/api-client` - typed Hono RPC client scaffold
 - `apps/mobile` - Flutter app outside pnpm/Turbo
 
@@ -47,14 +47,20 @@ Not currently shipped as supported product surface:
 - `pnpm --filter @triathlon/api test`
 - `pnpm --filter @triathlon/api build:deploy`
 
-## Source-of-truth docs
+## Source-of-Truth Docs
 
 - `README.md` - repo entry point and current scope
-- `AGENTS.md` - repo-specific coding guidance for agents
+- `AGENTS.md` - repo-wide coding guidance for agents
+- Nested `AGENTS.md` files under `apps/`, `packages/`, and `docs/` - folder-specific conventions for local work
 - `docs/technical-reference.md` - implementation truth across web, API, mobile, env, and architecture
 - `docs/integrations.md` - provider contract and integration control-plane behavior
 - `docs/web-v1-feature-matrix.md` - supported vs roadmap web surface
 - `FOLLOWUP.md` - living backlog and unresolved implementation debt
+
+## Agent Guidance
+
+- `AGENTS.md` plus the nearest nested `AGENTS.md` file is the primary rule set for coding agents in this repo.
+- `CLAUDE.md`, `.gemini/rules.md`, `.gemini/workflows/*`, and `.agent/workflows/*` mirror the same repo expectations for other agent clients and workflows. Keep them aligned with the docs above.
 
 ## Repo notes
 

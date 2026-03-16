@@ -23,6 +23,10 @@ flutter run \
   --dart-define=APP_LINK_URL=https://jpx.nu/workout/settings
 ```
 
+Local guidance:
+- Follow `apps/mobile/AGENTS.md` together with the root `AGENTS.md`.
+- This app is separate from pnpm/Turbo workflows.
+
 ## Current app structure
 
 - Auth: login + auth provider/repository
@@ -43,7 +47,6 @@ flutter run \
 
 ## Notes
 
-- This app is separate from pnpm/Turbo workflows.
 - Supabase is initialized in `lib/main.dart` via compile-time `--dart-define` values.
 - `API_URL` defaults to `http://localhost:8787` if omitted.
 - `APP_LINK_URL` defines the OAuth return target used by mobile integration connect flows.

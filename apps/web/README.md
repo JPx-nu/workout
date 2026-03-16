@@ -22,6 +22,10 @@ pnpm --filter web dev
 
 Default port: `3100`.
 
+Local guidance:
+- Follow `apps/web/AGENTS.md` together with the root `AGENTS.md`.
+- `apps/web/docs/MOCK_DATA_MIGRATION.md` is the current data-layer note for this workspace.
+
 ## Required env vars
 
 - `NEXT_PUBLIC_SUPABASE_URL`

@@ -141,7 +141,7 @@ export function createLogWorkoutTool(client: SupabaseClient, userId: string, clu
 		{
 			name: "log_workout",
 			description:
-				"Logs a new workout for the athlete. For STRENGTH workouts, include structured exercise data (exercises with sets, reps, weight, RPE). Always confirm details with the athlete before calling this tool.",
+				"Logs a new workout for the athlete. For simple completed sessions, use the details already provided and do not block on optional fields like notes or avg HR. For STRENGTH workouts, include structured exercise data (exercises with sets, reps, weight, RPE). Ask follow-up questions only when the workout type or core timing/details are too unclear to log safely.",
 			schema: workoutLogSchema,
 		},
 	);

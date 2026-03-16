@@ -42,7 +42,7 @@ export function createAllTools(client: SupabaseClient, userId: string, clubId: s
 		// Gamification tools
 		createGetSquadLeaderboardTool(client, userId),
 		createPassBatonTool(client, userId),
-		// Write tools (require user confirmation via prompt)
+		// Write tools
 		createLogWorkoutTool(client, userId, clubId),
 		createUpdateSorenessTool(client, userId, clubId),
 		createLogInjuryTool(client, userId),

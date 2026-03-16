@@ -1,29 +1,38 @@
 ---
-description: Research best practices before implementing any plan. Always run after creating an implementation plan and before execution.
+description: Research workflow for grounding repo changes in current local implementation and official docs when needed
 ---
 
 # Research Workflow
 
-Run this workflow after creating an implementation plan and before starting execution.
-The goal is to ground every proposed change in the latest, highest-quality guidance as of February 2026 (or later).
+1. Start with local sources:
+   - `README.md`
+   - `AGENTS.md`
+   - nearest nested `AGENTS.md`
+   - `docs/technical-reference.md`
+   - `docs/integrations.md` when relevant
 
-## Steps
+2. Identify the concrete topics that are unstable or easy to misremember:
+   - framework-version behavior
+   - deploy/runtime behavior
+   - provider OAuth or webhook requirements
+   - security-sensitive guidance
 
-1. **Extract topics from the plan** — Read the implementation plan and list the distinct technical topics that need research (e.g., "Next.js viewport export", "Supabase RLS policies", "React 19 suspense patterns").
+3. Inspect the local implementation before proposing changes:
+   - workspace `package.json`
+   - route entry points
+   - config files such as `next.config.ts`, `apps/api/src/config/startup-env.ts`, and `.github/workflows/deploy.yml`
 
-2. **Google search (broad)** — For each topic, run a web search targeting the latest frameworks and best practices. Use queries like:
-   - `<topic> best practices <current year>`
-   - `<topic> latest implementation <framework version>`
-   Capture key findings: recommended APIs, patterns to avoid, accessibility considerations, and any breaking changes.
+4. Use external research only when it is actually needed:
+   - latest framework or provider behavior
+   - security, legal, or deployment-sensitive questions
+   - a user explicitly asks for verification
 
-3. **Context7 enrichment (code examples)** — For each topic that maps to a known library:
-   - Call `resolve-library-id` to find the Context7 library ID.
-   - Call `query-docs` with a specific query to retrieve code examples and API docs.
-   This step turns broad guidance into concrete, copy-paste-ready patterns.
+5. Prefer primary sources when you research externally:
+   - official framework docs
+   - provider docs
+   - upstream release notes
 
-4. **Update the implementation plan** — Merge findings into the plan:
-   - Add concrete code snippets under each proposed change.
-   - Note any best-practice adjustments (e.g., "prefer CSS fix over viewport hack for accessibility").
-   - Add links/sources where relevant.
-
-5. **Request user review** — Present the enriched plan for approval before execution.
+6. Fold the findings back into implementation work:
+   - adjust the code or docs
+   - update repo guidance files if process assumptions changed
+   - record any unresolved gap in `FOLLOWUP.md` when appropriate

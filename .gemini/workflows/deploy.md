@@ -1,27 +1,31 @@
 ---
-description: How to deploy the application to Azure App Service
+description: Azure deployment workflow for the current triathlon-app repo
 ---
 
-// turbo-all
+# Deployment Workflow
 
-## Steps
+- Source of truth: `.github/workflows/deploy.yml`
+- Trigger: push to `main` or `workflow_dispatch`
+- Azure targets: `jpx-workout-api` and `jpx-workout-web`
 
-1. Build the web app production bundle:
+## Key Build Steps
+
 ```bash
-pnpm --filter web run build
+pnpm --filter @triathlon/api build:deploy
+pnpm --filter web build
 ```
 
-2. Build the API:
-```bash
-pnpm --filter @triathlon/api run build
-```
+## Key Deploy Facts
 
-3. Deploy web app to Azure:
-```bash
-az webapp deploy --resource-group jpx-workout --name jpx-workout-web --src-path apps/web/.next/standalone
-```
+- API deploy runs first and must pass `GET /health` before web deploy starts.
+- Web health check path is `/workout/health`.
+- API `API_URL` is sourced from `NEXT_PUBLIC_API_URL`.
+- API `SUPABASE_ANON_KEY` is sourced from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- `INTEGRATION_ENCRYPTION_KEY` stays Azure-managed unless a GitHub override secret is provided.
 
-4. Deploy API to Azure:
-```bash
-az webapp deploy --resource-group jpx-workout --name jpx-workout-api --src-path apps/api/dist
-```
+## Verification
+
+- `gh run list`
+- `gh run view <run-id>`
+- `az webapp log tail --name jpx-workout-api --resource-group <rg>`
+- `az webapp log tail --name jpx-workout-web --resource-group <rg>`

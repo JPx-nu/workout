@@ -1,6 +1,7 @@
 # Bleeding-Edge Health Tech Research — February 2026
 
 > **Purpose**: Identify innovative health monitoring hardware that positions the JPX Workout platform as bleeding-edge, maps integration feasibility, and highlights sponsorship opportunities.
+> **Status**: Research-only background document. It is not implementation truth, and some native-integration references predate the current Flutter mobile app.
 
 ---
 

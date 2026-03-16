@@ -60,8 +60,8 @@ export const AI_CONFIG = {
 		reflectionEnabled: false,
 		/** Enable RAG document retrieval (future) */
 		ragEnabled: false,
-		/** Require user confirmation before write operations */
-		confirmWrites: true,
+		/** Routine logging can proceed without an extra confirmation when intent is clear */
+		confirmWrites: false,
 		/** Enable vision/image analysis via GPT-5-mini */
 		visionEnabled: true,
 	},

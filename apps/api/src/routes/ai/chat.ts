@@ -14,6 +14,10 @@ import {
 } from "../../services/ai/conversation.js";
 import { createAgent, toBaseMessages } from "../../services/ai/graph.js";
 import { extractMemories } from "../../services/ai/memory-extractor.js";
+import {
+	tryHandleQuickWorkoutLog,
+	tryHandleQuickWorkoutLogFollowUp,
+} from "../../services/ai/quick-workout-log.js";
 import { checkInput, classifyIntent, processOutput } from "../../services/ai/safety.js";
 import { createUserClient } from "../../services/ai/supabase.js";
 import { getAgentErrorMessage } from "../../services/ai/utils/agent-errors.js";
@@ -101,6 +105,57 @@ aiRoutes.post("/chat", async (c) => {
 			: Promise.resolve();
 
 	await Promise.all([savePromise, titlePromise]);
+
+	const quickWorkoutLogFollowUp = await tryHandleQuickWorkoutLogFollowUp({
+		client,
+		userId: auth.userId,
+		message,
+		history,
+	});
+	const quickWorkoutLog =
+		quickWorkoutLogFollowUp ??
+		(await tryHandleQuickWorkoutLog({
+			client,
+			userId: auth.userId,
+			clubId: auth.clubId,
+			message,
+		}));
+
+	if (quickWorkoutLog) {
+		await saveMessages(client, conversation.id, [
+			{
+				role: "assistant",
+				content: quickWorkoutLog.content,
+				metadata: quickWorkoutLog.metadata,
+			},
+		]);
+
+		return streamSSE(c, async (stream) => {
+			c.header("X-Accel-Buffering", "no");
+			c.header("Cache-Control", "no-cache, no-transform");
+
+			await stream.writeSSE({
+				event: "metadata",
+				data: JSON.stringify({
+					conversationId: conversation.id,
+					intent: "training",
+					athleteId: auth.userId,
+					fastPath: quickWorkoutLog.metadata.fastPath,
+				}),
+			});
+			await stream.writeSSE({
+				event: "delta",
+				data: JSON.stringify({ content: quickWorkoutLog.content }),
+			});
+			await stream.writeSSE({
+				event: "done",
+				data: JSON.stringify({
+					conversationId: conversation.id,
+					fastPath: quickWorkoutLog.metadata.fastPath,
+				}),
+			});
+		});
+	}
 
 	// ── Intent classification (for metadata) ─────────────────
 	const intent = classifyIntent(message);
