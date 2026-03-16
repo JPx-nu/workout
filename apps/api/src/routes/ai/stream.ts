@@ -124,11 +124,11 @@ aiStreamRoutes.post("/stream", async (c) => {
 	const quickWorkoutLog =
 		quickWorkoutLogFollowUp ??
 		(await tryHandleQuickWorkoutLog({
-		client,
-		userId: auth.userId,
-		clubId: auth.clubId,
-		message,
-	}));
+			client,
+			userId: auth.userId,
+			clubId: auth.clubId,
+			message,
+		}));
 	if (quickWorkoutLog) {
 		await saveMessages(client, conversation.id, [
 			{

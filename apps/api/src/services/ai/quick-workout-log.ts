@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ChatMessage } from "./conversation.js";
 import { createLogger } from "../../lib/logger.js";
+import type { ChatMessage } from "./conversation.js";
 import { insertWorkout, updateWorkout } from "./supabase.js";
 
 const log = createLogger({ module: "quick-workout-log" });
@@ -184,16 +184,16 @@ function buildOptionalFollowUp(parsed: ParsedQuickWorkoutLog): string | null {
 	if (!parsed.avgHr) missing.push("average HR");
 	if (!parsed.notes) missing.push("a note");
 
-	return missing.length > 0
-		? ` If you want, send ${joinWithOr(missing)} and I'll add it.`
-		: null;
+	return missing.length > 0 ? ` If you want, send ${joinWithOr(missing)} and I'll add it.` : null;
 }
 
 function getPendingQuickWorkoutLog(history: ChatMessage[]): {
 	workoutId: string;
 	activityType?: string;
 } | null {
-	const lastAssistantMessage = [...history].reverse().find((message) => message.role === "assistant");
+	const lastAssistantMessage = [...history]
+		.reverse()
+		.find((message) => message.role === "assistant");
 	if (!lastAssistantMessage?.metadata) {
 		return null;
 	}
@@ -375,7 +375,8 @@ export async function tryHandleQuickWorkoutLogFollowUp(params: {
 		if (parsed.avgHr) additions.push(`average HR ${parsed.avgHr}`);
 		if (parsed.notes) additions.push("that note");
 
-		const activityLabel = pendingLog.activityType?.toLowerCase() ?? updatedWorkout.activity_type.toLowerCase();
+		const activityLabel =
+			pendingLog.activityType?.toLowerCase() ?? updatedWorkout.activity_type.toLowerCase();
 
 		return {
 			content: `Added ${joinWithAnd(additions)} to your ${activityLabel}.`,
