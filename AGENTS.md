@@ -58,7 +58,12 @@ Not currently shipped as supported product surface:
 
 ## Validation Before Handoff
 
-Run the smallest meaningful checks for the files you changed, then broaden if needed:
+After any repo changes, always run these root checks before handoff or commit because the Husky pre-commit hook runs them:
+
+- `pnpm lint`
+- `pnpm type-check`
+
+Then run the smallest meaningful scope-specific checks for the files you changed, and broaden if needed:
 
 - Web changes: `pnpm --filter web lint`
 - Web route/config/env changes: `pnpm --filter web build`

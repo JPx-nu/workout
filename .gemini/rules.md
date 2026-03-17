@@ -48,6 +48,7 @@ Not currently supported as shipped surface:
 
 ## Validation Defaults
 
+- After any repo changes, always finish with `pnpm lint` and `pnpm type-check`. The Husky pre-commit hook runs those exact commands.
 - Web: `pnpm --filter web lint`
 - Web route/config/env changes: `pnpm --filter web build`
 - API: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`

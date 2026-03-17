@@ -26,6 +26,7 @@ Guidance for `apps/api`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook runs both and can still block the commit after targeted API checks pass.
 - `pnpm --filter @triathlon/api test`
 - `pnpm --filter @triathlon/api type-check`
 - `pnpm check:env-keys` when env keys, deploy mapping, or startup validation changes

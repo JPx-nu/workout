@@ -13,5 +13,6 @@ Guidance for editing files under `docs/`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook still runs those commands for docs-only changes.
 - Re-read the touched docs against the actual source files they describe.
 - Run `pnpm check:env-keys` when documentation changes mention env keys or deploy mappings.

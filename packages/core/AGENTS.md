@@ -10,5 +10,6 @@ Guidance for `packages/core`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook runs both before commit.
 - `pnpm --filter @triathlon/core test`
 - `pnpm --filter @triathlon/core type-check`

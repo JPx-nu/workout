@@ -17,6 +17,7 @@ Guidance for work inside `packages/`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook runs both even when only a package changed.
 - `pnpm --filter @triathlon/types test`
 - `pnpm --filter @triathlon/types type-check`
 - `pnpm --filter @triathlon/core test`

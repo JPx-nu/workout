@@ -25,4 +25,5 @@ Guidance for `apps/mobile`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook still runs those commands for mobile-only changes.
 - Run the smallest meaningful Flutter validation available locally, typically `flutter analyze` and any targeted tests

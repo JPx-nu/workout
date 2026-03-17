@@ -28,5 +28,6 @@ Guidance for `apps/web`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook runs both and can still block the commit after targeted web checks pass.
 - `pnpm --filter web lint`
 - `pnpm --filter web build` for route, config, CSP, env, or deployment-behavior changes

@@ -11,5 +11,6 @@ Guidance for `packages/api-client`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook runs those commands before commit.
 - `pnpm type-check`
 - Run any affected consumer build or type-check if the exported client surface changes

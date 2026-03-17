@@ -23,6 +23,7 @@ Current shipped product surface excludes Garmin end-user availability, native he
 
 Validation defaults:
 
+- After any repo changes, always finish with `pnpm lint` and `pnpm type-check`. The Husky pre-commit hook runs those exact commands.
 - Web: `pnpm --filter web lint`, plus `pnpm --filter web build` for route/config/env changes
 - API: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`
 - Shared packages: targeted `pnpm --filter ... test` and `pnpm --filter ... type-check`

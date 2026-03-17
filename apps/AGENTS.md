@@ -17,6 +17,7 @@ Guidance for work inside `apps/`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook runs both even when you changed only one workspace.
 - Web: `pnpm --filter web lint`
 - API: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`
 - Mobile: run the smallest meaningful Flutter validation if the toolchain is available

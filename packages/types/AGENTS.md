@@ -12,6 +12,7 @@ Guidance for `packages/types`.
 
 ## Validation
 
+- Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook runs both before commit.
 - `pnpm --filter @triathlon/types test`
 - `pnpm --filter @triathlon/types type-check`
 - `pnpm check:env-keys` when env schema changes are involved
