@@ -69,3 +69,7 @@ Not currently supported as shipped surface:
 - `docs/technical-reference.md`
 - `docs/integrations.md`
 - `docs/web-v1-feature-matrix.md`
+
+## Workflow Notes
+
+- When investigating GitHub Actions, CI, or deploy failures, use the `github-actions-investigator` skill when it is available in the local Codex skills directory.

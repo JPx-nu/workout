@@ -14,7 +14,11 @@
 		}
 	},
 	"scripts": {
+		"build:deps": "pnpm --filter @triathlon/types build",
 		"build": "tsc -p tsconfig.build.json",
+		"prebuild": "pnpm run build:deps",
+		"pretest": "pnpm run build:deps",
+		"pretype-check": "pnpm run build:deps",
 		"test": "vitest run",
 		"type-check": "tsc --noEmit"
 	},

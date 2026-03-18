@@ -28,3 +28,7 @@ Validation defaults:
 - API: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`
 - Shared packages: targeted `pnpm --filter ... test` and `pnpm --filter ... type-check`
 - Cross-cutting changes: `pnpm check:env-keys`, `pnpm type-check`, `pnpm test`
+
+Workflow note:
+
+- When investigating GitHub Actions, CI, or deploy failures, use the `github-actions-investigator` skill when it is available in the local Codex skills directory.

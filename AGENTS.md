@@ -81,6 +81,7 @@ Then run the smallest meaningful scope-specific checks for the files you changed
 - `CLAUDE.md` mirrors the repo entry guidance for Claude-based agents.
 - `.gemini/rules.md` and `.gemini/workflows/*` should stay aligned with the repo docs and nested `AGENTS.md` files.
 - `.agent/workflows/*` contains local workflow recipes and must reflect current scripts, ports, and deploy flow.
+- When investigating GitHub Actions, CI, or deploy failures, use the `github-actions-investigator` skill when it is available in the local Codex skills directory.
 
 ## Safe Auto-Run Commands
 

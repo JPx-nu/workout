@@ -157,6 +157,7 @@ Protected routes:
 
 Build/deploy note:
 - `pnpm --filter @triathlon/api build:deploy` bundles `src/server.ts` into `apps/api/dist-deploy` for deployment packaging.
+- `@triathlon/types` and `@triathlon/core` compile to workspace `dist` output, and standalone web/API dev, test, build, and deploy scripts prebuild those shared packages so clean checkouts do not rely on stale local artifacts.
 - GitHub Actions serializes `main` deploys with workflow concurrency.
 - Deploy preflight fails before Azure mutation if required repo secrets resolve to empty.
 - GitHub Actions deploys API first, waits for `GET /health`, then deploys web and smoke-tests `/workout/`.

@@ -6,9 +6,15 @@
 	"main": "./src/server.ts",
 	"types": "./src/server.ts",
 	"scripts": {
+		"build:deps": "pnpm --filter @triathlon/types build && pnpm --filter @triathlon/core build",
 		"dev": "npx -y kill-port 8787 && node ./scripts/dev-watch.mjs",
 		"build": "tsc",
 		"build:deploy": "node esbuild.deploy.mjs",
+		"prebuild": "pnpm run build:deps",
+		"prebuild:deploy": "pnpm run build:deps",
+		"predev": "pnpm run build:deps",
+		"pretest": "pnpm run build:deps",
+		"pretype-check": "pnpm run build:deps",
 		"start": "node --env-file-if-exists=.env --env-file-if-exists=.env.local dist/server.js",
 		"test": "vitest run",
 		"type-check": "tsc --noEmit"
