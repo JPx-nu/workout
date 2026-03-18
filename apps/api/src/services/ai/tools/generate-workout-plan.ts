@@ -12,6 +12,7 @@ import { toIsoDate } from "@triathlon/core";
 import { z } from "zod";
 import { AI_CONFIG, getAzureInstanceName } from "../../../config/ai.js";
 import { createLogger } from "../../../lib/logger.js";
+import { scheduleSessionsBatch } from "../../workout-center.js";
 
 const log = createLogger({ module: "tool-generate-workout-plan" });
 
@@ -181,29 +182,27 @@ GUIDELINES:
 						);
 
 						return {
-							athlete_id: userId,
-							club_id: clubId,
-							plan_id: planRow.id,
-							planned_date: toIsoDate(sessionDate),
-							activity_type: session.activityType,
+							planId: planRow.id,
+							plannedDate: toIsoDate(sessionDate),
+							activityType: session.activityType,
 							title: session.title,
 							description: session.description,
-							duration_min: session.durationMin,
-							distance_km: session.distanceKm || null,
-							target_rpe: session.targetRpe || null,
+							durationMin: session.durationMin,
+							distanceKm: session.distanceKm || undefined,
+							targetRpe: session.targetRpe || undefined,
 							intensity: session.intensity,
-							status: "planned",
-							source: "AI",
-							coach_notes: `Week ${week.weekNumber}: ${week.theme}`,
+							status: "planned" as const,
+							source: "AI" as const,
+							coachNotes: `Week ${week.weekNumber}: ${week.theme}`,
 						};
 					}),
 				);
 
-				const { error: insertError } = await client
-					.from("planned_workouts")
-					.insert(plannedWorkouts);
-
-				if (insertError) throw new Error(`Failed to insert workouts: ${insertError.message}`);
+				await scheduleSessionsBatch(client, {
+					athleteId: userId,
+					clubId,
+					workouts: plannedWorkouts,
+				});
 
 				// 6. Build summary
 				const totalSessions = plannedWorkouts.length;

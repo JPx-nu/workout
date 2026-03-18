@@ -25,6 +25,7 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
+import Link from "next/link";
 import { type PlannedWorkout, usePlannedWorkouts } from "@/hooks/use-planned-workouts";
 import { ACTIVITY_CONFIG, getActivityConfig } from "@/lib/activity-config";
 
@@ -227,6 +228,12 @@ export default function TrainingCalendarPage() {
 				</div>
 
 				<div className="flex items-center gap-2">
+					<Link
+						href={{ pathname: "/dashboard/workouts/new", query: { mode: "schedule" } }}
+						className="btn-primary text-xs px-3 py-1.5"
+					>
+						New session
+					</Link>
 					<button type="button" onClick={goToToday} className="btn-glass text-xs px-3 py-1.5">
 						Today
 					</button>

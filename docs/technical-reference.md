@@ -1,7 +1,7 @@
 # Triathlon App Technical Reference
 
-> Version: 0.6.1
-> Last Updated: 2026-03-16
+> Version: 0.6.2
+> Last Updated: 2026-03-17
 > Scope: implementation truth only, not roadmap intent
 
 ## 1. Repository Snapshot
@@ -47,6 +47,7 @@ Supported web-v1 areas:
 - auth, session handling, and onboarding
 - dashboard with triathlon and strength views
 - workout history and filtering
+- Workout Center for `start now`, `log past`, and `schedule`
 - training calendar backed by planned-workout API routes
 - AI Coach with streaming chat, conversation history, and image attachments
 - 2D body map backed by `daily_logs` and `injuries`
@@ -73,6 +74,7 @@ Main routes:
 - `/dashboard`
 - `/dashboard/onboarding`
 - `/dashboard/workouts`
+- `/dashboard/workouts/new`
 - `/dashboard/training`
 - `/dashboard/coach`
 - `/dashboard/body-map`
@@ -84,6 +86,7 @@ Main routes:
 Client data sources:
 - `useProfile` -> Supabase `profiles` + `clubs`
 - `useWorkouts` -> Supabase `workouts`
+- `useWorkoutCenter` -> `/api/workouts`, `/api/planned-workouts`, `/api/planned-workouts/batch`
 - `useTraining` -> Supabase `training_plans` + `events`
 - `useHealth` -> Supabase `daily_logs` + `injuries`
 - `useCoach` -> `/api/ai/stream`, `/api/ai/conversations`, Supabase `messages`, Supabase Storage `chat-images`
@@ -132,9 +135,13 @@ Protected routes:
   - `GET /`
   - `GET /:id`
   - `POST /`
+  - `POST /batch`
   - `PATCH /:id`
   - `PATCH /:id/complete`
   - `DELETE /:id`
+- `/api/workouts`
+  - `POST /`
+  - `PATCH /:id`
 - `/api/integrations`
   - `GET /status`
   - `GET /sync-history`
@@ -205,6 +212,9 @@ Workout logging behavior:
 - `/api/ai/stream` and `/api/ai/chat` first try a deterministic quick-log path for simple completed workout requests
 - when activity type plus enough timing/context is clear, the API logs the session immediately instead of asking for confirmation or optional metrics first
 - optional post-log follow-ups currently support attaching a note or average HR to the just-logged workout without re-entering the full agent loop
+- manual Workout Center writes and AI/MCP workout writes share the same API service layer in `apps/api/src/services/workout-center.ts`
+- strength sessions use the canonical `StrengthSessionV1` contract from `packages/types` for both completed workout `raw_data` and planned workout `session_data`
+- `start now` sessions persist as `planned_workouts.status = in_progress` until completion links them to the final `workouts` row
 
 ## 8. Data and Database Notes
 

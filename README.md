@@ -4,7 +4,7 @@ Monorepo for the current JPX triathlon product surface: a Next.js web cockpit, a
 
 ## Current shipped scope
 
-- Web athlete cockpit: auth, onboarding, dashboard, workouts, training calendar, AI Coach, 2D body map, settings, and live integrations control.
+- Web athlete cockpit: auth, onboarding, dashboard, workout history, Workout Center (`start now`, `log past`, `schedule`), training calendar, AI Coach, 2D body map, settings, and live integrations control.
 - API: AI chat/streaming, onboarding persistence, planned workouts, integrations, mobile health ingest, MCP bridge, and provider webhooks.
 - Mobile companion: login, dashboard, workouts, training, coach, body map, and settings backed by the same API contracts for profile and integrations.
 

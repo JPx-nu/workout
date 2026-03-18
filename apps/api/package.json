@@ -9,7 +9,7 @@
 		"dev": "npx -y kill-port 8787 && node ./scripts/dev-watch.mjs",
 		"build": "tsc",
 		"build:deploy": "node esbuild.deploy.mjs",
-		"start": "node dist/server.js",
+		"start": "node --env-file-if-exists=.env --env-file-if-exists=.env.local dist/server.js",
 		"test": "vitest run",
 		"type-check": "tsc --noEmit"
 	},

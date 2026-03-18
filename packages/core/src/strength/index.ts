@@ -1,11 +1,13 @@
-// ============================================================
-// Strength Training Utility Functions
-// Pure functions for 1RM estimation, volume computation,
-// and workout summarization.
-// Moved from apps/api/src/services/ai/utils/strength-utils.ts
-// ============================================================
-
-// ── Types ─────────────────────────────────────────────────────
+import {
+	type MuscleGroup,
+	type StrengthExercise,
+	type StrengthExerciseCatalogItem,
+	type StrengthSessionV1,
+	StrengthSessionV1Schema,
+	type StrengthSet,
+	type StrengthSetType,
+} from "@triathlon/types";
+import { findStrengthExerciseCatalogItem } from "./catalog.js";
 
 export interface SetData {
 	reps: number;
@@ -34,19 +36,224 @@ export interface ExerciseSummary {
 	group_type?: string;
 }
 
-// ── 1RM Estimation ────────────────────────────────────────────
+type LegacyUiSet = {
+	id?: string;
+	weightKg?: number;
+	reps?: number;
+	rpe?: number;
+	type?: "warmup" | "working" | "failure" | "drop";
+};
 
-/**
- * Rep-range-adaptive 1RM estimation.
- *
- * Formula selection based on research accuracy:
- *   - 1 rep   -> identity (actual 1RM)
- *   - <=6 reps -> Brzycki (most accurate for heavy loads)
- *   - 7-10    -> Epley (best for moderate rep ranges)
- *   - >10     -> Lombardi (most conservative, avoids overestimation)
- *
- * Returns the estimated 1RM in the same unit as weight, rounded to 1 decimal.
- */
+type LegacyUiExercise = {
+	id?: string;
+	name?: string;
+	muscleGroup?: MuscleGroup;
+	sets?: LegacyUiSet[];
+	notes?: string;
+};
+
+type LegacyUiStrengthSessionData = {
+	focus?: string;
+	exercises?: LegacyUiExercise[];
+};
+
+function isObject(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function mapLegacySetType(type: string | undefined): StrengthSetType {
+	switch (type) {
+		case "warmup":
+		case "working":
+		case "dropset":
+		case "backoff":
+		case "amrap":
+		case "cluster":
+			return type;
+		case "drop":
+			return "dropset";
+		case "failure":
+			return "amrap";
+		default:
+			return "working";
+	}
+}
+
+function normalizeSetFromLegacySnake(set: SetData, index: number): StrengthSet {
+	return {
+		id: `set-${index + 1}`,
+		order: index + 1,
+		setType: mapLegacySetType(set.set_type),
+		completed: true,
+		reps: set.reps,
+		weightKg: set.weight_kg,
+		rpe: set.rpe,
+		rir: set.rir,
+		tempo: set.tempo,
+	};
+}
+
+function normalizeSetFromLegacyUi(set: LegacyUiSet, index: number): StrengthSet {
+	return {
+		id: set.id ?? `set-${index + 1}`,
+		order: index + 1,
+		setType: mapLegacySetType(set.type),
+		completed: true,
+		reps: set.reps ?? 0,
+		weightKg: set.weightKg ?? 0,
+		rpe: set.rpe,
+	};
+}
+
+function buildExerciseFromCatalog(
+	name: string,
+	catalogItem: StrengthExerciseCatalogItem | null,
+): Pick<
+	StrengthExercise,
+	"catalogId" | "displayName" | "isCustom" | "equipment" | "movementPattern" | "primaryMuscleGroups"
+> {
+	return {
+		catalogId: catalogItem?.id,
+		displayName: catalogItem?.displayName ?? name,
+		isCustom: !catalogItem,
+		equipment: catalogItem?.equipment[0] ?? "other",
+		movementPattern: catalogItem?.movementPattern ?? "other",
+		primaryMuscleGroups: catalogItem?.primaryMuscleGroups ?? ["full"],
+	};
+}
+
+function normalizeFromLegacySnake(rawData: Record<string, unknown>): StrengthSessionV1 | null {
+	const rawExercises = rawData.exercises;
+	if (!Array.isArray(rawExercises)) {
+		return null;
+	}
+
+	const exercises = rawExercises
+		.map<StrengthExercise | null>((exercise, index) => {
+			if (!isObject(exercise)) {
+				return null;
+			}
+
+			const name = typeof exercise.name === "string" ? exercise.name : `Exercise ${index + 1}`;
+			const sets = Array.isArray(exercise.sets)
+				? (exercise.sets as SetData[]).map(normalizeSetFromLegacySnake)
+				: [];
+			const catalogItem = findStrengthExerciseCatalogItem(name);
+			return {
+				id: `exercise-${index + 1}`,
+				...buildExerciseFromCatalog(name, catalogItem),
+				notes: typeof exercise.notes === "string" ? exercise.notes : undefined,
+				restSec: undefined,
+				groupId:
+					typeof exercise.group_id === "number" && Number.isFinite(exercise.group_id)
+						? exercise.group_id
+						: undefined,
+				groupType:
+					exercise.group_type === "superset" ||
+					exercise.group_type === "circuit" ||
+					exercise.group_type === "giant_set"
+						? exercise.group_type
+						: undefined,
+				sets,
+			};
+		})
+		.filter((exercise): exercise is StrengthExercise => exercise !== null);
+
+	return {
+		schemaVersion: 1,
+		activityType: "STRENGTH",
+		mode: "log_past",
+		status: "completed",
+		source:
+			isObject(rawData.metadata) &&
+			(rawData.metadata.source === "AI" ||
+				rawData.metadata.source === "COACH" ||
+				rawData.metadata.source === "MANUAL")
+				? rawData.metadata.source
+				: "MANUAL",
+		focus: typeof rawData.focus === "string" ? rawData.focus : undefined,
+		sessionNotes: typeof rawData.notes === "string" ? rawData.notes : undefined,
+		exercises,
+	};
+}
+
+function normalizeFromLegacyUi(rawData: Record<string, unknown>): StrengthSessionV1 | null {
+	const data = rawData as LegacyUiStrengthSessionData;
+	if (!Array.isArray(data.exercises)) {
+		return null;
+	}
+
+	const exercises: StrengthExercise[] = data.exercises.map((exercise, index) => {
+		const name = exercise.name ?? `Exercise ${index + 1}`;
+		const catalogItem = findStrengthExerciseCatalogItem(name);
+		return {
+			id: exercise.id ?? `exercise-${index + 1}`,
+			...buildExerciseFromCatalog(name, catalogItem),
+			primaryMuscleGroups:
+				exercise.muscleGroup && !catalogItem
+					? [exercise.muscleGroup]
+					: buildExerciseFromCatalog(name, catalogItem).primaryMuscleGroups,
+			notes: exercise.notes,
+			restSec: undefined,
+			sets: (exercise.sets ?? []).map(normalizeSetFromLegacyUi),
+		};
+	});
+
+	return {
+		schemaVersion: 1,
+		activityType: "STRENGTH",
+		mode: "log_past",
+		status: "completed",
+		source: "MANUAL",
+		focus: data.focus,
+		exercises,
+	};
+}
+
+export function normalizeStrengthSession(rawData: unknown): StrengthSessionV1 | null {
+	if (!isObject(rawData)) {
+		return null;
+	}
+
+	const parsed = StrengthSessionV1Schema.safeParse(rawData);
+	if (parsed.success) {
+		return parsed.data;
+	}
+
+	const rawExercises = rawData.exercises;
+	if (Array.isArray(rawExercises) && rawExercises.length > 0) {
+		const firstExercise = rawExercises[0];
+		if (isObject(firstExercise) && Array.isArray(firstExercise.sets)) {
+			const firstSet = firstExercise.sets[0];
+			if (isObject(firstSet) && "weight_kg" in firstSet) {
+				return normalizeFromLegacySnake(rawData);
+			}
+			if (isObject(firstSet) && "weightKg" in firstSet) {
+				return normalizeFromLegacyUi(rawData);
+			}
+		}
+	}
+
+	return null;
+}
+
+export function strengthSessionToLegacyExercises(session: StrengthSessionV1): ExerciseData[] {
+	return session.exercises.map((exercise) => ({
+		name: exercise.displayName,
+		notes: exercise.notes,
+		group_id: exercise.groupId,
+		group_type: exercise.groupType,
+		sets: exercise.sets.map((set) => ({
+			reps: set.reps ?? 0,
+			weight_kg: set.weightKg ?? 0,
+			rpe: set.rpe,
+			rir: set.rir,
+			tempo: set.tempo,
+			set_type: set.setType,
+		})),
+	}));
+}
+
 export function estimate1RM(weight: number, reps: number): number | null {
 	if (weight <= 0 || reps <= 0) return null;
 	if (reps === 1) return weight;
@@ -54,31 +261,24 @@ export function estimate1RM(weight: number, reps: number): number | null {
 	let estimate: number;
 
 	if (reps <= 6) {
-		// Brzycki: 1RM = W / (1.0278 - 0.0278 x R)
 		const denominator = 1.0278 - 0.0278 * reps;
 		if (denominator <= 0) return null;
 		estimate = weight / denominator;
 	} else if (reps <= 10) {
-		// Epley: 1RM = W x (1 + R / 30)
 		estimate = weight * (1 + reps / 30);
 	} else {
-		// Lombardi: 1RM = W x R^0.10
 		estimate = weight * reps ** 0.1;
 	}
 
 	return Math.round(estimate * 10) / 10;
 }
 
-// ── Volume Computation ────────────────────────────────────────
-
-/** Compute total volume (weight x reps) from working sets only. Excludes warmup sets. */
 export function computeVolume(sets: SetData[]): number {
 	return sets
 		.filter((s) => s.set_type !== "warmup")
 		.reduce((sum, s) => sum + s.weight_kg * s.reps, 0);
 }
 
-/** Find the "top set" — the working set with the highest estimated 1RM. */
 export function findTopSet(sets: SetData[]): SetData | null {
 	const workingSets = sets.filter((s) => s.set_type !== "warmup");
 	if (workingSets.length === 0) return null;
@@ -86,52 +286,53 @@ export function findTopSet(sets: SetData[]): SetData | null {
 	let best: SetData | null = null;
 	let bestE1RM = 0;
 
-	for (const s of workingSets) {
-		const e1rm = estimate1RM(s.weight_kg, s.reps);
-		if (e1rm !== null && e1rm > bestE1RM) {
-			bestE1RM = e1rm;
-			best = s;
+	for (const set of workingSets) {
+		const estimated = estimate1RM(set.weight_kg, set.reps);
+		if (estimated !== null && estimated > bestE1RM) {
+			bestE1RM = estimated;
+			best = set;
 		}
 	}
 
 	return best;
 }
 
-// ── Workout Summarization ─────────────────────────────────────
-
-/** Parse raw_data from a STRENGTH workout into a compact summary. */
 export function summarizeStrengthWorkout(rawData: unknown): ExerciseSummary[] {
-	if (!rawData || typeof rawData !== "object") return [];
+	const session = normalizeStrengthSession(rawData);
+	if (!session) {
+		return [];
+	}
 
-	const data = rawData as Record<string, unknown>;
-	const exercises = data.exercises as ExerciseData[] | undefined;
-	if (!Array.isArray(exercises)) return [];
-
-	return exercises.map((ex) => {
-		const workingSets = ex.sets.filter((s) => s.set_type !== "warmup");
-		const topSet = findTopSet(ex.sets);
-		const totalVolume = computeVolume(ex.sets);
-		const e1rm = topSet ? estimate1RM(topSet.weight_kg, topSet.reps) : null;
+	return strengthSessionToLegacyExercises(session).map((exercise) => {
+		const workingSets = exercise.sets.filter((set) => set.set_type !== "warmup");
+		const topSet = findTopSet(exercise.sets);
+		const totalVolume = computeVolume(exercise.sets);
+		const estimated = topSet ? estimate1RM(topSet.weight_kg, topSet.reps) : null;
 
 		return {
-			name: ex.name,
+			name: exercise.name,
 			workingSets: workingSets.length,
-			topSet: topSet ? { weight_kg: topSet.weight_kg, reps: topSet.reps, rpe: topSet.rpe } : null,
+			topSet: topSet
+				? {
+						weight_kg: topSet.weight_kg,
+						reps: topSet.reps,
+						rpe: topSet.rpe,
+					}
+				: null,
 			totalVolume_kg: totalVolume,
-			estimated1RM_kg: e1rm,
-			...(ex.group_id !== undefined && { group_id: ex.group_id }),
-			...(ex.group_type && { group_type: ex.group_type }),
+			estimated1RM_kg: estimated,
+			...(exercise.group_id !== undefined ? { group_id: exercise.group_id } : {}),
+			...(exercise.group_type ? { group_type: exercise.group_type } : {}),
 		};
 	});
 }
 
-/** Compute the average RPE across all working sets in a workout's exercises. */
 export function computeAverageRPE(exercises: ExerciseData[]): number | null {
 	const rpeValues: number[] = [];
-	for (const ex of exercises) {
-		for (const s of ex.sets) {
-			if (s.set_type !== "warmup" && s.rpe !== undefined) {
-				rpeValues.push(s.rpe);
+	for (const exercise of exercises) {
+		for (const set of exercise.sets) {
+			if (set.set_type !== "warmup" && set.rpe !== undefined) {
+				rpeValues.push(set.rpe);
 			}
 		}
 	}
@@ -139,14 +340,9 @@ export function computeAverageRPE(exercises: ExerciseData[]): number | null {
 	return Math.round((rpeValues.reduce((a, b) => a + b, 0) / rpeValues.length) * 10) / 10;
 }
 
-/** Compute total session volume across all exercises. */
 export function computeSessionVolume(exercises: ExerciseData[]): number {
-	return exercises.reduce((sum, ex) => sum + computeVolume(ex.sets), 0);
+	return exercises.reduce((sum, exercise) => sum + computeVolume(exercise.sets), 0);
 }
-
-// ── Frontend Strength Metrics ────────────────────────────────
-
-import type { StrengthSessionData } from "@triathlon/types";
 
 export type StrengthMetrics = {
 	weeklyVolumeLoad: number;
@@ -154,7 +350,6 @@ export type StrengthMetrics = {
 	muscleSplit: Record<string, number>;
 };
 
-/** Minimal workout shape for strength metric computation. */
 export type StrengthWorkoutLike = {
 	activityType: string;
 	startedAt: string;
@@ -162,7 +357,6 @@ export type StrengthWorkoutLike = {
 	rawData?: unknown;
 };
 
-/** Compute aggregate strength metrics for the last 7 days. */
 export function computeStrengthMetrics(workouts: StrengthWorkoutLike[]): StrengthMetrics {
 	const now = Date.now();
 	const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
@@ -174,21 +368,28 @@ export function computeStrengthMetrics(workouts: StrengthWorkoutLike[]): Strengt
 	let totalDensity = 0;
 	const muscleSplit: Record<string, number> = {};
 
-	for (const w of thisWeek) {
-		const data = w.rawData as StrengthSessionData | undefined;
-		if (!data?.exercises) continue;
+	for (const workout of thisWeek) {
+		const session = normalizeStrengthSession(workout.rawData);
+		if (!session?.exercises?.length) {
+			continue;
+		}
 
 		let sessionVolume = 0;
-		for (const ex of data.exercises) {
-			muscleSplit[ex.muscleGroup] = (muscleSplit[ex.muscleGroup] || 0) + ex.sets.length;
-			for (const set of ex.sets) {
-				sessionVolume += set.weightKg * set.reps;
+		for (const exercise of session.exercises) {
+			for (const muscleGroup of exercise.primaryMuscleGroups) {
+				muscleSplit[muscleGroup] = (muscleSplit[muscleGroup] || 0) + exercise.sets.length;
+			}
+			for (const set of exercise.sets) {
+				if (set.setType === "warmup") {
+					continue;
+				}
+				sessionVolume += (set.weightKg ?? 0) * (set.reps ?? 0);
 			}
 		}
 
 		totalVolume += sessionVolume;
-		if (w.durationSec > 0) {
-			totalDensity += sessionVolume / (w.durationSec / 60);
+		if (workout.durationSec > 0) {
+			totalDensity += sessionVolume / (workout.durationSec / 60);
 		}
 	}
 

@@ -21,12 +21,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useProfile } from "@/hooks/use-profile";
 
 const navItems = [
-	{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-	{ href: "/dashboard/workouts", label: "Workouts", icon: Dumbbell },
-	{ href: "/dashboard/training", label: "Training", icon: Calendar },
-	{ href: "/dashboard/coach", label: "AI Coach", icon: Brain },
-	{ href: "/dashboard/body-map", label: "Body Map", icon: Activity },
-	{ href: "/dashboard/settings", label: "Settings", icon: Settings },
+	{ href: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
+	{ href: "/dashboard/workouts" as const, label: "Workouts", icon: Dumbbell },
+	{ href: "/dashboard/training" as const, label: "Training", icon: Calendar },
+	{ href: "/dashboard/coach" as const, label: "AI Coach", icon: Brain },
+	{ href: "/dashboard/body-map" as const, label: "Body Map", icon: Activity },
+	{ href: "/dashboard/settings" as const, label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

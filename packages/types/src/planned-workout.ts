@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod/v4";
+import { StrengthSessionV1Schema } from "./strength.js";
 
 // ── Enums ──────────────────────────────────────────────────────
 
@@ -67,6 +68,9 @@ export const SessionData = z.object({
 });
 export type SessionData = z.infer<typeof SessionData>;
 
+export const PlannedSessionData = z.union([StrengthSessionV1Schema, SessionData]);
+export type PlannedSessionData = z.infer<typeof PlannedSessionData>;
+
 // ── Planned Workout Schema ─────────────────────────────────────
 
 export const PlannedWorkout = z.object({
@@ -91,7 +95,7 @@ export const PlannedWorkout = z.object({
 	intensity: Intensity.nullable().optional(),
 
 	// Structured data
-	sessionData: SessionData.optional().default({}),
+	sessionData: PlannedSessionData.optional().default({}),
 
 	// Status
 	status: PlannedWorkoutStatus.default("planned"),
@@ -132,7 +136,7 @@ export const AiPlannedSession = z.object({
 	intensity: Intensity,
 	targetRpe: z.number().int().min(1).max(10).optional(),
 	distanceKm: z.number().optional(),
-	sessionData: SessionData.optional(),
+	sessionData: PlannedSessionData.optional(),
 });
 export type AiPlannedSession = z.infer<typeof AiPlannedSession>;
 
@@ -170,7 +174,7 @@ export function dbRowToPlannedWorkout(row: Record<string, unknown>): PlannedWork
 		targetTss: (row.target_tss as number) || null,
 		targetRpe: (row.target_rpe as number) || null,
 		intensity: (row.intensity as PlannedWorkout["intensity"]) || null,
-		sessionData: (row.session_data as SessionData) || {},
+		sessionData: (row.session_data as PlannedSessionData) || {},
 		status: (row.status as PlannedWorkout["status"]) || "planned",
 		sortOrder: (row.sort_order as number) || 0,
 		notes: (row.notes as string) || null,

@@ -38,6 +38,7 @@ const connectSrc = [
 
 const nextConfig: NextConfig = {
 	reactCompiler: true,
+	typedRoutes: true,
 	output: "standalone",
 	basePath: "/workout",
 	outputFileTracingRoot: path.join(__dirname, "../../"),

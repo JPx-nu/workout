@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-	{ href: "/dashboard", label: "Home", icon: LayoutDashboard },
-	{ href: "/dashboard/workouts", label: "Workouts", icon: Dumbbell },
-	{ href: "/dashboard/training", label: "Training", icon: Calendar },
-	{ href: "/dashboard/coach", label: "Coach", icon: Brain },
-	{ href: "/dashboard/body-map", label: "Body", icon: Activity },
+	{ href: "/dashboard" as const, label: "Home", icon: LayoutDashboard },
+	{ href: "/dashboard/workouts" as const, label: "Workouts", icon: Dumbbell },
+	{ href: "/dashboard/training" as const, label: "Training", icon: Calendar },
+	{ href: "/dashboard/coach" as const, label: "Coach", icon: Brain },
+	{ href: "/dashboard/body-map" as const, label: "Body", icon: Activity },
 ];
 
 export function MobileNav() {

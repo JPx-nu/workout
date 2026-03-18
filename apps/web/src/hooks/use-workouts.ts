@@ -73,5 +73,6 @@ export function useWorkouts() {
 		setFilter,
 		isLoading,
 		error,
+		refetch: fetchWorkouts,
 	};
 }

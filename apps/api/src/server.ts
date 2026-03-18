@@ -20,6 +20,7 @@ import { mcpRoutes } from "./routes/mcp/index.js";
 import { onboardingRoutes } from "./routes/onboarding.js";
 import { plannedWorkoutsRoutes } from "./routes/planned-workouts/index.js";
 import { webhookRoutes } from "./routes/webhooks/index.js";
+import { workoutsRoutes } from "./routes/workouts/index.js";
 import { stopPolling } from "./services/integrations/webhook-queue.js";
 
 validateStartupEnv();
@@ -106,6 +107,7 @@ const routes = app
 	.route("/api/health", healthRoutes)
 	.route("/api/onboarding", onboardingRoutes)
 	.route("/api/planned-workouts", plannedWorkoutsRoutes)
+	.route("/api/workouts", workoutsRoutes)
 	.route("/api/integrations", integrationRoutes);
 
 // ── OpenAPI documentation ──────────────────────────────────────

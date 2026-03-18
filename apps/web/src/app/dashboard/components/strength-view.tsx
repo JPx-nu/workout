@@ -1,8 +1,7 @@
 "use client";
 
 import type { MappedWorkout, StrengthMetrics } from "@triathlon/core";
-import { formatDuration } from "@triathlon/core";
-import type { StrengthSessionData } from "@triathlon/types";
+import { formatDuration, normalizeStrengthSession } from "@triathlon/core";
 import { Activity, ChevronRight, Dumbbell, Timer, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
@@ -27,10 +26,11 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 				const dayWorkouts = workouts.filter((w) => w.startedAt.startsWith(dayStr));
 
 				const volume = dayWorkouts.reduce((acc, w) => {
-					const data = w.rawData as StrengthSessionData | undefined;
+					const data = normalizeStrengthSession(w.rawData);
 					if (!data) return acc;
 					const sessionVol = data.exercises.reduce(
-						(sAcc, ex) => sAcc + ex.sets.reduce((setAcc, s) => setAcc + s.weightKg * s.reps, 0),
+						(sAcc, ex) =>
+							sAcc + ex.sets.reduce((setAcc, s) => setAcc + (s.weightKg ?? 0) * (s.reps ?? 0), 0),
 						0,
 					);
 					return acc + sessionVol;
@@ -217,10 +217,11 @@ export function StrengthView({ workouts, metrics }: StrengthViewProps) {
 				</div>
 				<div className="space-y-3">
 					{recentWorkouts.map((w) => {
-						const data = w.rawData as StrengthSessionData | undefined;
+						const data = normalizeStrengthSession(w.rawData);
 						const volume =
 							data?.exercises.reduce(
-								(act, ex) => act + ex.sets.reduce((sact, s) => sact + s.weightKg * s.reps, 0),
+								(act, ex) =>
+									act + ex.sets.reduce((sact, s) => sact + (s.weightKg ?? 0) * (s.reps ?? 0), 0),
 								0,
 							) || 0;
 						const exerciseCount = data?.exercises.length || 0;

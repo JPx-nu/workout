@@ -11,6 +11,7 @@
 
 import { z } from "zod/v4";
 import { ActivityType, Intensity, PlannedWorkoutStatus, WorkoutSource } from "./planned-workout.js";
+import { StrengthSessionV1Schema } from "./strength.js";
 
 // ── String Sanitizers ──────────────────────────────────────────
 
@@ -60,6 +61,39 @@ export const WorkoutInput = z.object({
 	raw_data: z.record(z.string(), z.unknown()).optional(),
 });
 export type WorkoutInput = z.infer<typeof WorkoutInput>;
+
+export const CompletedWorkoutInput = z
+	.object({
+		activityType: ActivityType,
+		startedAt: z.iso.datetime({ message: "startedAt must be ISO 8601 datetime" }),
+		durationSec: z.number().int().min(0).optional(),
+		distanceM: z.number().nonnegative().optional(),
+		avgHr: z.number().int().min(30).max(250).optional(),
+		tss: z.number().nonnegative().optional(),
+		notes: sanitizedString.pipe(z.string().max(2000)).optional(),
+		plannedWorkoutId: z.uuid().optional(),
+		rawData: z.record(z.string(), z.unknown()).optional(),
+		strengthSession: StrengthSessionV1Schema.optional(),
+	})
+	.superRefine((value, ctx) => {
+		if (value.activityType === "STRENGTH" && !value.strengthSession && !value.rawData) {
+			ctx.addIssue({
+				code: "custom",
+				path: ["strengthSession"],
+				message: "Strength workouts require strengthSession or rawData",
+			});
+		}
+	});
+export type CompletedWorkoutInput = z.infer<typeof CompletedWorkoutInput>;
+
+export const CompletedWorkoutUpdate = z.object({
+	avgHr: z.number().int().min(30).max(250).optional(),
+	tss: z.number().nonnegative().optional(),
+	notes: sanitizedString.pipe(z.string().max(2000)).optional(),
+	rawData: z.record(z.string(), z.unknown()).optional(),
+	strengthSession: StrengthSessionV1Schema.optional(),
+});
+export type CompletedWorkoutUpdate = z.infer<typeof CompletedWorkoutUpdate>;
 
 // ── Profile Schemas ────────────────────────────────────────────
 
@@ -182,7 +216,8 @@ export const PlannedWorkoutInput = z.object({
 	targetTss: z.number().nonnegative().optional(),
 	targetRpe: z.number().int().min(1).max(10).optional(),
 	intensity: Intensity.optional(),
-	sessionData: z.record(z.string(), z.unknown()).optional(),
+	sessionData: z.union([StrengthSessionV1Schema, z.record(z.string(), z.unknown())]).optional(),
+	status: PlannedWorkoutStatus.optional(),
 	sortOrder: z.number().int().nonnegative().optional(),
 	notes: sanitizedString.pipe(z.string().max(2000)).optional(),
 	coachNotes: sanitizedString.pipe(z.string().max(2000)).optional(),
@@ -202,13 +237,18 @@ export const PlannedWorkoutUpdate = z.object({
 	targetTss: z.number().nonnegative().optional(),
 	targetRpe: z.number().int().min(1).max(10).optional(),
 	intensity: Intensity.optional(),
-	sessionData: z.record(z.string(), z.unknown()).optional(),
+	sessionData: z.union([StrengthSessionV1Schema, z.record(z.string(), z.unknown())]).optional(),
 	status: PlannedWorkoutStatus.optional(),
 	sortOrder: z.number().int().nonnegative().optional(),
 	notes: sanitizedString.pipe(z.string().max(2000)).optional(),
 	coachNotes: sanitizedString.pipe(z.string().max(2000)).optional(),
 });
 export type PlannedWorkoutUpdate = z.infer<typeof PlannedWorkoutUpdate>;
+
+export const PlannedWorkoutBatchInput = z.object({
+	workouts: z.array(PlannedWorkoutInput).min(1).max(50),
+});
+export type PlannedWorkoutBatchInput = z.infer<typeof PlannedWorkoutBatchInput>;
 
 // ── Webhook Schemas ────────────────────────────────────────────
 

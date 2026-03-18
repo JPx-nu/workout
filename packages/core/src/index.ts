@@ -2,13 +2,18 @@
 // @triathlon/core — Shared cross-platform business logic
 // ============================================================
 
+export {
+	findStrengthExerciseCatalogItem,
+	searchStrengthExerciseCatalog,
+	strengthExerciseCatalog,
+} from "./strength/catalog.js";
 export type {
 	ExerciseData,
 	ExerciseSummary,
 	SetData,
 	StrengthMetrics,
 	StrengthWorkoutLike,
-} from "./strength/index";
+} from "./strength/index.js";
 // Strength training
 export {
 	computeAverageRPE,
@@ -17,8 +22,10 @@ export {
 	computeVolume,
 	estimate1RM,
 	findTopSet,
+	normalizeStrengthSession,
+	strengthSessionToLegacyExercises,
 	summarizeStrengthWorkout,
-} from "./strength/index";
+} from "./strength/index.js";
 // Date utilities
 export {
 	daysUntil,
@@ -26,14 +33,14 @@ export {
 	lookbackDate,
 	progressPercent,
 	toIsoDate,
-} from "./utils/dates";
+} from "./utils/dates.js";
 // Formatting utilities
 export {
 	formatDuration,
 	formatPace,
 	mToKm,
 	secToMin,
-} from "./utils/formatters";
+} from "./utils/formatters.js";
 export type {
 	DailyLogRow,
 	MappedDailyLog,
@@ -41,13 +48,13 @@ export type {
 	MappedWorkout,
 	PlannedWorkoutRow,
 	WorkoutRow,
-} from "./utils/mappers";
+} from "./utils/mappers.js";
 // Data mappers
 export {
 	mapDailyLogRow,
 	mapPlannedWorkoutRow,
 	mapWorkoutRow,
-} from "./utils/mappers";
+} from "./utils/mappers.js";
 export type {
 	ActivityStats,
 	ChartDataPoint,
@@ -56,7 +63,7 @@ export type {
 	MuscleFatigue,
 	WeeklyStats,
 	WorkoutLike,
-} from "./utils/stats";
+} from "./utils/stats.js";
 // Statistics & health
 export {
 	computeAverage,
@@ -68,4 +75,4 @@ export {
 	estimateSessionLoad,
 	mergeInjuriesToMuscleGroups,
 	severityToFatigueLevel,
-} from "./utils/stats";
+} from "./utils/stats.js";

@@ -6,6 +6,7 @@ import {
 	type ExerciseData,
 	estimate1RM,
 	findTopSet,
+	normalizeStrengthSession,
 	type SetData,
 	summarizeStrengthWorkout,
 } from "../strength/index";
@@ -141,7 +142,7 @@ describe("summarizeStrengthWorkout", () => {
 
 		const summary = summarizeStrengthWorkout(rawData);
 		expect(summary).toHaveLength(1);
-		expect(summary[0].name).toBe("Squat");
+		expect(summary[0].name).toBe("Barbell Back Squat");
 		expect(summary[0].workingSets).toBe(2);
 		expect(summary[0].totalVolume_kg).toBe(1000);
 		expect(summary[0].estimated1RM_kg).not.toBeNull();
@@ -174,6 +175,62 @@ describe("summarizeStrengthWorkout", () => {
 		const summary = summarizeStrengthWorkout(rawData);
 		expect(summary[0].group_id).toBe(1);
 		expect(summary[0].group_type).toBe("superset");
+	});
+});
+
+describe("normalizeStrengthSession", () => {
+	it("accepts canonical strength session payloads", () => {
+		const session = normalizeStrengthSession({
+			schemaVersion: 1,
+			activityType: "STRENGTH",
+			mode: "log_past",
+			status: "completed",
+			source: "MANUAL",
+			sessionNotes: "Maintenance day",
+			exercises: [
+				{
+					id: "exercise-1",
+					displayName: "Barbell Bench Press",
+					isCustom: false,
+					equipment: "barbell",
+					movementPattern: "horizontal_push",
+					primaryMuscleGroups: ["chest", "shoulders", "arms"],
+					sets: [
+						{
+							id: "set-1",
+							order: 1,
+							setType: "working",
+							completed: true,
+							reps: 5,
+							weightKg: 90,
+							rpe: 8,
+						},
+					],
+				},
+			],
+		});
+
+		expect(session).not.toBeNull();
+		expect(session?.exercises[0]?.displayName).toBe("Barbell Bench Press");
+		expect(session?.exercises[0]?.sets[0]?.weightKg).toBe(90);
+	});
+
+	it("normalizes legacy UI strength data", () => {
+		const session = normalizeStrengthSession({
+			focus: "Push day",
+			exercises: [
+				{
+					id: "legacy-1",
+					name: "Bench Press",
+					muscleGroup: "chest",
+					sets: [{ id: "set-1", reps: 8, weightKg: 70, rpe: 7, type: "working" }],
+				},
+			],
+		});
+
+		expect(session).not.toBeNull();
+		expect(session?.exercises[0]?.displayName).toBe("Barbell Bench Press");
+		expect(session?.focus).toBe("Push day");
 	});
 });
 

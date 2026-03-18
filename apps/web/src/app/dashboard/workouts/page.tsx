@@ -2,6 +2,7 @@
 
 import { formatDuration, formatPace, mToKm } from "@triathlon/core";
 import { Filter } from "lucide-react";
+import Link from "next/link";
 import { useWorkouts } from "@/hooks/use-workouts";
 import { getActivityConfig } from "@/lib/activity-config";
 
@@ -17,6 +18,9 @@ export default function WorkoutsPage() {
 						{allWorkouts.length} workouts recorded
 					</p>
 				</div>
+				<Link href="/dashboard/workouts/new" className="btn-primary text-sm px-4 py-2">
+					Log workout
+				</Link>
 			</div>
 
 			{/* Filters */}

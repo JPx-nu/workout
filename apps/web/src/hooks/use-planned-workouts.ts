@@ -12,7 +12,7 @@ import { getApiConfigurationError, getApiUrl } from "@/lib/constants";
 
 export type PlannedWorkout = MappedPlannedWorkout;
 
-export function usePlannedWorkouts(from: string, to: string) {
+export function usePlannedWorkouts(from: string, to: string, status?: string) {
 	const { session } = useAuth();
 	const [workouts, setWorkouts] = useState<PlannedWorkout[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +33,13 @@ export function usePlannedWorkouts(from: string, to: string) {
 				throw new Error(configError);
 			}
 
-			const res = await fetch(getApiUrl(`/api/planned-workouts?from=${from}&to=${to}`), {
+			const query = new URLSearchParams({
+				from,
+				to,
+				...(status ? { status } : {}),
+			});
+
+			const res = await fetch(getApiUrl(`/api/planned-workouts?${query.toString()}`), {
 				headers: {
 					Authorization: `Bearer ${session.access_token}`,
 					"Content-Type": "application/json",
@@ -51,7 +57,7 @@ export function usePlannedWorkouts(from: string, to: string) {
 		} finally {
 			setIsLoading(false);
 		}
-	}, [session?.access_token, from, to]);
+	}, [session?.access_token, from, to, status]);
 
 	useEffect(() => {
 		void fetchWorkouts();
@@ -129,6 +135,7 @@ export function usePlannedWorkouts(from: string, to: string) {
 		isLoading,
 		error,
 		refetch: fetchWorkouts,
+		setWorkouts,
 		updateWorkout,
 		deleteWorkout,
 	};

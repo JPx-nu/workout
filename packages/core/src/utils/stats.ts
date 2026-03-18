@@ -4,7 +4,7 @@
 // and health data arrays.
 // ============================================================
 
-import { toIsoDate } from "./dates";
+import { toIsoDate } from "./dates.js";
 
 // ── Types ─────────────────────────────────────────────────────
 

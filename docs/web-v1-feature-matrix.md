@@ -1,6 +1,6 @@
 # Web v1 Feature Matrix
 
-Last Updated: 2026-03-11
+Last Updated: 2026-03-17
 
 | Area | Status | Notes |
 |---|---|---|
@@ -9,6 +9,7 @@ Last Updated: 2026-03-11
 | Onboarding flow | Shipped | Completion now falls back to direct profile persistence if API transport fails |
 | Dashboard views | Shipped | Triathlon and strength default views backed by live profile state |
 | Workout history | Shipped | Reads from live workouts data |
+| Workout Center | Shipped | `/workout/dashboard/workouts/new` supports `start now`, quick past logs, and future scheduling with a strength-first structured editor |
 | Training calendar | Shipped | Uses planned-workout API routes and supported status updates |
 | AI Coach streaming chat | Shipped | Uses `/api/ai/stream`, conversation history, and image attachments |
 | AI Coach onboarding prompt | Beta-hardening | Optional coach step; onboarding completion no longer depends on coach success |

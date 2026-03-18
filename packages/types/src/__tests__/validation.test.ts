@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
 	ChatMessageInput,
+	CompletedWorkoutInput,
 	DailyLogInput,
 	InjuryInput,
+	PlannedWorkoutBatchInput,
 	PlannedWorkoutInput,
 	PlannedWorkoutUpdate,
 	ProfileUpdate,
@@ -127,6 +129,55 @@ describe("WorkoutInput", () => {
 			distance_m: 1500,
 		});
 		expect(result.success).toBe(true);
+	});
+});
+
+describe("CompletedWorkoutInput", () => {
+	const strengthSession = {
+		schemaVersion: 1,
+		activityType: "STRENGTH",
+		mode: "log_past",
+		status: "completed",
+		source: "MANUAL",
+		exercises: [
+			{
+				id: "exercise-1",
+				displayName: "Barbell Back Squat",
+				isCustom: false,
+				equipment: "barbell",
+				movementPattern: "squat",
+				primaryMuscleGroups: ["legs", "quads", "glutes"],
+				sets: [
+					{
+						id: "set-1",
+						order: 1,
+						setType: "working",
+						completed: true,
+						reps: 5,
+						weightKg: 100,
+					},
+				],
+			},
+		],
+	};
+
+	it("accepts strength workouts with canonical session data", () => {
+		const result = CompletedWorkoutInput.safeParse({
+			activityType: "STRENGTH",
+			startedAt: "2026-03-01T10:00:00Z",
+			durationSec: 1800,
+			notes: "Standard maintenance",
+			strengthSession,
+		});
+		expect(result.success).toBe(true);
+	});
+
+	it("rejects strength workouts without strength session data", () => {
+		const result = CompletedWorkoutInput.safeParse({
+			activityType: "STRENGTH",
+			startedAt: "2026-03-01T10:00:00Z",
+		});
+		expect(result.success).toBe(false);
 	});
 });
 
@@ -281,6 +332,28 @@ describe("PlannedWorkoutUpdate", () => {
 	it("accepts date change for drag-drop", () => {
 		const result = PlannedWorkoutUpdate.safeParse({
 			plannedDate: "2026-03-05",
+		});
+		expect(result.success).toBe(true);
+	});
+});
+
+describe("PlannedWorkoutBatchInput", () => {
+	it("accepts multiple planned sessions", () => {
+		const result = PlannedWorkoutBatchInput.safeParse({
+			workouts: [
+				{
+					plannedDate: "2026-03-01",
+					activityType: "STRENGTH",
+					title: "Strength A",
+					status: "planned",
+				},
+				{
+					plannedDate: "2026-03-03",
+					activityType: "RUN",
+					title: "Easy run",
+					durationMin: 45,
+				},
+			],
 		});
 		expect(result.success).toBe(true);
 	});

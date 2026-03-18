@@ -5,12 +5,21 @@
  * (applied in server.ts for /api/* routes).
  */
 
-import { PlannedWorkoutInput, PlannedWorkoutUpdate } from "@triathlon/types";
+import {
+	PlannedWorkoutBatchInput,
+	PlannedWorkoutInput,
+	PlannedWorkoutUpdate,
+} from "@triathlon/types";
 import { Hono } from "hono";
 import { createLogger } from "../../lib/logger.js";
 import { getAuth } from "../../middleware/auth.js";
 import { isResponse, parseBody } from "../../middleware/validate.js";
 import { createAdminClient } from "../../services/ai/supabase.js";
+import {
+	createPlannedWorkout,
+	scheduleSessionsBatch,
+	updatePlannedWorkout,
+} from "../../services/workout-center.js";
 
 const log = createLogger({ module: "planned-workouts" });
 
@@ -80,39 +89,47 @@ plannedWorkoutsRoutes.post("/", async (c) => {
 	const body = await parseBody(c, PlannedWorkoutInput);
 	if (isResponse(body)) return body;
 
-	const supabase = createAdminClient();
-	const { data, error } = await supabase
-		.from("planned_workouts")
-		.insert({
-			athlete_id: userId,
-			club_id: clubId,
-			plan_id: body.planId || null,
-			planned_date: body.plannedDate,
-			planned_time: body.plannedTime || null,
-			activity_type: body.activityType,
-			title: body.title,
-			description: body.description || null,
-			duration_min: body.durationMin || null,
-			distance_km: body.distanceKm || null,
-			target_tss: body.targetTss || null,
-			target_rpe: body.targetRpe || null,
-			intensity: body.intensity || null,
-			session_data: body.sessionData || {},
-			status: "planned",
-			sort_order: body.sortOrder || 0,
-			notes: body.notes || null,
-			coach_notes: body.coachNotes || null,
-			source: body.source || "MANUAL",
-		})
-		.select()
-		.single();
-
-	if (error) {
+	try {
+		const supabase = createAdminClient();
+		const data = await createPlannedWorkout(supabase, {
+			...body,
+			athleteId: userId,
+			clubId,
+		});
+		return c.json({ data }, 201);
+	} catch (error) {
 		log.error({ err: error }, "Failed to create planned workout");
-		return c.json({ error: error.message }, 500);
+		return c.json(
+			{
+				error: error instanceof Error ? error.message : "Failed to create planned workout",
+			},
+			500,
+		);
 	}
+});
 
-	return c.json({ data }, 201);
+plannedWorkoutsRoutes.post("/batch", async (c) => {
+	const { userId, clubId } = getAuth(c);
+	const body = await parseBody(c, PlannedWorkoutBatchInput);
+	if (isResponse(body)) return body;
+
+	try {
+		const supabase = createAdminClient();
+		const data = await scheduleSessionsBatch(supabase, {
+			athleteId: userId,
+			clubId,
+			workouts: body.workouts,
+		});
+		return c.json({ data }, 201);
+	} catch (error) {
+		log.error({ err: error, userId }, "Failed to batch schedule workouts");
+		return c.json(
+			{
+				error: error instanceof Error ? error.message : "Failed to batch schedule workouts",
+			},
+			500,
+		);
+	}
 });
 
 // ── PATCH /api/planned-workouts/:id ────────────────────────────
@@ -123,43 +140,23 @@ plannedWorkoutsRoutes.patch("/:id", async (c) => {
 	const body = await parseBody(c, PlannedWorkoutUpdate);
 	if (isResponse(body)) return body;
 
-	// Map camelCase to snake_case for the fields being updated
-	const updateData: Record<string, unknown> = {};
-	if (body.plannedDate !== undefined) updateData.planned_date = body.plannedDate;
-	if (body.plannedTime !== undefined) updateData.planned_time = body.plannedTime;
-	if (body.activityType !== undefined) updateData.activity_type = body.activityType;
-	if (body.title !== undefined) updateData.title = body.title;
-	if (body.description !== undefined) updateData.description = body.description;
-	if (body.durationMin !== undefined) updateData.duration_min = body.durationMin;
-	if (body.distanceKm !== undefined) updateData.distance_km = body.distanceKm;
-	if (body.targetTss !== undefined) updateData.target_tss = body.targetTss;
-	if (body.targetRpe !== undefined) updateData.target_rpe = body.targetRpe;
-	if (body.intensity !== undefined) updateData.intensity = body.intensity;
-	if (body.sessionData !== undefined) updateData.session_data = body.sessionData;
-	if (body.status !== undefined) updateData.status = body.status;
-	if (body.sortOrder !== undefined) updateData.sort_order = body.sortOrder;
-	if (body.notes !== undefined) updateData.notes = body.notes;
-	if (body.coachNotes !== undefined) updateData.coach_notes = body.coachNotes;
-
-	if (Object.keys(updateData).length === 0) {
+	if (Object.keys(body).length === 0) {
 		return c.json({ error: "No fields to update" }, 400);
 	}
 
-	const supabase = createAdminClient();
-	const { data, error } = await supabase
-		.from("planned_workouts")
-		.update(updateData)
-		.eq("id", id)
-		.eq("athlete_id", userId)
-		.select()
-		.single();
-
-	if (error) {
+	try {
+		const supabase = createAdminClient();
+		const data = await updatePlannedWorkout(supabase, id, userId, body);
+		return c.json({ data });
+	} catch (error) {
 		log.error({ err: error }, "Failed to update planned workout");
-		return c.json({ error: error.message }, 500);
+		return c.json(
+			{
+				error: error instanceof Error ? error.message : "Failed to update planned workout",
+			},
+			500,
+		);
 	}
-
-	return c.json({ data });
 });
 
 // ── PATCH /api/planned-workouts/:id/complete ───────────────────
