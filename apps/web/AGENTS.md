@@ -14,6 +14,7 @@ Guidance for `apps/web`.
 - Dev port is `3100`. The deployed app serves under basePath `/workout`.
 - The `@/*` import alias is local to this workspace.
 - Keep data hooks backed by live Supabase or API calls. Do not reintroduce `src/lib/mock` or local placeholder data flows.
+- Browser and end-to-end verification must use live data and real services. Mocked or stubbed browser runs do not count as final validation unless the user explicitly approves an exception.
 - Read public env vars in `apps/web/src` with static `process.env.NEXT_PUBLIC_*` property access only. `pnpm lint` runs `scripts/check-web-public-env-access.mjs` and will fail dynamic access.
 - Reuse `src/lib/constants.ts` and existing hook patterns for API base URLs and auth-aware fetches.
 - If you touch settings or integrations, preserve the live `/api/integrations/status` contract and action-route flow.
@@ -31,3 +32,4 @@ Guidance for `apps/web`.
 - Always finish with root `pnpm lint` and `pnpm type-check`; the repo pre-commit hook runs both and can still block the commit after targeted web checks pass.
 - `pnpm --filter web lint`
 - `pnpm --filter web build` for route, config, CSP, env, or deployment-behavior changes
+- `pnpm --filter web test:e2e` for browser-visible workflow changes when a live Playwright environment and credentials are available

@@ -21,6 +21,10 @@ Tooling:
 - `turbo`
 - `biome`
 - `vitest`
+- API end-to-end user-flow tests run through `pnpm --filter @triathlon/api test:e2e`
+- Web Playwright browser tests run through `pnpm --filter web test:e2e` against a live environment
+- Local Playwright runs auto-start the real API and web dev servers when targeting `http://localhost:3100/workout`
+- Playwright auth uses explicit `PLAYWRIGHT_TEST_EMAIL` / `PLAYWRIGHT_TEST_PASSWORD` when provided; otherwise local runs fall back to the live demo athlete account
 - Azure App Service deploy targets: `jpx-workout-web`, `jpx-workout-api`
 
 Repo notes:

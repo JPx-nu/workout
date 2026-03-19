@@ -44,8 +44,14 @@ Not currently shipped as supported product surface:
 - `pnpm test`
 - `pnpm check:env-keys`
 - `pnpm --filter web build`
+- `pnpm --filter web test:e2e`
 - `pnpm --filter @triathlon/api test`
+- `pnpm --filter @triathlon/api test:e2e`
 - `pnpm --filter @triathlon/api build:deploy`
+
+Playwright note:
+- `pnpm --filter web test:e2e` auto-starts the local web/API stack when targeting `http://localhost:3100/workout`
+- it uses explicit `PLAYWRIGHT_TEST_EMAIL` / `PLAYWRIGHT_TEST_PASSWORD` when provided, otherwise it falls back to the live demo athlete account
 
 ## Source-of-Truth Docs
 

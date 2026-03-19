@@ -341,6 +341,7 @@ export default function CoachPage() {
 						value={input}
 						onChange={(e) => setInput(e.target.value)}
 						onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+						data-testid="coach-input"
 						placeholder={
 							attachedFiles.length > 0
 								? "Describe what you want to know about these images..."
@@ -364,6 +365,7 @@ export default function CoachPage() {
 							type="button"
 							onClick={() => void sendMessage()}
 							disabled={!input.trim()}
+							data-testid="coach-send-button"
 							className="btn-primary px-4 disabled:opacity-40 disabled:cursor-not-allowed"
 							aria-label={isResponding ? "Send and interrupt" : "Send message"}
 						>

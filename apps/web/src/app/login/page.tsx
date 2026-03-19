@@ -184,6 +184,7 @@ export default function LoginPage() {
 									type="button"
 									onClick={handleDemoLogin}
 									disabled={loading}
+									data-testid="demo-login-button"
 									className="w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
 									style={{
 										background:
@@ -275,6 +276,7 @@ export default function LoginPage() {
 									type="email"
 									autoComplete="email"
 									required
+									data-testid="login-email"
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									className="w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-all duration-200"
@@ -301,6 +303,7 @@ export default function LoginPage() {
 									autoComplete={mode === "signup" ? "new-password" : "current-password"}
 									required
 									minLength={mode === "signup" ? 6 : undefined}
+									data-testid="login-password"
 									value={password}
 									onChange={(e) => setPassword(e.target.value)}
 									className="w-full rounded-lg px-3 py-2.5 text-sm outline-none transition-all duration-200"
@@ -316,6 +319,7 @@ export default function LoginPage() {
 							<button
 								type="submit"
 								disabled={loading}
+								data-testid="login-submit"
 								className="w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50"
 								style={{
 									background:

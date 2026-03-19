@@ -55,7 +55,7 @@ function pad(value: number): string {
 	return value.toString().padStart(2, "0");
 }
 
-function dateToInputValue(date: Date): string {
+export function toDateInputValue(date: Date): string {
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
@@ -95,7 +95,7 @@ function splitIsoDateTime(value?: string | null): { date: string; time: string }
 	if (!value) {
 		const now = new Date();
 		return {
-			date: dateToInputValue(now),
+			date: toDateInputValue(now),
 			time: timeToInputValue(now),
 		};
 	}
@@ -104,13 +104,13 @@ function splitIsoDateTime(value?: string | null): { date: string; time: string }
 	if (Number.isNaN(date.getTime())) {
 		const fallback = new Date();
 		return {
-			date: dateToInputValue(fallback),
+			date: toDateInputValue(fallback),
 			time: timeToInputValue(fallback),
 		};
 	}
 
 	return {
-		date: dateToInputValue(date),
+		date: toDateInputValue(date),
 		time: timeToInputValue(date),
 	};
 }
@@ -157,7 +157,7 @@ export function createEmptyWorkoutForm(
 		description: "",
 		notes: "",
 		focus: "",
-		date: dateToInputValue(now),
+		date: toDateInputValue(now),
 		time: timeToInputValue(now),
 		durationMin: "",
 		distanceKm: "",
@@ -165,7 +165,7 @@ export function createEmptyWorkoutForm(
 		tss: "",
 		intensity: "",
 		targetRpe: "",
-		exercises: activityType === "STRENGTH" ? [createExerciseFromCatalog()] : [],
+		exercises: activityType === "STRENGTH" ? [] : [],
 	};
 }
 
@@ -335,7 +335,7 @@ export function hydrateFormFromWorkout(workout: MappedWorkout): WorkoutCenterFor
 				: "",
 		targetRpe:
 			typeof workout.rawData?.targetRpe === "number" ? String(workout.rawData.targetRpe) : "",
-		exercises: workout.activityType === "STRENGTH" ? [createExerciseFromCatalog()] : [],
+		exercises: workout.activityType === "STRENGTH" ? [] : [],
 	};
 }
 
@@ -380,7 +380,7 @@ export function hydrateFormFromPlannedWorkout(
 		tss: workout.targetTss ? String(workout.targetTss) : "",
 		intensity: (workout.intensity as WorkoutCenterIntensity | null) ?? "",
 		targetRpe: workout.targetRpe ? String(workout.targetRpe) : "",
-		exercises: workout.activityType === "STRENGTH" ? [createExerciseFromCatalog()] : [],
+		exercises: workout.activityType === "STRENGTH" ? [] : [],
 	};
 }
 

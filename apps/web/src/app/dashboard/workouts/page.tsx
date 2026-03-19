@@ -18,7 +18,11 @@ export default function WorkoutsPage() {
 						{allWorkouts.length} workouts recorded
 					</p>
 				</div>
-				<Link href="/dashboard/workouts/new" className="btn-primary text-sm px-4 py-2">
+				<Link
+					href="/dashboard/workouts/new"
+					className="btn-primary text-sm px-4 py-2"
+					data-testid="log-workout-link"
+				>
 					Log workout
 				</Link>
 			</div>

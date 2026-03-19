@@ -8,8 +8,12 @@
 		"build": "next build --webpack",
 		"prebuild": "pnpm run build:deps",
 		"predev": "pnpm run build:deps",
-		"start": "next start",
-		"lint": "node ../../scripts/check-web-public-env-access.mjs && biome check ."
+		"start": "node .next/standalone/apps/web/server.js",
+		"lint": "node ../../scripts/check-web-public-env-access.mjs && biome check .",
+		"playwright:install": "playwright install --with-deps chromium",
+		"test:e2e": "playwright test",
+		"test:e2e:headed": "playwright test --headed",
+		"test:e2e:ui": "playwright test --ui"
 	},
 	"dependencies": {
 		"@ai-sdk/react": "^3.0.107",
@@ -42,6 +46,7 @@
 		"three": "^0.182.0"
 	},
 	"devDependencies": {
+		"@playwright/test": "^1.58.2",
 		"@tailwindcss/postcss": "^4.2.1",
 		"@types/node": "^20.19.34",
 		"@types/react": "^19.2.14",

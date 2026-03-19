@@ -139,7 +139,7 @@ export function StrengthEditor({
 	}
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-4" data-testid="strength-editor">
 			<div className="flex items-center justify-between gap-3">
 				<div>
 					<h2 className="text-lg font-semibold">Strength Builder</h2>
@@ -149,19 +149,46 @@ export function StrengthEditor({
 					</p>
 				</div>
 
-				<button type="button" onClick={onOpenPicker} className="btn-primary text-sm px-4 py-2">
+				<button
+					type="button"
+					onClick={onOpenPicker}
+					data-testid="add-exercise-button"
+					className="btn-primary text-sm px-4 py-2"
+				>
 					<Plus size={14} className="inline-block mr-1" />
 					Add exercise
 				</button>
 			</div>
 
 			<div className="space-y-4">
+				{exercises.length === 0 && (
+					<section
+						className="glass-card p-5 text-sm"
+						data-testid="strength-empty-state"
+						style={{ color: "var(--color-text-secondary)" }}
+					>
+						<p className="font-medium" style={{ color: "var(--color-text-primary)" }}>
+							Start with the main lift or machine you want to track.
+						</p>
+						<p className="mt-2">
+							Add an exercise to pull from the shared library, recent strength history, or a custom
+							machine name.
+						</p>
+						<button type="button" onClick={onOpenPicker} className="btn-primary mt-4 text-sm">
+							Add first exercise
+						</button>
+					</section>
+				)}
 				{exercises.map((exercise) => {
 					const previous =
 						previousLookup[exercise.catalogId ?? exercise.displayName.toLowerCase()] ?? null;
 
 					return (
-						<section key={exercise.id} className="glass-card p-4 lg:p-5 space-y-4">
+						<section
+							key={exercise.id}
+							className="glass-card p-4 lg:p-5 space-y-4"
+							data-testid={`exercise-card-${exercise.displayName.toLowerCase().replaceAll(" ", "-")}`}
+						>
 							<div className="flex flex-wrap items-start justify-between gap-3">
 								<div className="min-w-0 flex-1">
 									<div className="flex items-center gap-2">
@@ -180,11 +207,11 @@ export function StrengthEditor({
 												style={{ color: "var(--color-text-muted)" }}
 											>
 												<span>{exercise.equipment.replaceAll("_", " ")}</span>
-												<span>·</span>
+												<span>/</span>
 												<span>{exercise.movementPattern.replaceAll("_", " ")}</span>
 												{!!exercise.primaryMuscleGroups.length && (
 													<>
-														<span>·</span>
+														<span>/</span>
 														<span>{exercise.primaryMuscleGroups.join(", ")}</span>
 													</>
 												)}
@@ -205,13 +232,13 @@ export function StrengthEditor({
 												month: "short",
 												day: "numeric",
 											})}
-											{" · "}
+											{" / "}
 											{previous.sets
 												.filter((set) => set.weightKg !== undefined || set.reps !== undefined)
 												.slice(0, 2)
 												.map((set) => `${set.weightKg ?? 0} kg x ${set.reps ?? 0}`)
 												.join(", ") || "No logged sets"}
-											{previous.notes ? ` · ${previous.notes}` : ""}
+											{previous.notes ? ` / ${previous.notes}` : ""}
 										</div>
 									)}
 								</div>

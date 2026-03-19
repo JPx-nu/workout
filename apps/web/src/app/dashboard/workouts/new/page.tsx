@@ -16,6 +16,7 @@ import {
 	hydrateFormFromPlannedWorkout,
 	hydrateFormFromWorkout,
 	isFormMeaningful,
+	toDateInputValue,
 	type WorkoutCenterFormState,
 	type WorkoutCenterMode,
 } from "@/components/workout-center/model";
@@ -38,17 +39,13 @@ type QueueItem = {
 	payload: ReturnType<typeof buildPlannedWorkoutPayload>;
 };
 
-function toIsoDate(date: Date): string {
-	return date.toISOString().split("T")[0];
-}
-
 function getWideRange(): { from: string; to: string } {
 	const now = new Date();
 	const from = new Date(now);
 	from.setDate(from.getDate() - 365);
 	const to = new Date(now);
 	to.setDate(to.getDate() + 365);
-	return { from: toIsoDate(from), to: toIsoDate(to) };
+	return { from: toDateInputValue(from), to: toDateInputValue(to) };
 }
 
 function parseMode(value: string | null): WorkoutCenterMode {
@@ -302,12 +299,7 @@ export default function NewWorkoutPage() {
 		setForm((current) => ({
 			...current,
 			activityType: nextActivity,
-			exercises:
-				nextActivity === "STRENGTH"
-					? current.exercises.length > 0
-						? current.exercises
-						: [createExerciseFromCatalog()]
-					: [],
+			exercises: nextActivity === "STRENGTH" ? current.exercises : [],
 		}));
 	}
 
@@ -449,7 +441,7 @@ export default function NewWorkoutPage() {
 					: "Schedule sessions";
 
 	return (
-		<div className="space-y-6 animate-fade-in">
+		<div className="space-y-6 animate-fade-in" data-testid="workout-center-page">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<h1 className="text-2xl font-bold">Workout Center</h1>
@@ -470,6 +462,7 @@ export default function NewWorkoutPage() {
 
 			{message && (
 				<div
+					data-testid="workout-center-message"
 					className="rounded-xl px-4 py-3 text-sm"
 					style={{ background: "var(--color-glass-bg-subtle)" }}
 				>
@@ -493,6 +486,7 @@ export default function NewWorkoutPage() {
 							key={option.id}
 							type="button"
 							onClick={() => changeMode(option.id)}
+							data-testid={`mode-${option.id}`}
 							className="rounded-full px-4 py-2 text-sm font-semibold transition-colors"
 							style={
 								active
@@ -523,6 +517,7 @@ export default function NewWorkoutPage() {
 							key={activity}
 							type="button"
 							onClick={() => changeActivity(activity)}
+							data-testid={`activity-${activity.toLowerCase()}`}
 							className="rounded-full px-4 py-2 text-sm font-semibold transition-colors"
 							style={
 								active
@@ -558,6 +553,7 @@ export default function NewWorkoutPage() {
 								<input
 									id="workout-center-title"
 									type="text"
+									data-testid="workout-title-input"
 									value={form.title}
 									onChange={(event) =>
 										updateForm({ title: event.target.value, focus: event.target.value })
@@ -584,6 +580,7 @@ export default function NewWorkoutPage() {
 									<input
 										id="workout-center-date"
 										type="date"
+										data-testid="workout-date-input"
 										value={form.date}
 										onChange={(event) => updateForm({ date: event.target.value })}
 										className="glass-input w-full"
@@ -591,6 +588,7 @@ export default function NewWorkoutPage() {
 									<input
 										id="workout-center-time"
 										type="time"
+										data-testid="workout-time-input"
 										value={form.time}
 										onChange={(event) => updateForm({ time: event.target.value })}
 										className="glass-input w-full"
@@ -610,6 +608,7 @@ export default function NewWorkoutPage() {
 									type="number"
 									min="0"
 									step="1"
+									data-testid="workout-duration-input"
 									value={form.durationMin}
 									onChange={(event) => updateForm({ durationMin: event.target.value })}
 									className="glass-input w-full"
@@ -628,6 +627,7 @@ export default function NewWorkoutPage() {
 									type="number"
 									min="0"
 									step="0.1"
+									data-testid="workout-distance-input"
 									value={form.distanceKm}
 									onChange={(event) => updateForm({ distanceKm: event.target.value })}
 									className="glass-input w-full"
@@ -673,6 +673,7 @@ export default function NewWorkoutPage() {
 									min="1"
 									max="10"
 									step="0.5"
+									data-testid="workout-target-rpe-input"
 									value={form.targetRpe}
 									onChange={(event) => updateForm({ targetRpe: event.target.value })}
 									className="glass-input w-full"
@@ -693,6 +694,7 @@ export default function NewWorkoutPage() {
 											type="number"
 											min="30"
 											step="1"
+											data-testid="workout-avg-hr-input"
 											value={form.avgHr}
 											onChange={(event) => updateForm({ avgHr: event.target.value })}
 											className="glass-input w-full"
@@ -711,6 +713,7 @@ export default function NewWorkoutPage() {
 											type="number"
 											min="0"
 											step="1"
+											data-testid="workout-tss-input"
 											value={form.tss}
 											onChange={(event) => updateForm({ tss: event.target.value })}
 											className="glass-input w-full"
@@ -730,6 +733,7 @@ export default function NewWorkoutPage() {
 							</label>
 							<textarea
 								id="workout-center-notes"
+								data-testid="workout-notes-input"
 								value={form.notes}
 								onChange={(event) => updateForm({ notes: event.target.value })}
 								className="glass-input min-h-28 w-full"
@@ -895,7 +899,7 @@ export default function NewWorkoutPage() {
 											>
 												{item.payload.plannedDate}
 												{item.payload.plannedTime ? ` at ${item.payload.plannedTime}` : ""}
-												{item.payload.durationMin ? ` · ${item.payload.durationMin} min` : ""}
+												{item.payload.durationMin ? ` / ${item.payload.durationMin} min` : ""}
 											</div>
 										</div>
 									))
@@ -952,6 +956,7 @@ export default function NewWorkoutPage() {
 								type="button"
 								onClick={() => void handleSaveDraft()}
 								disabled={isSaving}
+								data-testid="save-draft-button"
 								className="btn-ghost text-sm disabled:opacity-50"
 							>
 								Save draft
@@ -962,6 +967,7 @@ export default function NewWorkoutPage() {
 								type="button"
 								onClick={handleQueueCurrentSession}
 								disabled={isSaving}
+								data-testid="queue-session-button"
 								className="btn-ghost text-sm disabled:opacity-50"
 							>
 								Add to batch
@@ -971,6 +977,7 @@ export default function NewWorkoutPage() {
 							type="button"
 							onClick={() => void handlePrimaryAction()}
 							disabled={isSaving}
+							data-testid="primary-action-button"
 							className="btn-primary text-sm disabled:opacity-50"
 						>
 							{isSaving ? "Saving..." : primaryLabel}

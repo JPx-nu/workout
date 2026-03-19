@@ -14,9 +14,11 @@
 		"prebuild:deploy": "pnpm run build:deps",
 		"predev": "pnpm run build:deps",
 		"pretest": "pnpm run build:deps",
+		"pretest:e2e": "pnpm run build:deps",
 		"pretype-check": "pnpm run build:deps",
 		"start": "node --env-file-if-exists=.env --env-file-if-exists=.env.local dist/server.js",
-		"test": "vitest run",
+		"test": "vitest run --config vitest.config.ts",
+		"test:e2e": "vitest run --config vitest.e2e.config.ts",
 		"type-check": "tsc --noEmit"
 	},
 	"dependencies": {

@@ -27,6 +27,7 @@ Read these files before making assumptions:
 - Keep shared pure logic in `packages/core`.
 - Do not author generated output such as `apps/api/dist`, `apps/api/dist-deploy`, or `apps/web/.next`.
 - Web data hooks use live Supabase/API sources. Do not bring back mock-data fallbacks.
+- Manual, browser, and end-to-end validation must use live data and real services. Stubbed or mocked runs do not count as final verification unless the user explicitly approves an exception.
 - In `apps/web/src`, use static `process.env.NEXT_PUBLIC_*` property access only.
 - API routes should validate inputs at the boundary and use the existing problem-details helpers for non-2xx responses.
 - Supabase access tokens are verified through JWKS. Do not reintroduce a shared JWT secret flow.
@@ -52,6 +53,7 @@ Not currently supported as shipped surface:
 - Web: `pnpm --filter web lint`
 - Web route/config/env changes: `pnpm --filter web build`
 - API: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`
+- API AI coach or workout logging flow changes: `pnpm --filter @triathlon/api test:e2e`
 - Shared packages:
   - `pnpm --filter @triathlon/types test`
   - `pnpm --filter @triathlon/types type-check`

@@ -17,6 +17,7 @@ Key repo invariants:
 - Shared contracts belong in `packages/types`. Shared pure logic belongs in `packages/core`.
 - Do not author generated output such as `apps/api/dist`, `apps/api/dist-deploy`, `apps/web/.next`, or mobile build artifacts.
 - Web code must not use dynamic `process.env[name]` access inside `apps/web/src`.
+- Manual, browser, and end-to-end validation must use live data and real services. Stubbed or mocked runs do not count as final verification unless the user explicitly approves an exception.
 - Keep docs and agent guidance in sync when routes, env vars, feature flags, deploy behavior, or supported product surface change.
 
 Current shipped product surface excludes Garmin end-user availability, native health permission UX, live-data 3D body map, self-serve export/delete-account UI, and squad features.
@@ -26,6 +27,7 @@ Validation defaults:
 - After any repo changes, always finish with `pnpm lint` and `pnpm type-check`. The Husky pre-commit hook runs those exact commands.
 - Web: `pnpm --filter web lint`, plus `pnpm --filter web build` for route/config/env changes
 - API: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`
+- API AI coach or workout logging flow changes: `pnpm --filter @triathlon/api test:e2e`
 - Shared packages: targeted `pnpm --filter ... test` and `pnpm --filter ... type-check`
 - Cross-cutting changes: `pnpm check:env-keys`, `pnpm type-check`, `pnpm test`
 

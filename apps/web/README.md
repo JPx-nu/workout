@@ -67,3 +67,40 @@ Optional feature flags:
 pnpm --filter web build
 pnpm --filter web start
 ```
+
+## Live Browser Tests
+
+Playwright browser tests live in `apps/web/e2e` and are intended to run against a real environment with live data, not mocks.
+
+Required env vars:
+
+- `PLAYWRIGHT_BASE_URL` - optional override for the full app base URL including `/workout`
+- `PLAYWRIGHT_TEST_EMAIL` - optional athlete test account email
+- `PLAYWRIGHT_TEST_PASSWORD` - optional athlete test account password
+
+Local default behavior:
+
+- if `PLAYWRIGHT_BASE_URL` is unset, Playwright targets `http://localhost:3100/workout`
+- local runs auto-start the real API and web dev servers through repo scripts
+- if `PLAYWRIGHT_TEST_EMAIL` and `PLAYWRIGHT_TEST_PASSWORD` are both unset, auth falls back to the live demo athlete account
+- if you set one credential env var, you must set both
+
+Install browser binaries:
+
+```bash
+pnpm --filter web playwright:install
+```
+
+Run the suite:
+
+```bash
+pnpm --filter web test:e2e
+```
+
+Current browser coverage focuses on:
+
+- live login through Supabase auth
+- opening the Workout Center from workout history
+- logging a past strength workout
+- scheduling a future strength session
+- sending an AI Coach quick-log flow and verifying the workout appears in history

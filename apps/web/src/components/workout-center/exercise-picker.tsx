@@ -45,7 +45,10 @@ export function ExercisePicker({ open, recent, onClose, onPick }: ExercisePicker
 	const customName = query.trim();
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+		<div
+			className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
+			data-testid="exercise-picker"
+		>
 			<button
 				type="button"
 				className="absolute inset-0"
@@ -93,6 +96,7 @@ export function ExercisePicker({ open, recent, onClose, onPick }: ExercisePicker
 								type="text"
 								value={query}
 								onChange={(event) => setQuery(event.target.value)}
+								data-testid="exercise-search-input"
 								placeholder="Search barbell, machine, row, press..."
 								className="glass-input w-full pl-10"
 							/>
@@ -113,6 +117,7 @@ export function ExercisePicker({ open, recent, onClose, onPick }: ExercisePicker
 									key={value}
 									type="button"
 									onClick={() => setTab(value)}
+									data-testid={`exercise-tab-${value}`}
 									className="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
 									style={
 										active
@@ -151,6 +156,7 @@ export function ExercisePicker({ open, recent, onClose, onPick }: ExercisePicker
 									setTab("recent");
 								}}
 								disabled={!customName}
+								data-testid="create-custom-exercise-button"
 								className="btn-primary mt-4 text-sm disabled:opacity-50"
 							>
 								Create &quot;{customName || "Custom Exercise"}&quot;
@@ -178,13 +184,14 @@ export function ExercisePicker({ open, recent, onClose, onPick }: ExercisePicker
 											setQuery("");
 											setTab("recent");
 										}}
+										data-testid={`exercise-result-${item.id}`}
 										className="rounded-xl border p-4 text-left transition-colors hover-surface"
 										style={{ borderColor: "var(--color-glass-border)" }}
 									>
 										<div className="text-sm font-semibold">{item.displayName}</div>
 										<div className="mt-1 text-xs" style={{ color: "var(--color-text-secondary)" }}>
 											{item.equipment.join(", ").replaceAll("_", " ")}
-											{" · "}
+											{" / "}
 											{item.movementPattern.replaceAll("_", " ")}
 										</div>
 										<div className="mt-2 flex flex-wrap gap-1">

@@ -36,6 +36,7 @@ Read these files before making assumptions:
 - Keep app-local aliases local. `@/*` is for `apps/web` only.
 - Do not author generated output such as `apps/api/dist`, `apps/api/dist-deploy`, `apps/web/.next`, or mobile build artifacts.
 - Web hooks and settings use live Supabase/API data. Do not reintroduce mock-data fallbacks.
+- Manual, browser, and end-to-end validation must use live data and real services. Stubbed or mocked runs do not count as final verification unless the user explicitly approves an exception.
 - In `apps/web/src`, read public env keys with static `process.env.NEXT_PUBLIC_*` property access only. Dynamic `process.env[name]` access is blocked by `scripts/check-web-public-env-access.mjs`.
 - API routes should validate inputs at the boundary, keep protected routes under `/api/*`, and use `application/problem+json` responses through the existing helpers.
 - Supabase access tokens are verified through JWKS. Do not reintroduce a legacy shared JWT-secret flow.
@@ -68,6 +69,7 @@ Then run the smallest meaningful scope-specific checks for the files you changed
 - Web changes: `pnpm --filter web lint`
 - Web route/config/env changes: `pnpm --filter web build`
 - API changes: `pnpm --filter @triathlon/api test` and `pnpm --filter @triathlon/api type-check`
+- API AI coach or workout logging flow changes: `pnpm --filter @triathlon/api test:e2e`
 - Shared package changes:
   - `pnpm --filter @triathlon/types test`
   - `pnpm --filter @triathlon/types type-check`
