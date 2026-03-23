@@ -1,9 +1,9 @@
 import { CompletedWorkoutInput, CompletedWorkoutUpdate } from "@triathlon/types";
 import { Hono } from "hono";
 import { createLogger } from "../../lib/logger.js";
-import { getAuth } from "../../middleware/auth.js";
+import { getAuth, getJwt } from "../../middleware/auth.js";
 import { isResponse, parseBody } from "../../middleware/validate.js";
-import { createAdminClient } from "../../services/ai/supabase.js";
+import { createUserClient } from "../../services/ai/supabase.js";
 import { createCompletedWorkout, updateCompletedWorkout } from "../../services/workout-center.js";
 
 const log = createLogger({ module: "workouts-routes" });
@@ -18,7 +18,7 @@ workoutsRoutes.post("/", async (c) => {
 	}
 
 	try {
-		const supabase = createAdminClient();
+		const supabase = createUserClient(getJwt(c));
 		const data = await createCompletedWorkout(supabase, {
 			...body,
 			athleteId: userId,
@@ -46,7 +46,7 @@ workoutsRoutes.patch("/:id", async (c) => {
 	}
 
 	try {
-		const supabase = createAdminClient();
+		const supabase = createUserClient(getJwt(c));
 		const data = await updateCompletedWorkout(supabase, id, userId, body);
 		return c.json({ data });
 	} catch (error) {

@@ -219,6 +219,7 @@ function createWorkoutCenterAdminClient() {
 }
 
 vi.mock("../services/ai/supabase.js", () => ({
+	createUserClient: () => createWorkoutCenterAdminClient(),
 	createAdminClient: () => createWorkoutCenterAdminClient(),
 }));
 
@@ -228,6 +229,7 @@ vi.mock("../middleware/auth.js", () => ({
 		clubId: "club-1",
 		role: "athlete",
 	}),
+	getJwt: () => "jwt-token",
 }));
 
 import { plannedWorkoutsRoutes } from "../routes/planned-workouts/index.js";

@@ -7,6 +7,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getApiConfigurationError, getApiUrl } from "@/lib/constants";
+import type { CoachPageBootstrap } from "@/lib/dashboard/types";
 import { createClient } from "@/lib/supabase/client";
 import { type Message, suggestedPrompts } from "@/lib/types";
 
@@ -17,12 +18,64 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const STREAM_TIMEOUT_MS = 120_000;
 type CoachActivity = "idle" | "connecting" | "typing";
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		return null;
+	}
+
+	return value as Record<string, unknown>;
+}
+
+function getConversationIdFromMetadata(metadata: unknown): string | undefined {
+	const record = asRecord(metadata);
+	return typeof record?.conversationId === "string" ? record.conversationId : undefined;
+}
+
+function getStringArray(value: unknown): string[] | undefined {
+	if (!Array.isArray(value)) {
+		return undefined;
+	}
+
+	const items = value.filter((entry): entry is string => typeof entry === "string");
+	return items.length > 0 ? items : undefined;
+}
+
+function toMessageMetadata(metadata: unknown): Message["metadata"] | undefined {
+	const record = asRecord(metadata);
+	if (!record) {
+		return undefined;
+	}
+
+	const normalized: Message["metadata"] = {};
+
+	const sources = getStringArray(record.sources);
+	if (sources) {
+		normalized.sources = sources;
+	}
+
+	const toolCalls = getStringArray(record.toolCalls);
+	if (toolCalls) {
+		normalized.toolCalls = toolCalls;
+	}
+
+	const imageUrls = getStringArray(record.imageUrls);
+	if (imageUrls) {
+		normalized.imageUrls = imageUrls;
+	}
+
+	if (typeof record.confidence === "number") {
+		normalized.confidence = record.confidence;
+	}
+
+	return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
 /**
  * AI Coach hook with Vercel AI SDK 6 streaming.
  * Uses useChat for message state and AI SDK protocol streaming.
  * Keeps conversation management and file attachment logic.
  */
-export function useCoach() {
+export function useCoach(initialState?: Partial<CoachPageBootstrap>) {
 	const supabase = useMemo(() => createClient(), []);
 	const tokenRef = useRef("");
 	const conversationIdRef = useRef<string | undefined>(undefined);
@@ -35,7 +88,7 @@ export function useCoach() {
 			created_at: string;
 			message_count: number;
 		}>
-	>([]);
+	>(initialState?.conversations ?? []);
 	const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 	const previewUrlsRef = useRef<Map<File, string>>(new Map());
 	const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -73,7 +126,7 @@ export function useCoach() {
 			headers: () => ({
 				Authorization: `Bearer ${tokenRef.current}`,
 			}),
-			body: () => ({ conversationId: conversationIdRef.current }),
+			body: () => (conversationIdRef.current ? { conversationId: conversationIdRef.current } : {}),
 			fetch: async (url, init) => {
 				const response = await globalThis.fetch(url, init);
 				if (!response.ok) {
@@ -93,12 +146,25 @@ export function useCoach() {
 				// Capture conversationId from response header
 				const convId = response.headers.get("X-Conversation-Id");
 				if (convId) {
+					conversationIdRef.current = convId;
 					setConversationId(convId);
 				}
 				return response;
 			},
 		}),
 	});
+
+	useEffect(() => {
+		const latestConversationId = [...aiMessages]
+			.reverse()
+			.map((message) => getConversationIdFromMetadata(message.metadata))
+			.find((value): value is string => typeof value === "string");
+
+		if (latestConversationId && latestConversationId !== conversationIdRef.current) {
+			conversationIdRef.current = latestConversationId;
+			setConversationId(latestConversationId);
+		}
+	}, [aiMessages]);
 
 	// Map low-level AI SDK transport states to the user-facing chat states shown in the UI.
 	const coachActivity: CoachActivity =
@@ -142,6 +208,7 @@ export function useCoach() {
 						.map((p) => p.text)
 						.join("") || "",
 				createdAt: new Date().toISOString(),
+				metadata: toMessageMetadata(m.metadata),
 			})),
 		[aiMessages],
 	);
@@ -211,6 +278,7 @@ export function useCoach() {
 						}),
 					),
 				);
+				conversationIdRef.current = convId;
 				setConversationId(convId);
 			} catch {
 				setError("Failed to load conversation");
@@ -222,6 +290,7 @@ export function useCoach() {
 	// ── Start a new conversation ─────────────────────────────
 	const newConversation = useCallback(() => {
 		setAiMessages([]);
+		conversationIdRef.current = undefined;
 		setConversationId(undefined);
 		setError(null);
 		setAttachedFiles([]);
@@ -398,6 +467,7 @@ export function useCoach() {
 	return {
 		// State
 		messages,
+		uiMessages: aiMessages,
 		coachActivity,
 		isConnecting,
 		isTyping,

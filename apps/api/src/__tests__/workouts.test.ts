@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const createAdminClientMock = vi.hoisted(() => vi.fn());
+const createUserClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../services/ai/supabase.js", () => ({
-	createAdminClient: createAdminClientMock,
+	createUserClient: createUserClientMock,
 }));
 
 vi.mock("../middleware/auth.js", () => ({
@@ -13,6 +13,7 @@ vi.mock("../middleware/auth.js", () => ({
 		clubId: "club-1",
 		role: "athlete",
 	}),
+	getJwt: () => "jwt-token",
 }));
 
 import { workoutsRoutes } from "../routes/workouts/index.js";
@@ -119,12 +120,12 @@ const strengthSession = {
 
 describe("workoutsRoutes", () => {
 	beforeEach(() => {
-		createAdminClientMock.mockReset();
+		createUserClientMock.mockReset();
 	});
 
 	it("creates a completed strength workout through the shared workout-center service path", async () => {
 		const { client, insertedRows } = createWorkoutsAdminClient();
-		createAdminClientMock.mockReturnValue(client);
+		createUserClientMock.mockReturnValue(client);
 		const app = createAuthedApp();
 
 		const response = await app.request("/api/workouts", {
@@ -165,7 +166,7 @@ describe("workoutsRoutes", () => {
 
 	it("updates a completed workout without bypassing the shared validation/update path", async () => {
 		const { client, updatedRows } = createWorkoutsAdminClient();
-		createAdminClientMock.mockReturnValue(client);
+		createUserClientMock.mockReturnValue(client);
 		const app = createAuthedApp();
 
 		const response = await app.request("/api/workouts/workout-1", {

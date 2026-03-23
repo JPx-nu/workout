@@ -12,9 +12,9 @@ import {
 } from "@triathlon/types";
 import { Hono } from "hono";
 import { createLogger } from "../../lib/logger.js";
-import { getAuth } from "../../middleware/auth.js";
+import { getAuth, getJwt } from "../../middleware/auth.js";
 import { isResponse, parseBody } from "../../middleware/validate.js";
-import { createAdminClient } from "../../services/ai/supabase.js";
+import { createUserClient } from "../../services/ai/supabase.js";
 import {
 	createPlannedWorkout,
 	scheduleSessionsBatch,
@@ -37,7 +37,7 @@ plannedWorkoutsRoutes.get("/", async (c) => {
 		return c.json({ error: "Missing required query params: from, to" }, 400);
 	}
 
-	const supabase = createAdminClient();
+	const supabase = createUserClient(getJwt(c));
 	let query = supabase
 		.from("planned_workouts")
 		.select("*")
@@ -67,7 +67,7 @@ plannedWorkoutsRoutes.get("/", async (c) => {
 plannedWorkoutsRoutes.get("/:id", async (c) => {
 	const { userId } = getAuth(c);
 	const id = c.req.param("id");
-	const supabase = createAdminClient();
+	const supabase = createUserClient(getJwt(c));
 
 	const { data, error } = await supabase
 		.from("planned_workouts")
@@ -90,7 +90,7 @@ plannedWorkoutsRoutes.post("/", async (c) => {
 	if (isResponse(body)) return body;
 
 	try {
-		const supabase = createAdminClient();
+		const supabase = createUserClient(getJwt(c));
 		const data = await createPlannedWorkout(supabase, {
 			...body,
 			athleteId: userId,
@@ -114,7 +114,7 @@ plannedWorkoutsRoutes.post("/batch", async (c) => {
 	if (isResponse(body)) return body;
 
 	try {
-		const supabase = createAdminClient();
+		const supabase = createUserClient(getJwt(c));
 		const data = await scheduleSessionsBatch(supabase, {
 			athleteId: userId,
 			clubId,
@@ -145,7 +145,7 @@ plannedWorkoutsRoutes.patch("/:id", async (c) => {
 	}
 
 	try {
-		const supabase = createAdminClient();
+		const supabase = createUserClient(getJwt(c));
 		const data = await updatePlannedWorkout(supabase, id, userId, body);
 		return c.json({ data });
 	} catch (error) {
@@ -166,7 +166,7 @@ plannedWorkoutsRoutes.patch("/:id/complete", async (c) => {
 	const id = c.req.param("id");
 	const body = await c.req.json().catch(() => ({}));
 
-	const supabase = createAdminClient();
+	const supabase = createUserClient(getJwt(c));
 	const { data, error } = await supabase
 		.from("planned_workouts")
 		.update({
@@ -191,7 +191,7 @@ plannedWorkoutsRoutes.delete("/:id", async (c) => {
 	const { userId } = getAuth(c);
 	const id = c.req.param("id");
 
-	const supabase = createAdminClient();
+	const supabase = createUserClient(getJwt(c));
 	const { error } = await supabase
 		.from("planned_workouts")
 		.delete()

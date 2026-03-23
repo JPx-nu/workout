@@ -17,46 +17,69 @@ import { createClient } from "@/lib/supabase/client";
 
 type ActivityFilter = "ALL" | "SWIM" | "BIKE" | "RUN" | "STRENGTH";
 
-export function useWorkouts() {
+export function useWorkouts(initialWorkouts: MappedWorkout[] = []) {
 	const { user } = useAuth();
 	const [filter, setFilter] = useState<ActivityFilter>("ALL");
-	const [allWorkouts, setAllWorkouts] = useState<MappedWorkout[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+	const [allWorkouts, setAllWorkouts] = useState<MappedWorkout[]>(initialWorkouts);
+	const [isHydrating, setIsHydrating] = useState(initialWorkouts.length === 0);
+	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const fetchWorkouts = useCallback(async () => {
+	const fetchWorkouts = useCallback(
+		async (options?: { background?: boolean }) => {
+			if (!user) {
+				if (initialWorkouts.length === 0) {
+					setAllWorkouts([]);
+				}
+				setIsHydrating(false);
+				setIsRefreshing(false);
+				return;
+			}
+
+			const background = options?.background ?? allWorkouts.length > 0;
+			if (background) {
+				setIsRefreshing(true);
+			} else {
+				setIsHydrating(true);
+			}
+			setError(null);
+
+			const supabase = createClient();
+			const { data, error: dbError } = await supabase
+				.from("workouts")
+				.select("*")
+				.eq("athlete_id", user.id)
+				.order("started_at", { ascending: false });
+
+			if (dbError) {
+				setError(dbError.message);
+			} else {
+				setAllWorkouts((data as WorkoutRow[]).map(mapWorkoutRow));
+			}
+
+			if (background) {
+				setIsRefreshing(false);
+			} else {
+				setIsHydrating(false);
+			}
+		},
+		[allWorkouts.length, initialWorkouts.length, user],
+	);
+
+	useEffect(() => {
 		if (!user) {
-			setAllWorkouts([]);
-			setIsLoading(false);
+			if (initialWorkouts.length === 0) {
+				setIsHydrating(false);
+			}
 			return;
 		}
 
-		setIsLoading(true);
-		setError(null);
-
-		const supabase = createClient();
-		const { data, error: dbError } = await supabase
-			.from("workouts")
-			.select("*")
-			.eq("athlete_id", user.id)
-			.order("started_at", { ascending: false });
-
-		if (dbError) {
-			setError(dbError.message);
-			setAllWorkouts([]);
-		} else {
-			setAllWorkouts((data as WorkoutRow[]).map(mapWorkoutRow));
-		}
-		setIsLoading(false);
-	}, [user]);
-
-	useEffect(() => {
-		fetchWorkouts();
-	}, [fetchWorkouts]);
+		void fetchWorkouts({ background: initialWorkouts.length > 0 });
+	}, [fetchWorkouts, initialWorkouts.length, user]);
 
 	const filtered = useMemo(() => {
 		if (filter === "ALL") return allWorkouts;
-		return allWorkouts.filter((w) => w.activityType === filter);
+		return allWorkouts.filter((workout) => workout.activityType === filter);
 	}, [allWorkouts, filter]);
 
 	const weeklyStats = useMemo(() => computeWeeklyStats(allWorkouts), [allWorkouts]);
@@ -71,8 +94,10 @@ export function useWorkouts() {
 		strengthMetrics,
 		filter,
 		setFilter,
-		isLoading,
+		isLoading: isHydrating,
+		isHydrating,
+		isRefreshing,
 		error,
-		refetch: fetchWorkouts,
+		refetch: () => fetchWorkouts({ background: allWorkouts.length > 0 }),
 	};
 }

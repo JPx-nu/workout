@@ -12,58 +12,82 @@ import { getApiConfigurationError, getApiUrl } from "@/lib/constants";
 
 export type PlannedWorkout = MappedPlannedWorkout;
 
-export function usePlannedWorkouts(from: string, to: string, status?: string) {
+export function usePlannedWorkouts(
+	from: string,
+	to: string,
+	status?: string,
+	initialWorkouts: PlannedWorkout[] = [],
+) {
 	const { session } = useAuth();
-	const [workouts, setWorkouts] = useState<PlannedWorkout[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+	const [workouts, setWorkouts] = useState<PlannedWorkout[]>(initialWorkouts);
+	const [isHydrating, setIsHydrating] = useState(initialWorkouts.length === 0);
+	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const fetchWorkouts = useCallback(async () => {
+	const fetchWorkouts = useCallback(
+		async (options?: { background?: boolean }) => {
+			if (!session?.access_token || !from || !to) {
+				setIsHydrating(false);
+				setIsRefreshing(false);
+				return;
+			}
+
+			const background = options?.background ?? workouts.length > 0;
+			if (background) {
+				setIsRefreshing(true);
+			} else {
+				setIsHydrating(true);
+			}
+			setError(null);
+
+			try {
+				const configError = getApiConfigurationError();
+				if (configError) {
+					throw new Error(configError);
+				}
+
+				const query = new URLSearchParams({
+					from,
+					to,
+					...(status ? { status } : {}),
+				});
+
+				const res = await fetch(getApiUrl(`/api/planned-workouts?${query.toString()}`), {
+					headers: {
+						Authorization: `Bearer ${session.access_token}`,
+						"Content-Type": "application/json",
+					},
+				});
+
+				if (!res.ok) {
+					throw new Error(`Failed to fetch: ${res.status}`);
+				}
+
+				const json = await res.json();
+				setWorkouts((json.data || []).map(mapPlannedWorkoutRow));
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "Failed to fetch workouts");
+			} finally {
+				if (background) {
+					setIsRefreshing(false);
+				} else {
+					setIsHydrating(false);
+				}
+			}
+		},
+		[from, session?.access_token, status, to, workouts.length],
+	);
+
+	useEffect(() => {
 		if (!session?.access_token || !from || !to) {
-			setIsLoading(false);
+			if (initialWorkouts.length === 0) {
+				setIsHydrating(false);
+			}
 			return;
 		}
 
-		setIsLoading(true);
-		setError(null);
-
-		try {
-			const configError = getApiConfigurationError();
-			if (configError) {
-				throw new Error(configError);
-			}
-
-			const query = new URLSearchParams({
-				from,
-				to,
-				...(status ? { status } : {}),
-			});
-
-			const res = await fetch(getApiUrl(`/api/planned-workouts?${query.toString()}`), {
-				headers: {
-					Authorization: `Bearer ${session.access_token}`,
-					"Content-Type": "application/json",
-				},
-			});
-
-			if (!res.ok) {
-				throw new Error(`Failed to fetch: ${res.status}`);
-			}
-
-			const json = await res.json();
-			setWorkouts((json.data || []).map(mapPlannedWorkoutRow));
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to fetch workouts");
-		} finally {
-			setIsLoading(false);
-		}
-	}, [session?.access_token, from, to, status]);
-
-	useEffect(() => {
-		void fetchWorkouts();
-	}, [fetchWorkouts]);
-
-	// ── Mutations ──────────────────────────────────────────────
+		void fetchWorkouts({ background: initialWorkouts.length > 0 });
+	}, [fetchWorkouts, from, initialWorkouts.length, session?.access_token, to]);
 
 	const updateWorkout = useCallback(
 		async (
@@ -91,9 +115,7 @@ export function usePlannedWorkouts(from: string, to: string, status?: string) {
 
 				const json = await res.json();
 				const updated = mapPlannedWorkoutRow(json.data);
-
-				// Optimistic update
-				setWorkouts((prev) => prev.map((w) => (w.id === id ? updated : w)));
+				setWorkouts((current) => current.map((workout) => (workout.id === id ? updated : workout)));
 				return updated;
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Update failed");
@@ -122,7 +144,7 @@ export function usePlannedWorkouts(from: string, to: string, status?: string) {
 
 				if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
 
-				setWorkouts((prev) => prev.filter((w) => w.id !== id));
+				setWorkouts((current) => current.filter((workout) => workout.id !== id));
 			} catch (err) {
 				setError(err instanceof Error ? err.message : "Delete failed");
 			}
@@ -132,9 +154,11 @@ export function usePlannedWorkouts(from: string, to: string, status?: string) {
 
 	return {
 		workouts,
-		isLoading,
+		isLoading: isHydrating,
+		isHydrating,
+		isRefreshing,
 		error,
-		refetch: fetchWorkouts,
+		refetch: () => fetchWorkouts({ background: workouts.length > 0 }),
 		setWorkouts,
 		updateWorkout,
 		deleteWorkout,

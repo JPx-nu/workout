@@ -4,7 +4,8 @@
 // ============================================================
 
 import type { AppProfile as Profile, ProfilePreferences } from "@triathlon/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDashboardAccess } from "@/components/dashboard-access-context";
 import { useAuth } from "@/components/supabase-provider";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,7 +16,23 @@ function toPreferences(value: unknown): ProfilePreferences {
 	return value as ProfilePreferences;
 }
 
-const defaultProfile: Profile = {
+function getClubName(value: unknown): string {
+	if (Array.isArray(value)) {
+		const firstClub = value[0];
+		if (firstClub && typeof firstClub === "object" && "name" in firstClub) {
+			return typeof firstClub.name === "string" ? firstClub.name : "";
+		}
+		return "";
+	}
+
+	if (value && typeof value === "object" && "name" in value) {
+		return typeof value.name === "string" ? value.name : "";
+	}
+
+	return "";
+}
+
+export const defaultProfile: Profile = {
 	id: "",
 	displayName: "",
 	role: "athlete",
@@ -28,161 +45,218 @@ const defaultProfile: Profile = {
 	preferences: {},
 };
 
-export function useProfile(): {
+function getFallbackProfile(user: { id: string; email?: string | null }): Profile {
+	return {
+		...defaultProfile,
+		id: user.id,
+		email: user.email ?? "",
+		displayName: user.email?.split("@")[0] ?? "User",
+	};
+}
+
+export function useProfile(initialProfile?: Profile): {
 	profile: Profile;
-	isLoading: boolean;
+	isHydrating: boolean;
+	isRefreshing: boolean;
 	isOnboarded: boolean;
 	error: string | null;
-	refetch: () => void;
+	refetch: () => Promise<void>;
 	updateDefaultView: (view: "triathlon" | "strength") => Promise<void>;
 	updateProfile: (fields: { displayName?: string; timezone?: string }) => Promise<void>;
 	updatePreferences: (fields: Record<string, unknown>) => Promise<void>;
 } {
 	const { user } = useAuth();
-	const [profile, setProfile] = useState<Profile>(defaultProfile);
-	const [isLoading, setIsLoading] = useState(true);
-	const [isOnboarded, setIsOnboarded] = useState(false);
+	const accessState = useDashboardAccess();
+	const bootstrappedProfile = initialProfile ?? accessState?.profile ?? defaultProfile;
+	const bootstrappedOnboarded = accessState?.isOnboarded ?? false;
+	const [profile, setProfile] = useState<Profile>(bootstrappedProfile);
+	const [isHydrating, setIsHydrating] = useState(bootstrappedProfile.id.length === 0);
+	const [isRefreshing, setIsRefreshing] = useState(false);
+	const [isOnboarded, setIsOnboarded] = useState(bootstrappedOnboarded);
 	const [error, setError] = useState<string | null>(null);
 
-	const fetchProfile = useCallback(async () => {
-		if (!user) {
-			setProfile(defaultProfile);
-			setIsOnboarded(false);
-			setIsLoading(false);
+	useEffect(() => {
+		if (bootstrappedProfile.id.length === 0) {
 			return;
 		}
 
-		setIsLoading(true);
-		setError(null);
+		setProfile(bootstrappedProfile);
+		setIsOnboarded(bootstrappedOnboarded);
+		setIsHydrating(false);
+	}, [bootstrappedProfile, bootstrappedOnboarded]);
 
-		const supabase = createClient();
+	const fetchProfile = useCallback(
+		async (options?: { background?: boolean }) => {
+			if (!user) {
+				if (bootstrappedProfile.id.length === 0) {
+					setProfile(defaultProfile);
+					setIsOnboarded(false);
+				}
+				setIsHydrating(false);
+				setIsRefreshing(false);
+				return;
+			}
 
-		const { data, error: dbError } = await supabase
-			.from("profiles")
-			.select("*, clubs(name)")
-			.eq("id", user.id)
-			.single();
+			const background = options?.background ?? profile.id.length > 0;
+			if (background) {
+				setIsRefreshing(true);
+			} else {
+				setIsHydrating(true);
+			}
+			setError(null);
 
-		if (dbError) {
-			setError(dbError.message);
-			// Provide fallback from auth user data
-			setProfile({
-				...defaultProfile,
-				id: user.id,
-				email: user.email ?? "",
-				displayName: user.email?.split("@")[0] ?? "User",
-				clubId: "",
-				clubName: "",
-				avatarUrl: null,
-				preferences: {},
-			});
-			setIsOnboarded(false);
-		} else if (data) {
-			const preferences = toPreferences(data.preferences);
-			setProfile({
-				id: data.id,
-				displayName: data.display_name ?? user.email?.split("@")[0] ?? "User",
-				role: data.role ?? "athlete",
-				clubId: data.club_id ?? "",
-				clubName: (data.clubs as { name: string } | null)?.name ?? "",
-				avatarUrl: data.avatar_url ?? null,
-				timezone: data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-				email: user.email ?? "",
-				defaultView: (data.default_view as "triathlon" | "strength") ?? "triathlon",
-				preferences,
-			});
-			setIsOnboarded(preferences.onboarding_completed === true);
-		}
+			const supabase = createClient();
+			const { data, error: dbError } = await supabase
+				.from("profiles")
+				.select("*, clubs(name)")
+				.eq("id", user.id)
+				.single();
 
-		setIsLoading(false);
-	}, [user]);
+			if (dbError) {
+				setError(dbError.message);
+				setProfile(getFallbackProfile(user));
+				setIsOnboarded(false);
+			} else if (data) {
+				const preferences = toPreferences(data.preferences);
+				setProfile({
+					id: data.id,
+					displayName: data.display_name ?? user.email?.split("@")[0] ?? "User",
+					role: data.role ?? "athlete",
+					clubId: data.club_id ?? "",
+					clubName: getClubName(data.clubs),
+					avatarUrl: data.avatar_url ?? null,
+					timezone: data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+					email: user.email ?? "",
+					defaultView: (data.default_view as "triathlon" | "strength") ?? "triathlon",
+					preferences,
+				});
+				setIsOnboarded(preferences.onboarding_completed === true);
+			}
+
+			if (background) {
+				setIsRefreshing(false);
+			} else {
+				setIsHydrating(false);
+			}
+		},
+		[bootstrappedProfile.id.length, profile.id.length, user],
+	);
 
 	useEffect(() => {
-		fetchProfile();
-	}, [fetchProfile]);
-
-	const updateDefaultView = async (view: "triathlon" | "strength") => {
-		if (!user) return;
-
-		// Optimistic update
-		setProfile((prev: Profile) => ({ ...prev, defaultView: view }));
-
-		const supabase = createClient();
-		const { error: updateError } = await supabase
-			.from("profiles")
-			.update({ default_view: view })
-			.eq("id", user.id);
-
-		if (updateError) {
-			fetchProfile();
-			throw updateError;
+		if (!user) {
+			if (bootstrappedProfile.id.length === 0) {
+				setIsHydrating(false);
+			}
+			return;
 		}
-	};
 
-	const updateProfile = async (fields: { displayName?: string; timezone?: string }) => {
-		if (!user) return;
+		void fetchProfile({
+			background: bootstrappedProfile.id.length > 0,
+		});
+	}, [bootstrappedProfile.id.length, fetchProfile, user]);
 
-		const prev: Profile = profile;
-		// Optimistic update
-		setProfile((p: Profile) => ({
-			...p,
-			...(fields.displayName !== undefined ? { displayName: fields.displayName } : {}),
-			...(fields.timezone !== undefined ? { timezone: fields.timezone } : {}),
-		}));
+	const updateDefaultView = useCallback(
+		async (view: "triathlon" | "strength") => {
+			if (!user) return;
 
-		const dbFields: Record<string, string> = {};
-		if (fields.displayName !== undefined) dbFields.display_name = fields.displayName;
-		if (fields.timezone !== undefined) dbFields.timezone = fields.timezone;
+			setProfile((prev: Profile) => ({ ...prev, defaultView: view }));
 
-		const supabase = createClient();
-		const { error: updateError } = await supabase
-			.from("profiles")
-			.update(dbFields)
-			.eq("id", user.id);
+			const supabase = createClient();
+			const { error: updateError } = await supabase
+				.from("profiles")
+				.update({ default_view: view })
+				.eq("id", user.id);
 
-		if (updateError) {
-			setProfile(prev);
-			throw updateError;
-		}
-	};
+			if (updateError) {
+				await fetchProfile({ background: profile.id.length > 0 });
+				throw updateError;
+			}
+		},
+		[fetchProfile, profile.id.length, user],
+	);
 
-	const updatePreferences = async (fields: Record<string, unknown>) => {
-		if (!user) return;
+	const updateProfile = useCallback(
+		async (fields: { displayName?: string; timezone?: string }) => {
+			if (!user) return;
 
-		const prev: Profile = profile;
-		const mergedPreferences: ProfilePreferences = {
-			...profile.preferences,
-			...fields,
-		};
+			const previousProfile: Profile = profile;
+			setProfile((current: Profile) => ({
+				...current,
+				...(fields.displayName !== undefined ? { displayName: fields.displayName } : {}),
+				...(fields.timezone !== undefined ? { timezone: fields.timezone } : {}),
+			}));
 
-		// Optimistic update
-		setProfile((p: Profile) => ({
-			...p,
-			preferences: mergedPreferences,
-		}));
-		setIsOnboarded(mergedPreferences.onboarding_completed === true);
+			const dbFields: Record<string, string> = {};
+			if (fields.displayName !== undefined) dbFields.display_name = fields.displayName;
+			if (fields.timezone !== undefined) dbFields.timezone = fields.timezone;
 
-		const supabase = createClient();
-		const { error: updateError } = await supabase
-			.from("profiles")
-			.update({ preferences: mergedPreferences })
-			.eq("id", user.id);
+			const supabase = createClient();
+			const { error: updateError } = await supabase
+				.from("profiles")
+				.update(dbFields)
+				.eq("id", user.id);
 
-		if (updateError) {
-			setProfile(prev);
-			setIsOnboarded(prev.preferences.onboarding_completed === true);
-			throw updateError;
-		}
-	};
+			if (updateError) {
+				setProfile(previousProfile);
+				throw updateError;
+			}
+		},
+		[profile, user],
+	);
 
-	return {
-		profile,
-		isLoading,
-		isOnboarded,
-		error,
-		refetch: fetchProfile,
-		updateDefaultView,
-		updateProfile,
-		updatePreferences,
-	};
+	const updatePreferences = useCallback(
+		async (fields: Record<string, unknown>) => {
+			if (!user) return;
+
+			const previousProfile: Profile = profile;
+			const mergedPreferences: ProfilePreferences = {
+				...profile.preferences,
+				...fields,
+			};
+
+			setProfile((current: Profile) => ({
+				...current,
+				preferences: mergedPreferences,
+			}));
+			setIsOnboarded(mergedPreferences.onboarding_completed === true);
+
+			const supabase = createClient();
+			const { error: updateError } = await supabase
+				.from("profiles")
+				.update({ preferences: mergedPreferences })
+				.eq("id", user.id);
+
+			if (updateError) {
+				setProfile(previousProfile);
+				setIsOnboarded(previousProfile.preferences.onboarding_completed === true);
+				throw updateError;
+			}
+		},
+		[profile, user],
+	);
+
+	return useMemo(
+		() => ({
+			profile,
+			isHydrating,
+			isRefreshing,
+			isOnboarded,
+			error,
+			refetch: () => fetchProfile({ background: profile.id.length > 0 }),
+			updateDefaultView,
+			updateProfile,
+			updatePreferences,
+		}),
+		[
+			error,
+			fetchProfile,
+			isHydrating,
+			isOnboarded,
+			isRefreshing,
+			profile,
+			updateDefaultView,
+			updatePreferences,
+			updateProfile,
+		],
+	);
 }

@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
 import { gotoAppPage } from "./helpers/app";
 import { createUniqueLabel } from "./helpers/live-env";
+import { expect, test } from "./helpers/test";
 import {
 	addLibraryExercise,
 	expectWorkoutCenterMessage,

@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const createAdminClientMock = vi.hoisted(() => vi.fn());
+const createUserClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("../services/ai/supabase.js", () => ({
-	createAdminClient: createAdminClientMock,
+	createUserClient: createUserClientMock,
 }));
 
 vi.mock("../middleware/auth.js", () => ({
@@ -13,6 +13,7 @@ vi.mock("../middleware/auth.js", () => ({
 		clubId: "club-1",
 		role: "athlete",
 	}),
+	getJwt: () => "jwt-token",
 }));
 
 import { plannedWorkoutsRoutes } from "../routes/planned-workouts/index.js";
@@ -109,12 +110,12 @@ const scheduledStrengthSession = {
 
 describe("plannedWorkoutsRoutes", () => {
 	beforeEach(() => {
-		createAdminClientMock.mockReset();
+		createUserClientMock.mockReset();
 	});
 
 	it("creates a single in-progress strength draft through the shared planned-workout path", async () => {
 		const { client, insertedRows } = createPlannedWorkoutsAdminClient();
-		createAdminClientMock.mockReturnValue(client);
+		createUserClientMock.mockReturnValue(client);
 		const app = createAuthedApp();
 
 		const response = await app.request("/api/planned-workouts", {
@@ -152,7 +153,7 @@ describe("plannedWorkoutsRoutes", () => {
 
 	it("batch schedules future sessions using the shared canonical session payload", async () => {
 		const { client, insertedRows } = createPlannedWorkoutsAdminClient();
-		createAdminClientMock.mockReturnValue(client);
+		createUserClientMock.mockReturnValue(client);
 		const app = createAuthedApp();
 
 		const response = await app.request("/api/planned-workouts/batch", {

@@ -5,12 +5,41 @@ import {
 	getSupabasePublicConfig,
 } from "./live-env";
 
+const ROUTE_MARKERS: Record<string, string> = {
+	dashboard: "dashboard-page",
+	"dashboard/coach": "coach-page",
+	"dashboard/training": "training-page",
+	"dashboard/workouts": "workouts-page",
+	"dashboard/workouts/new": "workout-center-page",
+};
+
 export function buildAppUrl(pathname: string): string {
 	return new URL(pathname.replace(/^\/+/, ""), getPlaywrightBaseUrl()).toString();
 }
 
+function getRouteKey(pathname: string): string {
+	return pathname.replace(/^\/+/, "").split("?")[0]?.replace(/\/+$/, "") ?? "";
+}
+
+function escapeRegex(value: string): string {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export async function expectAppRoute(page: Page, pathname: string): Promise<void> {
+	const targetUrl = new URL(buildAppUrl(pathname));
+	await expect(page).toHaveURL(new RegExp(`${escapeRegex(targetUrl.pathname)}(?:\\?.*)?$`), {
+		timeout: 60_000,
+	});
+
+	const marker = ROUTE_MARKERS[getRouteKey(pathname)];
+	if (marker) {
+		await expect(page.getByTestId(marker)).toBeVisible({ timeout: 60_000 });
+	}
+}
+
 export async function gotoAppPage(page: Page, pathname: string): Promise<void> {
 	await page.goto(buildAppUrl(pathname));
+	await expectAppRoute(page, pathname);
 }
 
 type LiveSession = {
@@ -124,27 +153,19 @@ async function markCurrentAthleteOnboarded(page: Page): Promise<void> {
 async function ensureAuthenticatedDashboard(page: Page): Promise<void> {
 	await markCurrentAthleteOnboarded(page);
 	await gotoAppPage(page, "dashboard");
-	await page.waitForURL(/\/workout\/dashboard(?:\/.*)?$/, { timeout: 60_000 });
 
 	if (page.url().includes("/dashboard/onboarding")) {
 		throw new Error("The live test athlete is still being redirected to onboarding after setup.");
 	}
 
-	await expect(page.getByRole("heading", { name: /good morning/i })).toBeVisible({
-		timeout: 60_000,
-	});
-
 	// Reload once to ensure the persisted profile state survives a fresh route guard check.
 	await page.reload();
-	await page.waitForURL(/\/workout\/dashboard(?:\/.*)?$/, { timeout: 60_000 });
+	await expectAppRoute(page, "dashboard");
 	if (page.url().includes("/dashboard/onboarding")) {
 		throw new Error(
 			"The live test athlete returned to onboarding after reload, so setup is not durable.",
 		);
 	}
-	await expect(page.getByRole("heading", { name: /good morning/i })).toBeVisible({
-		timeout: 60_000,
-	});
 }
 
 export async function signInLiveAthlete(page: Page): Promise<void> {
@@ -154,7 +175,6 @@ export async function signInLiveAthlete(page: Page): Promise<void> {
 	await page.getByTestId("login-email").fill(credentials.email);
 	await page.getByTestId("login-password").fill(credentials.password);
 	await page.getByTestId("login-submit").click();
-
 	await page.waitForURL(/\/workout\/dashboard(?:\/.*)?$/, { timeout: 60_000 });
 
 	await ensureAuthenticatedDashboard(page);

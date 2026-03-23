@@ -1,11 +1,15 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { buildAppUrl, gotoAppPage } from "./helpers/app";
 import { createUniqueLabel } from "./helpers/live-env";
+import { expect, test } from "./helpers/test";
 
 async function waitForCoachResponse(page: Page) {
-	const stopButton = page.getByRole("button", { name: /stop generating/i });
-	await stopButton.waitFor({ state: "visible", timeout: 30_000 }).catch(() => undefined);
-	await expect(page.getByTestId("coach-send-button")).toBeVisible({ timeout: 120_000 });
+	const sendButton = page.getByTestId("coach-send-button");
+	await expect(sendButton).toBeVisible({ timeout: 30_000 });
+	await expect(sendButton)
+		.toHaveAttribute("aria-label", /stop generating/i, { timeout: 30_000 })
+		.catch(() => undefined);
+	await expect(sendButton).toHaveAttribute("aria-label", /send message/i, { timeout: 120_000 });
 }
 
 test.describe("AI Coach", () => {

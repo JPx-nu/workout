@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseQuickWorkoutLogRequest } from "../quick-workout-log.js";
+import { parseQuickWorkoutLogFollowUp, parseQuickWorkoutLogRequest } from "../quick-workout-log.js";
 
 describe("parseQuickWorkoutLogRequest", () => {
 	it("parses a simple completed run log request", () => {
@@ -45,6 +45,14 @@ describe("parseQuickWorkoutLogRequest", () => {
 			durationMin: 45,
 			avgHr: 142,
 			tss: 55,
+		});
+	});
+
+	it("accepts short follow-up notes even when they include the word log", () => {
+		const parsed = parseQuickWorkoutLogFollowUp("[PW] ai quick log note");
+
+		expect(parsed).toMatchObject({
+			notes: "[PW] ai quick log note",
 		});
 	});
 });

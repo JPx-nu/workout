@@ -214,7 +214,9 @@ function getPendingQuickWorkoutLog(history: ChatMessage[]): {
 	};
 }
 
-function parseQuickWorkoutLogFollowUp(message: string): ParsedQuickWorkoutLogFollowUp | null {
+export function parseQuickWorkoutLogFollowUp(
+	message: string,
+): ParsedQuickWorkoutLogFollowUp | null {
 	const trimmed = message.trim();
 	if (!trimmed) {
 		return null;
@@ -241,7 +243,7 @@ function parseQuickWorkoutLogFollowUp(message: string): ParsedQuickWorkoutLogFol
 	const notes =
 		noteCandidate.length > 0 &&
 		noteCandidate.length <= 160 &&
-		!WRITE_INTENT_PATTERN.test(noteCandidate)
+		!hasExplicitWorkoutLogIntent(noteCandidate)
 			? noteCandidate
 			: undefined;
 
