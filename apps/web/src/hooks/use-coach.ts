@@ -128,6 +128,18 @@ export function useCoach(initialState?: Partial<CoachPageBootstrap>) {
 			}),
 			body: () => (conversationIdRef.current ? { conversationId: conversationIdRef.current } : {}),
 			fetch: async (url, init) => {
+				// Refresh the access token before every API call so expired
+				// sessions don't produce 401s on the deployed environment.
+				const {
+					data: { session },
+				} = await supabase.auth.getSession();
+				if (session?.access_token) {
+					tokenRef.current = session.access_token;
+					const headers = new Headers(init?.headers);
+					headers.set("Authorization", `Bearer ${session.access_token}`);
+					init = { ...init, headers };
+				}
+
 				const response = await globalThis.fetch(url, init);
 				if (!response.ok) {
 					let message = "Failed to reach AI Coach.";

@@ -37,7 +37,14 @@
       "Bash(uv:*)",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "mcp__serena__*"
+      "mcp__serena__*",
+      "Bash(unzip -o /tmp/api-logs.zip -d /tmp/api-logs)",
+      "Bash(az group:*)",
+      "Bash(for chunk:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(python3 -c \"import sys,json,base64; t=json.load\\(sys.stdin\\).get\\(''''access_token'''',''''''''\\); parts=t.split\\(''''.''''\\); header=json.loads\\(base64.urlsafe_b64decode\\(parts[0]+''''==''''\\)\\) if len\\(parts\\)>=2 else {}; print\\(json.dumps\\(header, indent=2\\)\\)\")",
+      "Bash(node -e \"const d=require\\(''''fs''''\\).readFileSync\\(0,''''utf8''''\\); const t=JSON.parse\\(d\\).access_token; const h=Buffer.from\\(t.split\\(''''.''''\\)[0],''''base64url''''\\).toString\\(\\); console.log\\(h\\)\")"
     ]
   }
 }
