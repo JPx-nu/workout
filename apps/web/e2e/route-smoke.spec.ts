@@ -8,6 +8,8 @@ test.describe("Dashboard route stability", () => {
 		await gotoAppPage(page, "dashboard/workouts");
 		await gotoAppPage(page, "dashboard/workouts/new");
 		await gotoAppPage(page, "dashboard/workouts/new?mode=schedule");
-		await expect(page.getByTestId("primary-action-button")).toContainText("Schedule sessions");
+		await expect(page.getByTestId("primary-action-button").first()).toContainText(
+			"Schedule sessions",
+		);
 	});
 });

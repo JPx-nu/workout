@@ -27,7 +27,7 @@ test.describe("AI Coach", () => {
 		await waitForCoachResponse(page);
 
 		await gotoAppPage(page, "dashboard/workouts");
-		await expect(page.getByText(workoutNote)).toBeVisible({ timeout: 120_000 });
+		await expect(page.getByText(workoutNote).first()).toBeVisible({ timeout: 120_000 });
 	});
 
 	test("creates a future workout session through AI chat", async ({ page }) => {

@@ -12,15 +12,15 @@ test.describe("Workout Center", () => {
 	test("opens the Workout Center from workout history", async ({ page }) => {
 		await gotoAppPage(page, "dashboard/workouts");
 
-		await expect(page.getByTestId("log-workout-link")).toHaveAttribute(
+		await expect(page.getByTestId("log-workout-link").first()).toHaveAttribute(
 			"href",
 			"/workout/dashboard/workouts/new",
 		);
-		await page.getByTestId("log-workout-link").click();
+		await page.getByTestId("log-workout-link").first().click();
 
 		await expect(page).toHaveURL(/\/workout\/dashboard\/workouts\/new/, { timeout: 60_000 });
-		await expect(page.getByTestId("workout-center-page")).toBeVisible();
-		await expect(page.getByRole("heading", { name: "Workout Center" })).toBeVisible();
+		await expect(page.getByTestId("workout-center-page").first()).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Workout Center" }).first()).toBeVisible();
 	});
 
 	test("logs a past strength workout through the browser", async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe("Workout Center", () => {
 		await expectWorkoutCenterMessage(page, "Workout saved to history.");
 
 		await gotoAppPage(page, "dashboard/workouts");
-		await expect(page.getByText(workoutNote)).toBeVisible();
+		await expect(page.getByText(workoutNote).first()).toBeVisible();
 	});
 
 	test("schedules a future strength session from the Workout Center", async ({ page }) => {

@@ -33,7 +33,7 @@ export async function expectAppRoute(page: Page, pathname: string): Promise<void
 
 	const marker = ROUTE_MARKERS[getRouteKey(pathname)];
 	if (marker) {
-		await expect(page.getByTestId(marker)).toBeVisible({ timeout: 60_000 });
+		await expect(page.getByTestId(marker).first()).toBeVisible({ timeout: 60_000 });
 	}
 }
 
