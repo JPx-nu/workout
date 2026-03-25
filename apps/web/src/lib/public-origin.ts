@@ -1,7 +1,10 @@
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"]);
 
 function normalizeHostname(hostname: string): string {
-	return hostname.trim().replace(/^\[(.*)\]$/, "$1").toLowerCase();
+	return hostname
+		.trim()
+		.replace(/^\[(.*)\]$/, "$1")
+		.toLowerCase();
 }
 
 function getHostHostname(host: string): string | null {
@@ -42,7 +45,8 @@ export function getRequestPublicOrigin(request: Request): string {
 	const requestUrl = new URL(request.url);
 	const forwardedHost = request.headers.get("x-forwarded-host");
 	const host = request.headers.get("host");
-	const forwardedProto = request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
+	const forwardedProto =
+		request.headers.get("x-forwarded-proto") ?? requestUrl.protocol.replace(":", "");
 
 	for (const candidate of [forwardedHost, host]) {
 		if (!candidate) continue;
