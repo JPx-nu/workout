@@ -271,28 +271,32 @@ Deploy-managed GitHub secrets:
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
 - `AZURE_RESOURCE_GROUP`
+- `AZURE_KEY_VAULT_NAME`
 - `AZURE_OPENAI_ENDPOINT`
-- `AZURE_OPENAI_API_KEY`
 - `AZURE_OPENAI_DEPLOYMENT`
 - `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` (optional)
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
 - `WEB_URL`
 - `NEXT_PUBLIC_API_URL`
-- `INTEGRATION_ENCRYPTION_KEY`
 
 Repo-managed runtime app settings written during deploy:
 - API: `APP_ENV=prod`, `FEATURE_AI_ENABLED=true`, `FEATURE_INTEGRATIONS_ENABLED=true`, `FEATURE_MCP_ENABLED=true`
 - API: `AZURE_OPENAI_API_VERSION=2024-12-01-preview`
 - API: `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` if provided; otherwise semantic memory recall is disabled
-- API: `INTEGRATION_ENCRYPTION_KEY`
 - web and API URL/Supabase settings mapped from the deploy workflow
 
-Azure-managed cloud follow-up:
-- move runtime secrets to Key Vault references once the vault and managed-identity wiring exist
-- keep provider credentials out of committed exports and ad-hoc portal-only snapshots
+Azure Key Vault-managed runtime secrets:
+- `AZURE_OPENAI_API_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `INTEGRATION_ENCRYPTION_KEY`
+- `STRAVA_CLIENT_SECRET`
+- `STRAVA_VERIFY_TOKEN`
+
+Current Azure secret store:
+- Key Vault: `jpx-workout-kv-neu`
+- API/web apps use system-assigned managed identities with `Key Vault Secrets User`
 
 Deploy mapping notes:
 - API `API_URL` is sourced from the repo secret `NEXT_PUBLIC_API_URL`.
@@ -300,7 +304,7 @@ Deploy mapping notes:
 - Web `NEXT_PUBLIC_WEB_URL` is sourced from the repo secret `WEB_URL`.
 - API `AZURE_OPENAI_API_VERSION` is pinned by the deploy workflow to `2024-12-01-preview`.
 - API `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` is optional; if unset, embedding-backed memory recall is skipped instead of assuming `text-embedding-3-small` exists in Azure.
-- API `INTEGRATION_ENCRYPTION_KEY` is sourced from GitHub deploy configuration rather than preserving prior Azure state.
+- API runtime secrets are written as Key Vault references using `AZURE_KEY_VAULT_NAME`, not as raw values in App Service settings.
 - Supabase access tokens are verified via JWKS; the deploy workflow does not manage a legacy shared JWT secret.
 - The deploy workflow uses OIDC via `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` instead of `AZURE_CREDENTIALS`.
 - After web deploy, the workflow runs `scripts/smoke-test-ai.mjs` against the published `/api/ai/stream` path using the same public Supabase/API configuration as the deployed app.

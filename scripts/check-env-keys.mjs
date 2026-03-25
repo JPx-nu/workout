@@ -91,12 +91,12 @@ assert(
 	"deploy workflow must allow AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT as an optional secret",
 );
 assert(
-	deployWorkflow.includes('INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}'),
-	"deploy workflow must require INTEGRATION_ENCRYPTION_KEY in preflight",
+	deployWorkflow.includes('KEY_VAULT_NAME: ${{ secrets.AZURE_KEY_VAULT_NAME }}'),
+	"deploy workflow must require AZURE_KEY_VAULT_NAME in preflight",
 );
 assert(
-	deployWorkflow.includes('[INTEGRATION_KEY]="INTEGRATION_ENCRYPTION_KEY"'),
-	"deploy workflow must treat INTEGRATION_ENCRYPTION_KEY as required deploy configuration",
+	!deployWorkflow.includes('INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}'),
+	"deploy workflow must not require INTEGRATION_ENCRYPTION_KEY from GitHub once Key Vault references are used",
 );
 assert(
 	deployWorkflow.includes('AZURE_OPENAI_API_VERSION: "2024-12-01-preview"'),
@@ -127,8 +127,16 @@ assert(
 	"deploy workflow must configure the embeddings deployment app setting explicitly",
 );
 assert(
-	deployWorkflow.includes('INTEGRATION_ENCRYPTION_KEY=$INTEGRATION_KEY'),
-	"deploy workflow must always configure INTEGRATION_ENCRYPTION_KEY from GitHub secrets",
+	deployWorkflow.includes('@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=azure-openai-api-key)'),
+	"deploy workflow must configure the Azure OpenAI API key via Key Vault reference",
+);
+assert(
+	deployWorkflow.includes('@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=supabase-service-role-key)'),
+	"deploy workflow must configure the Supabase service role key via Key Vault reference",
+);
+assert(
+	deployWorkflow.includes('@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=integration-encryption-key)'),
+	"deploy workflow must configure the integration encryption key via Key Vault reference",
 );
 assert(
 	deployWorkflow.includes("node ./scripts/smoke-test-ai.mjs"),
@@ -140,13 +148,23 @@ assert(
 );
 const requiredApiSettingMappings = [
 	["AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_ENDPOINT=$EP"],
-	["AZURE_OPENAI_API_KEY", "AZURE_OPENAI_API_KEY=$KEY"],
+	[
+		"AZURE_OPENAI_API_KEY",
+		"AZURE_OPENAI_API_KEY=@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=azure-openai-api-key)",
+	],
 	["AZURE_OPENAI_DEPLOYMENT", "AZURE_OPENAI_DEPLOYMENT=$DEP"],
 	["SUPABASE_URL", "SUPABASE_URL=$SUPA_URL"],
 	["SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY=$SUPA_PUBLISHABLE"],
-	["SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_ROLE_KEY=$SUPA_SVC"],
+	[
+		"SUPABASE_SERVICE_ROLE_KEY",
+		"SUPABASE_SERVICE_ROLE_KEY=@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=supabase-service-role-key)",
+	],
 	["WEB_URL", "WEB_URL=$WEB"],
 	["API_URL", "API_URL=$API_URL"],
+	[
+		"INTEGRATION_ENCRYPTION_KEY",
+		"INTEGRATION_ENCRYPTION_KEY=@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=integration-encryption-key)",
+	],
 ];
 for (const [key, pattern] of requiredApiSettingMappings) {
 	assert(

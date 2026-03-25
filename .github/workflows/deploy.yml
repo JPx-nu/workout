@@ -40,31 +40,27 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          KEY_VAULT_NAME: ${{ secrets.AZURE_KEY_VAULT_NAME }}
           EP: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           DEP: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
           EMBED_DEP: ${{ secrets.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT }}
           SUPA_URL: ${{ secrets.SUPABASE_URL }}
           SUPA_PUBLISHABLE: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          SUPA_SVC: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           WEB: ${{ secrets.WEB_URL }}
           API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}
         run: |
           declare -A required=(
             [AZURE_CLIENT_ID]="AZURE_CLIENT_ID"
             [AZURE_TENANT_ID]="AZURE_TENANT_ID"
             [AZURE_SUBSCRIPTION_ID]="AZURE_SUBSCRIPTION_ID"
             [RG]="AZURE_RESOURCE_GROUP"
+            [KEY_VAULT_NAME]="AZURE_KEY_VAULT_NAME"
             [EP]="AZURE_OPENAI_ENDPOINT"
-            [KEY]="AZURE_OPENAI_API_KEY"
             [DEP]="AZURE_OPENAI_DEPLOYMENT"
             [SUPA_URL]="SUPABASE_URL"
             [SUPA_PUBLISHABLE]="NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
-            [SUPA_SVC]="SUPABASE_SERVICE_ROLE_KEY"
             [WEB]="WEB_URL"
             [API_URL]="NEXT_PUBLIC_API_URL"
-            [INTEGRATION_KEY]="INTEGRATION_ENCRYPTION_KEY"
           )
           missing=()
           for var_name in "${!required[@]}"; do
@@ -135,34 +131,34 @@ jobs:
       - name: Configure API App Settings
         env:
           RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          KEY_VAULT_NAME: ${{ secrets.AZURE_KEY_VAULT_NAME }}
           EP: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
-          KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           DEP: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
           EMBED_DEP: ${{ secrets.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT }}
           SUPA_URL: ${{ secrets.SUPABASE_URL }}
           SUPA_PUBLISHABLE: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-          SUPA_SVC: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           WEB: ${{ secrets.WEB_URL }}
           API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}
         run: |
           # The deploy workflow owns production app settings so Azure portal edits cannot drift.
           settings=(
             "AZURE_OPENAI_ENDPOINT=$EP"
-            "AZURE_OPENAI_API_KEY=$KEY"
+            "AZURE_OPENAI_API_KEY=@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=azure-openai-api-key)"
             "AZURE_OPENAI_DEPLOYMENT=$DEP"
             "AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT=$EMBED_DEP"
             "AZURE_OPENAI_API_VERSION=$AZURE_OPENAI_API_VERSION"
             "SUPABASE_URL=$SUPA_URL"
             "SUPABASE_ANON_KEY=$SUPA_PUBLISHABLE"
-            "SUPABASE_SERVICE_ROLE_KEY=$SUPA_SVC"
+            "SUPABASE_SERVICE_ROLE_KEY=@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=supabase-service-role-key)"
             "WEB_URL=$WEB"
             "API_URL=$API_URL"
             "APP_ENV=prod"
             "FEATURE_AI_ENABLED=true"
             "FEATURE_INTEGRATIONS_ENABLED=true"
             "FEATURE_MCP_ENABLED=true"
-            "INTEGRATION_ENCRYPTION_KEY=$INTEGRATION_KEY"
+            "INTEGRATION_ENCRYPTION_KEY=@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=integration-encryption-key)"
+            "STRAVA_CLIENT_SECRET=@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=strava-client-secret)"
+            "STRAVA_VERIFY_TOKEN=@Microsoft.KeyVault(VaultName=$KEY_VAULT_NAME;SecretName=strava-verify-token)"
             "WEBSITE_RUN_FROM_PACKAGE=0"
           )
 

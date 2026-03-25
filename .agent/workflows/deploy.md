@@ -16,14 +16,12 @@ description: Current Azure deployment workflow for the triathlon-app monorepo
 - `AZURE_TENANT_ID`
 - `AZURE_SUBSCRIPTION_ID`
 - `AZURE_RESOURCE_GROUP`
+- `AZURE_KEY_VAULT_NAME`
 - `AZURE_OPENAI_ENDPOINT`
-- `AZURE_OPENAI_API_KEY`
 - `AZURE_OPENAI_DEPLOYMENT`
-- `INTEGRATION_ENCRYPTION_KEY`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
 - `WEB_URL`
 - `NEXT_PUBLIC_API_URL`
 
@@ -41,6 +39,9 @@ pnpm --filter @triathlon/api build:deploy
 4. Applies API app settings, mapping:
    - `API_URL` <- `NEXT_PUBLIC_API_URL`
    - `SUPABASE_ANON_KEY` <- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `AZURE_OPENAI_API_KEY` <- Key Vault reference
+   - `SUPABASE_SERVICE_ROLE_KEY` <- Key Vault reference
+   - `INTEGRATION_ENCRYPTION_KEY` <- Key Vault reference
    - `APP_ENV` <- `prod`
    - `FEATURE_AI_ENABLED` <- `true`
    - `FEATURE_INTEGRATIONS_ENABLED` <- `true`
@@ -59,9 +60,9 @@ pnpm --filter web build
 
 - `apps/api/dist-deploy` is generated output, not source.
 - The workflow uses OIDC via `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`.
+- Runtime secrets are read from Azure Key Vault `jpx-workout-kv-neu` via App Service Key Vault references and system-assigned managed identity.
 - `AZURE_OPENAI_API_VERSION` is pinned in the workflow to `2024-12-01-preview`.
 - `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` is optional. When it is unset, semantic memory recall is skipped instead of assuming an embeddings deployment exists.
-- `INTEGRATION_ENCRYPTION_KEY` is required deploy configuration.
 
 ## Verification Commands
 

@@ -76,11 +76,12 @@ Playwright note:
 - Web and mobile settings both consume the same `/api/integrations/status` contract and per-provider action routes.
 - Cross-app data contracts should stay in `packages/types`; shared pure logic should stay in `packages/core`.
 - Azure deploys are health-gated: API deploys first and must pass `/health` before web deploy starts. Azure Health Check uses `/health` for the API and `/workout/health` for the web app.
-- GitHub is the source of truth for deploy identity, build-time public values, and runtime app settings applied during deploy. The workflow now uses OIDC (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`) instead of a long-lived `AZURE_CREDENTIALS` secret.
+- GitHub is the source of truth for deploy identity and build-time public values. The workflow now uses OIDC (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`) instead of a long-lived `AZURE_CREDENTIALS` secret.
 - The deploy workflow maps API `API_URL` from `NEXT_PUBLIC_API_URL` and API `SUPABASE_ANON_KEY` from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to keep web and API config aligned.
 - `AZURE_OPENAI_API_VERSION` defaults to `2024-12-01-preview` and is written by the deploy workflow so Azure cannot drift from the repo default.
 - `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` is optional. If it is unset, semantic memory recall is skipped instead of assuming an embeddings deployment exists.
-- `INTEGRATION_ENCRYPTION_KEY` remains runtime-required for integrations and is now treated as required deploy configuration rather than preserving a portal-only Azure value.
+- Runtime secrets now live in Azure Key Vault (`jpx-workout-kv-neu`) and App Service reads them through Key Vault references plus managed identity instead of storing raw secret values directly in App Service settings.
+- `INTEGRATION_ENCRYPTION_KEY` remains runtime-required for integrations and is now sourced from Key Vault instead of preserving a portal-only Azure value.
 - The deploy workflow smoke-tests the published AI path after web rollout by signing into Supabase and calling `/api/ai/stream`, so a green deploy now covers more than `/health`.
 - Live Azure app-setting exports should never be committed. Use `.env.azure.example.json` as a shape-only reference if you need a local snapshot format.
 - Supabase access tokens are verified through JWKS; the repo does not manage a legacy `SUPABASE_JWT_SECRET`.

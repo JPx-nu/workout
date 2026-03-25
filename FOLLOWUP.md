@@ -67,8 +67,8 @@ Last updated: 2026-03-25
 - [ ] **Legal copy review**
       Privacy/terms pages now match the current shipped product surface more closely, but they still need formal legal review before they should be treated as final legal text.
 
-- [ ] **Azure Key Vault migration for App Service secrets**
-      Deploy auth now uses OIDC and the workflow owns runtime settings, but runtime secrets still need to move from direct app settings/GitHub secret injection to App Service Key Vault references once the vault and managed-identity wiring are provisioned.
+- [ ] **Finish Key Vault coverage for remaining provider/runtime secrets**
+      Core API secrets now live in Key Vault and App Service reads them through managed identity, but remaining provider/runtime secrets should be audited and moved into the same pattern so the portal does not become a second source of truth again.
 
 - [ ] **Dedicated published AI smoke-test account**
       The deploy workflow now exercises the published `/api/ai/stream` path; move it off the shared demo fallback to a dedicated low-privilege smoke-test user before tightening auth and demo access further.

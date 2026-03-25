@@ -22,7 +22,7 @@ pnpm --filter web build
 - API `API_URL` is sourced from `NEXT_PUBLIC_API_URL`.
 - API `SUPABASE_ANON_KEY` is sourced from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - The deploy workflow uses OIDC via `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`.
-- `INTEGRATION_ENCRYPTION_KEY` is required deploy configuration.
+- Runtime secrets are read from Azure Key Vault `jpx-workout-kv-neu` through App Service Key Vault references and system-assigned managed identity.
 - `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` is optional; if unset, semantic memory recall is skipped.
 - The deploy workflow smoke-tests the published AI path after web rollout with `node ./scripts/smoke-test-ai.mjs`.
 
