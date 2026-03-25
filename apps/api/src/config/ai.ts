@@ -18,9 +18,8 @@ export const AI_CONFIG = {
 		apiKey: process.env.AZURE_OPENAI_API_KEY || "",
 		/** Deployment name for the chat model (e.g. "gpt-5-mini") */
 		deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-5-mini",
-		/** Deployment name for the embeddings model (e.g. "text-embedding-3-small") */
-		embeddingsDeployment:
-			process.env.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT || "text-embedding-3-small",
+		/** Deployment name for the embeddings model. Leave empty to disable semantic memory recall. */
+		embeddingsDeployment: process.env.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT || "",
 		/** API version — optional env override; defaults in code for smoother dev deploys */
 		apiVersion: process.env.AZURE_OPENAI_API_VERSION || "2024-12-01-preview",
 	},
@@ -108,6 +107,7 @@ export function validateAIConfig(): { valid: boolean; missing: string[] } {
 		missing.push("AZURE_OPENAI_INSTANCE_NAME or AZURE_OPENAI_ENDPOINT");
 	}
 	if (!AI_CONFIG.azure.apiKey) missing.push("AZURE_OPENAI_API_KEY");
+	if (!AI_CONFIG.azure.deploymentName) missing.push("AZURE_OPENAI_DEPLOYMENT");
 
 	if (missing.length > 0) {
 		log.warn(
@@ -117,6 +117,10 @@ export function validateAIConfig(): { valid: boolean; missing: string[] } {
 	}
 
 	return { valid: missing.length === 0, missing };
+}
+
+export function hasEmbeddingsDeployment(): boolean {
+	return AI_CONFIG.azure.embeddingsDeployment.trim().length > 0;
 }
 
 /** Resolves Azure instance name from explicit env var or parses endpoint URL */

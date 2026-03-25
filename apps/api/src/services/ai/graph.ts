@@ -9,7 +9,7 @@ import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toIsoDate } from "@triathlon/core";
-import { AI_CONFIG, getAzureInstanceName } from "../../config/ai.js";
+import { AI_CONFIG, getAzureInstanceName, hasEmbeddingsDeployment } from "../../config/ai.js";
 import { createLogger } from "../../lib/logger.js";
 import { createEmbeddings } from "./utils/embeddings.js";
 
@@ -71,7 +71,7 @@ export async function createAgent(
 	// Semantic memory recall: embed user message and find relevant memories
 	const allMemories: AthleteMemory[] = [...pinnedMemories];
 
-	if (userMessage) {
+	if (userMessage && hasEmbeddingsDeployment()) {
 		try {
 			const embeddingsModel = createEmbeddings();
 

@@ -21,7 +21,10 @@ pnpm --filter web build
 - Web health check path is `/workout/health`.
 - API `API_URL` is sourced from `NEXT_PUBLIC_API_URL`.
 - API `SUPABASE_ANON_KEY` is sourced from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-- `INTEGRATION_ENCRYPTION_KEY` stays Azure-managed unless a GitHub override secret is provided.
+- The deploy workflow uses OIDC via `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`.
+- `INTEGRATION_ENCRYPTION_KEY` is required deploy configuration.
+- `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` is optional; if unset, semantic memory recall is skipped.
+- The deploy workflow smoke-tests the published AI path after web rollout with `node ./scripts/smoke-test-ai.mjs`.
 
 ## Verification
 

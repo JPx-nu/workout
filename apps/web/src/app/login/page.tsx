@@ -12,7 +12,21 @@ function isFeatureEnabled(value: string | undefined): boolean {
 	return process.env.NODE_ENV === "development";
 }
 
+function isLocalBrowserHost(hostname: string): boolean {
+	return (
+		hostname === "localhost" ||
+		hostname === "127.0.0.1" ||
+		hostname === "0.0.0.0" ||
+		hostname === "::1"
+	);
+}
+
+/** Public URL for OAuth / email redirects. Local hosts always use the browser origin so `.env` can keep production `NEXT_PUBLIC_WEB_URL` for CSP/build without sending Google sign-in to prod. */
 function getPublicOrigin() {
+	if (typeof window !== "undefined" && isLocalBrowserHost(window.location.hostname)) {
+		return window.location.origin;
+	}
+
 	const configured = process.env.NEXT_PUBLIC_WEB_URL;
 	if (configured) {
 		try {

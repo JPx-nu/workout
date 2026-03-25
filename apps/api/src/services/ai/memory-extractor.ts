@@ -7,7 +7,7 @@
 
 import { AzureChatOpenAI } from "@langchain/openai";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { AI_CONFIG, getAzureInstanceName } from "../../config/ai.js";
+import { AI_CONFIG, getAzureInstanceName, hasEmbeddingsDeployment } from "../../config/ai.js";
 import { createLogger } from "../../lib/logger.js";
 import { getRecentMemories, insertMemory } from "./supabase.js";
 import { createEmbeddings } from "./utils/embeddings.js";
@@ -65,7 +65,7 @@ export async function extractMemories(
 			azureOpenAIApiKey: AI_CONFIG.azure.apiKey,
 			azureOpenAIApiDeploymentName: AI_CONFIG.azure.deploymentName,
 			azureOpenAIApiVersion: AI_CONFIG.azure.apiVersion,
-			temperature: 0, // Deterministic extraction
+			temperature: AI_CONFIG.model.temperature,
 			modelKwargs: { max_completion_tokens: 512 },
 		});
 
@@ -104,38 +104,56 @@ export async function extractMemories(
 
 		if (candidates.length === 0) return;
 
-		// Deduplicate via embeddings — skip if too similar to existing memories
-		const embeddingsModel = createEmbeddings();
-
-		// Get embeddings for existing memories that have them
-		const existingEmbeddings = existingMemories.flatMap((memory) =>
-			memory.embedding && memory.embedding.length > 0
-				? [{ content: memory.content, embedding: memory.embedding }]
-				: [],
+		const embeddingsEnabled = hasEmbeddingsDeployment();
+		const embeddingsModel = embeddingsEnabled ? createEmbeddings() : null;
+		const normalizedExistingContents = new Set(
+			existingMemories.map((memory) => memory.content.trim().toLowerCase()),
 		);
+		const existingEmbeddings = embeddingsEnabled
+			? existingMemories.flatMap((memory) =>
+					memory.embedding && memory.embedding.length > 0
+						? [{ content: memory.content, embedding: memory.embedding }]
+						: [],
+				)
+			: [];
 
 		for (const candidate of candidates) {
 			try {
-				const candidateEmbedding = await embeddingsModel.embedQuery(candidate.content);
-
-				// Check cosine similarity against existing memories
-				const isDuplicate = existingEmbeddings.some((existing) => {
-					const similarity = cosineSimilarity(candidateEmbedding, existing.embedding);
-					return similarity > AI_CONFIG.thresholds.memorySimilarity;
-				});
-
-				if (isDuplicate) {
+				const normalizedCandidate = candidate.content.trim().toLowerCase();
+				if (normalizedExistingContents.has(normalizedCandidate)) {
 					continue;
 				}
 
-				// Save the new memory
+				let candidateEmbedding: number[] | undefined;
+				if (embeddingsModel) {
+					candidateEmbedding = await embeddingsModel.embedQuery(candidate.content);
+					const embedding = candidateEmbedding;
+
+					// Check cosine similarity against existing memories
+					const isDuplicate = existingEmbeddings.some((existing) => {
+						const similarity = cosineSimilarity(embedding, existing.embedding);
+						return similarity > AI_CONFIG.thresholds.memorySimilarity;
+					});
+
+					if (isDuplicate) {
+						continue;
+					}
+				}
+
 				await insertMemory(client, {
 					athlete_id: userId,
 					category: candidate.category,
 					content: candidate.content,
 					importance: Math.min(5, Math.max(1, Math.round(candidate.importance))),
-					embedding: candidateEmbedding,
+					...(candidateEmbedding ? { embedding: candidateEmbedding } : {}),
 				});
+				normalizedExistingContents.add(normalizedCandidate);
+				if (candidateEmbedding) {
+					existingEmbeddings.push({
+						content: candidate.content,
+						embedding: candidateEmbedding,
+					});
+				}
 
 				log.info({ category: candidate.category, content: candidate.content }, "Memory extracted");
 			} catch (err) {

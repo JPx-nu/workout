@@ -9,8 +9,8 @@ export function toDateInputValue(date: Date): string {
 }
 
 export async function openExercisePicker(page: Page): Promise<void> {
-	await page.getByTestId("add-exercise-button").click();
-	await expect(page.getByTestId("exercise-picker")).toBeVisible();
+	await page.getByTestId("add-exercise-button").first().click();
+	await expect(page.getByTestId("exercise-picker").first()).toBeVisible();
 }
 
 export async function addLibraryExercise(
@@ -19,8 +19,8 @@ export async function addLibraryExercise(
 	exerciseName: RegExp,
 ): Promise<void> {
 	await openExercisePicker(page);
-	await page.getByTestId("exercise-tab-library").click();
-	await page.getByTestId("exercise-search-input").fill(searchTerm);
+	await page.getByTestId("exercise-tab-library").first().click();
+	await page.getByTestId("exercise-search-input").first().fill(searchTerm);
 	const firstResult = page.locator('[data-testid^="exercise-result-"]').first();
 	await expect(firstResult).toBeVisible();
 	await expect(firstResult).toContainText(exerciseName);
@@ -52,5 +52,5 @@ export async function expectWorkoutCenterMessage(
 	page: Page,
 	message: string | RegExp,
 ): Promise<void> {
-	await expect(page.getByTestId("workout-center-message")).toContainText(message);
+	await expect(page.getByTestId("workout-center-message").first()).toContainText(message);
 }

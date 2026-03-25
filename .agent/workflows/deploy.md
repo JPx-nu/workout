@@ -12,11 +12,14 @@ description: Current Azure deployment workflow for the triathlon-app monorepo
 
 ## Required GitHub Secrets
 
-- `AZURE_CREDENTIALS`
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
 - `AZURE_RESOURCE_GROUP`
 - `AZURE_OPENAI_ENDPOINT`
 - `AZURE_OPENAI_API_KEY`
 - `AZURE_OPENAI_DEPLOYMENT`
+- `INTEGRATION_ENCRYPTION_KEY`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_URL`
@@ -25,8 +28,7 @@ description: Current Azure deployment workflow for the triathlon-app monorepo
 - `NEXT_PUBLIC_API_URL`
 
 Optional override secrets:
-- `AZURE_OPENAI_API_VERSION`
-- `INTEGRATION_ENCRYPTION_KEY`
+- `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT`
 
 ## What the Workflow Does
 
@@ -39,6 +41,10 @@ pnpm --filter @triathlon/api build:deploy
 4. Applies API app settings, mapping:
    - `API_URL` <- `NEXT_PUBLIC_API_URL`
    - `SUPABASE_ANON_KEY` <- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `APP_ENV` <- `prod`
+   - `FEATURE_AI_ENABLED` <- `true`
+   - `FEATURE_INTEGRATIONS_ENABLED` <- `true`
+   - `FEATURE_MCP_ENABLED` <- `true`
 5. Smoke-tests `GET /health` before deploying the web app.
 6. Builds the web app with:
 ```bash
@@ -47,12 +53,15 @@ pnpm --filter web build
 7. Packages the Next standalone output.
 8. Configures the web app to Node `24.x`, `alwaysOn`, and health check `/workout/health`.
 9. Smoke-tests `https://jpx-workout-web.azurewebsites.net/workout/`.
+10. Smoke-tests the published `/api/ai/stream` path with `node ./scripts/smoke-test-ai.mjs`.
 
 ## Notes
 
 - `apps/api/dist-deploy` is generated output, not source.
-- `INTEGRATION_ENCRYPTION_KEY` remains Azure-managed unless a GitHub override secret is intentionally provided.
-- `AZURE_OPENAI_API_VERSION` falls back to the code default `2024-12-01-preview` when not overridden.
+- The workflow uses OIDC via `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`.
+- `AZURE_OPENAI_API_VERSION` is pinned in the workflow to `2024-12-01-preview`.
+- `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` is optional. When it is unset, semantic memory recall is skipped instead of assuming an embeddings deployment exists.
+- `INTEGRATION_ENCRYPTION_KEY` is required deploy configuration.
 
 ## Verification Commands
 

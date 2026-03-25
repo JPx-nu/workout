@@ -44,7 +44,25 @@
       "Bash(do echo:*)",
       "Bash(done)",
       "Bash(python3 -c \"import sys,json,base64; t=json.load\\(sys.stdin\\).get\\(''''access_token'''',''''''''\\); parts=t.split\\(''''.''''\\); header=json.loads\\(base64.urlsafe_b64decode\\(parts[0]+''''==''''\\)\\) if len\\(parts\\)>=2 else {}; print\\(json.dumps\\(header, indent=2\\)\\)\")",
-      "Bash(node -e \"const d=require\\(''''fs''''\\).readFileSync\\(0,''''utf8''''\\); const t=JSON.parse\\(d\\).access_token; const h=Buffer.from\\(t.split\\(''''.''''\\)[0],''''base64url''''\\).toString\\(\\); console.log\\(h\\)\")"
+      "Bash(node -e \"const d=require\\(''''fs''''\\).readFileSync\\(0,''''utf8''''\\); const t=JSON.parse\\(d\\).access_token; const h=Buffer.from\\(t.split\\(''''.''''\\)[0],''''base64url''''\\).toString\\(\\); console.log\\(h\\)\")",
+      "Bash(ls -la c:/git/jpx/workout/.env* c:/git/jpx/workout/apps/api/.env*)",
+      "Bash(pnpm dev)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(sleep *)",
+      "Bash(kill *)",
+      "Bash(node *)",
+      "Bash(npx *)",
+      "Bash(cd *)",
+      "Bash(tail *)",
+      "Bash(head *)",
+      "Bash(az *)",
+      "WebFetch(domain:jpx.nu)",
+      "WebFetch(domain:jpx-workout-api.azurewebsites.net)",
+      "WebFetch(domain:localhost)",
+      "WebFetch(domain:ykqoeprpbwxkoytaqngf.supabase.co)",
+      "Bash(PLAYWRIGHT_BASE_URL=https://jpx.nu/workout npx playwright test coach.spec.ts --reporter=line)",
+      "Bash(PLAYWRIGHT_BASE_URL=https://jpx.nu/workout npx playwright test --reporter=line)"
     ]
   }
 }

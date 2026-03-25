@@ -70,7 +70,7 @@
 			"formatter": { "enabled": false }
 		},
 		{
-			"includes": [".env.azure.json"],
+			"includes": [".env.azure.example.json"],
 			"linter": { "enabled": false },
 			"formatter": { "enabled": false }
 		},

@@ -267,36 +267,50 @@ API:
 - `PORT` (optional, defaults to `8787`)
 
 Deploy-managed GitHub secrets:
-- `AZURE_CREDENTIALS`
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
 - `AZURE_RESOURCE_GROUP`
 - `AZURE_OPENAI_ENDPOINT`
 - `AZURE_OPENAI_API_KEY`
 - `AZURE_OPENAI_DEPLOYMENT`
+- `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` (optional)
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `WEB_URL`
 - `NEXT_PUBLIC_API_URL`
-
-Azure-managed runtime app settings:
 - `INTEGRATION_ENCRYPTION_KEY`
-- integration provider credentials such as `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, and `STRAVA_VERIFY_TOKEN`
-- `AZURE_OPENAI_API_VERSION` only when you need to override the code default
+
+Repo-managed runtime app settings written during deploy:
+- API: `APP_ENV=prod`, `FEATURE_AI_ENABLED=true`, `FEATURE_INTEGRATIONS_ENABLED=true`, `FEATURE_MCP_ENABLED=true`
+- API: `AZURE_OPENAI_API_VERSION=2024-12-01-preview`
+- API: `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` if provided; otherwise semantic memory recall is disabled
+- API: `INTEGRATION_ENCRYPTION_KEY`
+- web and API URL/Supabase settings mapped from the deploy workflow
+
+Azure-managed cloud follow-up:
+- move runtime secrets to Key Vault references once the vault and managed-identity wiring exist
+- keep provider credentials out of committed exports and ad-hoc portal-only snapshots
 
 Deploy mapping notes:
 - API `API_URL` is sourced from the repo secret `NEXT_PUBLIC_API_URL`.
 - API `SUPABASE_ANON_KEY` is sourced from the repo secret `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - Web `NEXT_PUBLIC_WEB_URL` is sourced from the repo secret `WEB_URL`.
-- API `AZURE_OPENAI_API_VERSION` falls back to the code default `2024-12-01-preview` when no Azure or GitHub override is set.
-- API `INTEGRATION_ENCRYPTION_KEY` stays Azure-managed in dev unless a GitHub secret override is provided.
+- API `AZURE_OPENAI_API_VERSION` is pinned by the deploy workflow to `2024-12-01-preview`.
+- API `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` is optional; if unset, embedding-backed memory recall is skipped instead of assuming `text-embedding-3-small` exists in Azure.
+- API `INTEGRATION_ENCRYPTION_KEY` is sourced from GitHub deploy configuration rather than preserving prior Azure state.
 - Supabase access tokens are verified via JWKS; the deploy workflow does not manage a legacy shared JWT secret.
+- The deploy workflow uses OIDC via `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` instead of `AZURE_CREDENTIALS`.
+- After web deploy, the workflow runs `scripts/smoke-test-ai.mjs` against the published `/api/ai/stream` path using the same public Supabase/API configuration as the deployed app.
 
 Deployment recovery checklist:
 - verify the expected GitHub secrets are present and non-empty
 - confirm Azure runtime is Node `24.x`
 - confirm Health Check paths are `/health` and `/workout/health`
 - hit the deployed API `/health` before investigating the web app
+- run the published AI smoke test or inspect the workflow step if AI appears unavailable
 
 Mobile compile-time defines:
 - `SUPABASE_URL`

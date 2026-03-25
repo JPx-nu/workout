@@ -34,7 +34,7 @@ export const test = base.extend<{
 				}
 			});
 
-			await use();
+			await use(undefined);
 
 			await testInfo.attach("final-url", {
 				body: page.url(),

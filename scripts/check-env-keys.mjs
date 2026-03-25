@@ -83,36 +83,56 @@ assert(
 	"deploy workflow must source API_URL from NEXT_PUBLIC_API_URL",
 );
 assert(
-	deployWorkflow.includes('API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}'),
-	"deploy workflow must allow AZURE_OPENAI_API_VERSION as an optional override secret",
+	envExample.includes("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT="),
+	".env.example must define AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT",
+);
+assert(
+	deployWorkflow.includes('EMBED_DEP: ${{ secrets.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT }}'),
+	"deploy workflow must allow AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT as an optional secret",
 );
 assert(
 	deployWorkflow.includes('INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}'),
-	"deploy workflow must allow INTEGRATION_ENCRYPTION_KEY as an optional override secret",
+	"deploy workflow must require INTEGRATION_ENCRYPTION_KEY in preflight",
 );
 assert(
-	!deployWorkflow.includes('[API_VERSION]="AZURE_OPENAI_API_VERSION"'),
-	"deploy workflow must not require AZURE_OPENAI_API_VERSION in preflight",
+	deployWorkflow.includes('[INTEGRATION_KEY]="INTEGRATION_ENCRYPTION_KEY"'),
+	"deploy workflow must treat INTEGRATION_ENCRYPTION_KEY as required deploy configuration",
 );
 assert(
-	!deployWorkflow.includes('[INTEGRATION_KEY]="INTEGRATION_ENCRYPTION_KEY"'),
-	"deploy workflow must not require INTEGRATION_ENCRYPTION_KEY in preflight",
+	deployWorkflow.includes('AZURE_OPENAI_API_VERSION: "2024-12-01-preview"'),
+	"deploy workflow must define the default AZURE_OPENAI_API_VERSION in workflow env",
 );
 assert(
-	deployWorkflow.includes('if [ -n "${API_VERSION:-}" ]; then'),
-	"deploy workflow must preserve Azure or code defaults when AZURE_OPENAI_API_VERSION is unset",
+	deployWorkflow.includes('AZURE_OPENAI_API_VERSION=$AZURE_OPENAI_API_VERSION'),
+	"deploy workflow must always configure AZURE_OPENAI_API_VERSION from workflow env",
 );
 assert(
-	deployWorkflow.includes('settings+=("AZURE_OPENAI_API_VERSION=$API_VERSION")'),
-	"deploy workflow must only apply AZURE_OPENAI_API_VERSION when an override is provided",
+	!deployWorkflow.includes("AZURE_CREDENTIALS"),
+	"deploy workflow must not use long-lived AZURE_CREDENTIALS auth",
 );
 assert(
-	deployWorkflow.includes('if [ -n "${INTEGRATION_KEY:-}" ]; then'),
-	"deploy workflow must preserve Azure-managed integration secrets when no override is provided",
+	deployWorkflow.includes('client-id: ${{ secrets.AZURE_CLIENT_ID }}'),
+	"deploy workflow must use OIDC AZURE_CLIENT_ID auth",
 );
 assert(
-	deployWorkflow.includes('settings+=("INTEGRATION_ENCRYPTION_KEY=$INTEGRATION_KEY")'),
-	"deploy workflow must only apply INTEGRATION_ENCRYPTION_KEY when an override is provided",
+	deployWorkflow.includes('tenant-id: ${{ secrets.AZURE_TENANT_ID }}'),
+	"deploy workflow must use OIDC AZURE_TENANT_ID auth",
+);
+assert(
+	deployWorkflow.includes('subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}'),
+	"deploy workflow must use OIDC AZURE_SUBSCRIPTION_ID auth",
+);
+assert(
+	deployWorkflow.includes('AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT=$EMBED_DEP'),
+	"deploy workflow must configure the embeddings deployment app setting explicitly",
+);
+assert(
+	deployWorkflow.includes('INTEGRATION_ENCRYPTION_KEY=$INTEGRATION_KEY'),
+	"deploy workflow must always configure INTEGRATION_ENCRYPTION_KEY from GitHub secrets",
+);
+assert(
+	deployWorkflow.includes("node ./scripts/smoke-test-ai.mjs"),
+	"deploy workflow must smoke-test the published AI path after web deploy",
 );
 assert(
 	!deployWorkflow.includes("SUPABASE_JWT_SECRET"),

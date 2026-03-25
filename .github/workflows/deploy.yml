@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+
 # Keep mainline deploys serialized so stale pushes cannot roll out after newer ones.
 concurrency:
   group: deploy-main
@@ -14,6 +18,7 @@ concurrency:
 env:
   NODE_VERSION: "24"
   AZURE_NODE_RUNTIME: "NODE:24-lts"
+  AZURE_OPENAI_API_VERSION: "2024-12-01-preview"
   API_APP_NAME: "jpx-workout-api"
   WEB_APP_NAME: "jpx-workout-web"
   API_HEALTH_PATH: "/health"
@@ -31,11 +36,14 @@ jobs:
       # Fail before mutating Azure if required repo secrets are missing.
       - name: Preflight API deploy configuration
         env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
           EP: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           DEP: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
-          API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+          EMBED_DEP: ${{ secrets.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT }}
           SUPA_URL: ${{ secrets.SUPABASE_URL }}
           SUPA_PUBLISHABLE: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           SUPA_SVC: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -44,6 +52,9 @@ jobs:
           INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}
         run: |
           declare -A required=(
+            [AZURE_CLIENT_ID]="AZURE_CLIENT_ID"
+            [AZURE_TENANT_ID]="AZURE_TENANT_ID"
+            [AZURE_SUBSCRIPTION_ID]="AZURE_SUBSCRIPTION_ID"
             [RG]="AZURE_RESOURCE_GROUP"
             [EP]="AZURE_OPENAI_ENDPOINT"
             [KEY]="AZURE_OPENAI_API_KEY"
@@ -53,6 +64,7 @@ jobs:
             [SUPA_SVC]="SUPABASE_SERVICE_ROLE_KEY"
             [WEB]="WEB_URL"
             [API_URL]="NEXT_PUBLIC_API_URL"
+            [INTEGRATION_KEY]="INTEGRATION_ENCRYPTION_KEY"
           )
           missing=()
           for var_name in "${!required[@]}"; do
@@ -100,7 +112,9 @@ jobs:
         id: api_azure_login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Configure API runtime and health checks
         env:
@@ -124,7 +138,7 @@ jobs:
           EP: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
           DEP: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
-          API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
+          EMBED_DEP: ${{ secrets.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT }}
           SUPA_URL: ${{ secrets.SUPABASE_URL }}
           SUPA_PUBLISHABLE: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           SUPA_SVC: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -132,31 +146,25 @@ jobs:
           API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
           INTEGRATION_KEY: ${{ secrets.INTEGRATION_ENCRYPTION_KEY }}
         run: |
-          # GitHub remains the source of truth for build-critical/public settings.
-          # Runtime-only API secrets can stay Azure-managed in dev unless a secret override is provided here.
+          # The deploy workflow owns production app settings so Azure portal edits cannot drift.
           settings=(
             "AZURE_OPENAI_ENDPOINT=$EP"
             "AZURE_OPENAI_API_KEY=$KEY"
             "AZURE_OPENAI_DEPLOYMENT=$DEP"
+            "AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT=$EMBED_DEP"
+            "AZURE_OPENAI_API_VERSION=$AZURE_OPENAI_API_VERSION"
             "SUPABASE_URL=$SUPA_URL"
             "SUPABASE_ANON_KEY=$SUPA_PUBLISHABLE"
             "SUPABASE_SERVICE_ROLE_KEY=$SUPA_SVC"
             "WEB_URL=$WEB"
             "API_URL=$API_URL"
+            "APP_ENV=prod"
+            "FEATURE_AI_ENABLED=true"
+            "FEATURE_INTEGRATIONS_ENABLED=true"
+            "FEATURE_MCP_ENABLED=true"
+            "INTEGRATION_ENCRYPTION_KEY=$INTEGRATION_KEY"
             "WEBSITE_RUN_FROM_PACKAGE=0"
           )
-
-          if [ -n "${API_VERSION:-}" ]; then
-            settings+=("AZURE_OPENAI_API_VERSION=$API_VERSION")
-          else
-            echo "AZURE_OPENAI_API_VERSION not provided via GitHub secrets; preserving Azure app setting or code default."
-          fi
-
-          if [ -n "${INTEGRATION_KEY:-}" ]; then
-            settings+=("INTEGRATION_ENCRYPTION_KEY=$INTEGRATION_KEY")
-          else
-            echo "INTEGRATION_ENCRYPTION_KEY not provided via GitHub secrets; preserving existing Azure app setting."
-          fi
 
           az webapp config appsettings set \
             --resource-group "$RG" \
@@ -210,12 +218,17 @@ jobs:
             AZURE_OPENAI_ENDPOINT \
             AZURE_OPENAI_API_KEY \
             AZURE_OPENAI_DEPLOYMENT \
+            AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT \
             AZURE_OPENAI_API_VERSION \
             SUPABASE_URL \
             SUPABASE_ANON_KEY \
             SUPABASE_SERVICE_ROLE_KEY \
             WEB_URL \
             API_URL \
+            APP_ENV \
+            FEATURE_AI_ENABLED \
+            FEATURE_INTEGRATIONS_ENABLED \
+            FEATURE_MCP_ENABLED \
             INTEGRATION_ENCRYPTION_KEY
           do
             if printf '%s\n' "$existing_names" | grep -qx "$name"; then
@@ -235,6 +248,9 @@ jobs:
       # Fail before mutating Azure if required repo secrets are missing.
       - name: Preflight web deploy configuration
         env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
           PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
@@ -242,6 +258,9 @@ jobs:
           WEB: ${{ secrets.WEB_URL }}
         run: |
           declare -A required=(
+            [AZURE_CLIENT_ID]="AZURE_CLIENT_ID"
+            [AZURE_TENANT_ID]="AZURE_TENANT_ID"
+            [AZURE_SUBSCRIPTION_ID]="AZURE_SUBSCRIPTION_ID"
             [RG]="AZURE_RESOURCE_GROUP"
             [PUBLIC_SUPABASE_URL]="NEXT_PUBLIC_SUPABASE_URL"
             [PUBLIC_SUPABASE_KEY]="NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
@@ -289,7 +308,9 @@ jobs:
         id: web_azure_login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Configure web runtime and health checks
         env:
@@ -348,6 +369,15 @@ jobs:
             head -n 40 /tmp/web-root.html >&2
           fi
           exit 1
+
+      - name: Smoke test published AI
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PLAYWRIGHT_TEST_EMAIL }}
+          PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_PASSWORD }}
+        run: node ./scripts/smoke-test-ai.mjs
 
       - name: Web diagnostics on failure
         if: failure() && steps.web_azure_login.outcome == 'success'

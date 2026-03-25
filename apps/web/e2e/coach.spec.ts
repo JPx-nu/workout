@@ -4,7 +4,7 @@ import { createUniqueLabel } from "./helpers/live-env";
 import { expect, test } from "./helpers/test";
 
 async function waitForCoachResponse(page: Page) {
-	const sendButton = page.getByTestId("coach-send-button");
+	const sendButton = page.getByTestId("coach-send-button").first();
 	await expect(sendButton).toBeVisible({ timeout: 30_000 });
 	await expect(sendButton)
 		.toHaveAttribute("aria-label", /stop generating/i, { timeout: 30_000 })
@@ -18,12 +18,12 @@ test.describe("AI Coach", () => {
 
 		await gotoAppPage(page, "dashboard/coach");
 
-		await page.getByTestId("coach-input").fill("log a 12 minute 2km run from yesterday");
-		await page.getByTestId("coach-send-button").click();
+		await page.getByTestId("coach-input").first().fill("log a 12 minute 2km run from yesterday");
+		await page.getByTestId("coach-send-button").first().click();
 		await waitForCoachResponse(page);
 
-		await page.getByTestId("coach-input").fill(workoutNote);
-		await page.getByTestId("coach-send-button").click();
+		await page.getByTestId("coach-input").first().fill(workoutNote);
+		await page.getByTestId("coach-send-button").first().click();
 		await waitForCoachResponse(page);
 
 		await gotoAppPage(page, "dashboard/workouts");
@@ -37,10 +37,11 @@ test.describe("AI Coach", () => {
 
 		await page
 			.getByTestId("coach-input")
+			.first()
 			.fill(
 				`Schedule a strength workout for tomorrow at 08:00 titled "${title}" with 3 sets of 5 barbell back squats at RPE 7.`,
 			);
-		await page.getByTestId("coach-send-button").click();
+		await page.getByTestId("coach-send-button").first().click();
 		await waitForCoachResponse(page);
 
 		await page.goto(buildAppUrl("dashboard/training"));

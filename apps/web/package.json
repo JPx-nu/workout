@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"build:deps": "pnpm --filter @triathlon/types build && pnpm --filter @triathlon/core build",
-		"dev": "next dev --port 3100",
+		"dev": "npx -y kill-port 3100 && next dev --port 3100",
 		"build": "next build --webpack",
 		"prebuild": "pnpm run build:deps",
 		"predev": "pnpm run build:deps",

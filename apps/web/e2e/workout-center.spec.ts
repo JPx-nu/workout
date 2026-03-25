@@ -30,8 +30,8 @@ test.describe("Workout Center", () => {
 
 		await addLibraryExercise(page, "back squat", /barbell back squat/i);
 		await fillFirstStrengthSet(page, { weightKg: 100, reps: 5, rpe: 8 });
-		await page.getByTestId("workout-notes-input").fill(workoutNote);
-		await page.getByTestId("primary-action-button").click();
+		await page.getByTestId("workout-notes-input").first().fill(workoutNote);
+		await page.getByTestId("primary-action-button").first().click();
 
 		await expectWorkoutCenterMessage(page, "Workout saved to history.");
 
@@ -46,14 +46,14 @@ test.describe("Workout Center", () => {
 
 		await gotoAppPage(page, "dashboard/workouts/new?mode=schedule");
 
-		await page.getByTestId("workout-title-input").fill(title);
-		await page.getByTestId("workout-date-input").fill(toDateInputValue(plannedDate));
-		await page.getByTestId("workout-time-input").fill("08:00");
-		await page.getByTestId("workout-duration-input").fill("45");
+		await page.getByTestId("workout-title-input").first().fill(title);
+		await page.getByTestId("workout-date-input").first().fill(toDateInputValue(plannedDate));
+		await page.getByTestId("workout-time-input").first().fill("08:00");
+		await page.getByTestId("workout-duration-input").first().fill("45");
 		await addLibraryExercise(page, "bench press", /barbell bench press/i);
 		await fillFirstStrengthSet(page, { weightKg: 80, reps: 6, rpe: 7.5 });
 
-		await page.getByTestId("primary-action-button").click();
+		await page.getByTestId("primary-action-button").first().click();
 		await expectWorkoutCenterMessage(page, "Session added to the training calendar.");
 
 		await gotoAppPage(page, "dashboard/training");
