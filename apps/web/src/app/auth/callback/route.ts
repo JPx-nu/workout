@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getRequestPublicOrigin } from "@/lib/public-origin";
 import { createClient } from "@/lib/supabase/server";
 
 function normalizeNextPath(next: string | null, webBasePath: string) {
@@ -9,7 +10,8 @@ function normalizeNextPath(next: string | null, webBasePath: string) {
 
 export async function GET(request: Request) {
 	const webBasePath = "/workout";
-	const { searchParams, origin } = new URL(request.url);
+	const { searchParams } = new URL(request.url);
+	const origin = getRequestPublicOrigin(request);
 	const code = searchParams.get("code");
 	const next = searchParams.get("next");
 	const safeNext = normalizeNextPath(next, webBasePath);

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
+import { getRequestPublicOrigin } from "@/lib/public-origin";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
 	const supabase = await createClient();
 	await supabase.auth.signOut();
 
-	// Derive origin from the incoming request so it works in all environments
-	const origin = new URL(request.url).origin;
+	const origin = getRequestPublicOrigin(request);
 	return NextResponse.redirect(new URL("/workout/login", origin), {
 		status: 302,
 	});
