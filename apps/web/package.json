@@ -10,10 +10,16 @@
 		"predev": "pnpm run build:deps",
 		"start": "node .next/standalone/apps/web/server.js",
 		"lint": "node ../../scripts/check-web-public-env-access.mjs && biome check .",
-		"playwright:install": "playwright install --with-deps chromium",
+		"playwright:install": "playwright install --with-deps chromium webkit",
 		"test:e2e": "playwright test",
+		"test:e2e:smoke": "playwright test --grep @smoke --project=desktop-chrome --project=mobile-chrome",
+		"test:e2e:matrix": "playwright test --project=desktop-chrome --project=mobile-chrome --project=mobile-safari",
 		"test:e2e:headed": "playwright test --headed",
-		"test:e2e:ui": "playwright test --ui"
+		"test:e2e:ui": "playwright test --ui",
+		"storybook": "storybook dev -p 6006",
+		"storybook:build": "storybook build --output-dir ../../.qa-artifacts/storybook-static-web",
+		"chromatic": "chromatic --storybook-build-dir ../../.qa-artifacts/storybook-static-web",
+		"test:lighthouse": "lhci autorun --config=.lighthouserc.json"
 	},
 	"dependencies": {
 		"@ai-sdk/react": "^3.0.107",
@@ -46,11 +52,17 @@
 		"three": "^0.182.0"
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "^4.11.1",
+		"@lhci/cli": "^0.15.1",
 		"@playwright/test": "^1.58.2",
+		"@storybook/addon-a11y": "^10.3.3",
+		"@storybook/nextjs": "^10.3.3",
 		"@tailwindcss/postcss": "^4.2.1",
 		"@types/node": "^20.19.34",
 		"@types/react": "^19.2.14",
 		"@types/react-dom": "^19.2.3",
+		"chromatic": "^16.0.0",
+		"storybook": "^10.3.3",
 		"tailwindcss": "^4.2.1",
 		"typescript": "^5.9.3"
 	}

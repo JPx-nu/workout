@@ -45,13 +45,24 @@ Not currently shipped as supported product surface:
 - `pnpm check:env-keys`
 - `pnpm --filter web build`
 - `pnpm --filter web test:e2e`
+- `pnpm --filter web test:e2e:smoke`
+- `pnpm --filter web test:e2e:matrix`
+- `pnpm --filter web storybook:build`
+- `pnpm --filter web test:lighthouse`
 - `pnpm --filter @triathlon/api test`
 - `pnpm --filter @triathlon/api test:e2e`
 - `pnpm --filter @triathlon/api build:deploy`
 
 Playwright note:
 - `pnpm --filter web test:e2e` auto-starts the local web/API stack when targeting `http://localhost:3100/workout`
+- `pnpm --filter web test:e2e:smoke` runs the PR-friendly desktop + mobile-web smoke slice
+- `pnpm --filter web test:e2e:matrix` runs the broader desktop + mobile-web browser matrix
 - it uses explicit `PLAYWRIGHT_TEST_EMAIL` / `PLAYWRIGHT_TEST_PASSWORD` when provided, otherwise it falls back to the live demo athlete account
+
+Web QA note:
+- Storybook + Chromatic now cover reusable visual states from `apps/web/src/**/*.stories.tsx`
+- Lighthouse CI audits the critical web routes and writes reports under `.qa-artifacts/`
+- GitHub Actions runs web smoke on PRs, the broader Playwright matrix on `main` and nightly, Chromatic on PRs when `CHROMATIC_PROJECT_TOKEN` is set, and uploads QA artifacts for Cursor-driven debugging
 
 ## Source-of-Truth Docs
 

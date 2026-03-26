@@ -1,0 +1,46 @@
+{
+	"ci": {
+		"collect": {
+			"numberOfRuns": 1,
+			"startServerCommand": "node ../../scripts/run-playwright-web-start.mjs",
+			"url": [
+				"http://127.0.0.1:3100/workout/login",
+				"http://127.0.0.1:3100/workout/dashboard",
+				"http://127.0.0.1:3100/workout/dashboard/coach",
+				"http://127.0.0.1:3100/workout/dashboard/workouts"
+			],
+			"puppeteerScript": "./lighthouse/login.cjs",
+			"settings": {
+				"disableStorageReset": true
+			}
+		},
+		"assert": {
+			"preset": "lighthouse:recommended",
+			"assertions": {
+				"categories:accessibility": [
+					"warn",
+					{
+						"minScore": 0.9
+					}
+				],
+				"categories:best-practices": [
+					"warn",
+					{
+						"minScore": 0.8
+					}
+				],
+				"categories:performance": [
+					"warn",
+					{
+						"minScore": 0.6
+					}
+				],
+				"categories:seo": "off"
+			}
+		},
+		"upload": {
+			"target": "filesystem",
+			"outputDir": "../../.qa-artifacts/lighthouse-web"
+		}
+	}
+}

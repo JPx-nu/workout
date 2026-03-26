@@ -5,6 +5,8 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 4 * * *'
 
 env:
   NODE_VERSION: '24'
@@ -38,6 +40,146 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+
+  web-qa-smoke:
+    name: Web QA Smoke
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+      NEXT_PUBLIC_WEB_URL: http://127.0.0.1:3100
+      NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: "true"
+      NEXT_PUBLIC_ENABLE_DEMO: "true"
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3100/workout
+      PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PLAYWRIGHT_TEST_EMAIL }}
+      PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_PASSWORD }}
+      PLAYWRIGHT_USE_DEV_SERVER: "false"
+      PLAYWRIGHT_USE_REMOTE_API: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web playwright:install
+      - run: pnpm --filter web test:e2e:smoke
+      - name: Upload Playwright smoke artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-smoke-report
+          path: |
+            .qa-artifacts/playwright/report-web
+            .qa-artifacts/playwright/test-results-web
+          retention-days: 14
+
+  web-qa-matrix:
+    name: Web QA Matrix
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, web-qa-smoke]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+      NEXT_PUBLIC_WEB_URL: http://127.0.0.1:3100
+      NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: "true"
+      NEXT_PUBLIC_ENABLE_DEMO: "true"
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3100/workout
+      PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PLAYWRIGHT_TEST_EMAIL }}
+      PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_PASSWORD }}
+      PLAYWRIGHT_USE_DEV_SERVER: "false"
+      PLAYWRIGHT_USE_REMOTE_API: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web playwright:install
+      - run: pnpm --filter web test:e2e:matrix
+      - name: Upload Playwright matrix artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-matrix-report
+          path: |
+            .qa-artifacts/playwright/report-web
+            .qa-artifacts/playwright/test-results-web
+          retention-days: 14
+
+  chromatic:
+    name: Chromatic
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false && secrets.CHROMATIC_PROJECT_TOKEN != ''
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+      NEXT_PUBLIC_WEB_URL: http://127.0.0.1:3100
+      NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: "true"
+      NEXT_PUBLIC_ENABLE_DEMO: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web storybook:build
+      - name: Upload Storybook artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: storybook-static
+          path: .qa-artifacts/storybook-static-web
+          retention-days: 14
+      - uses: chromaui/action@latest
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          workingDir: apps/web
+          storybookBuildDir: ../../.qa-artifacts/storybook-static-web
+
+  lighthouse:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+      NEXT_PUBLIC_WEB_URL: http://127.0.0.1:3100
+      NEXT_PUBLIC_ENABLE_GOOGLE_AUTH: "true"
+      NEXT_PUBLIC_ENABLE_DEMO: "true"
+      PLAYWRIGHT_TEST_EMAIL: ${{ secrets.PLAYWRIGHT_TEST_EMAIL }}
+      PLAYWRIGHT_TEST_PASSWORD: ${{ secrets.PLAYWRIGHT_TEST_PASSWORD }}
+      LIGHTHOUSE_BASE_ORIGIN: http://127.0.0.1:3100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web test:lighthouse
+      - name: Upload Lighthouse artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report
+          path: .qa-artifacts/lighthouse-web
+          retention-days: 14
 
   build:
     name: Build

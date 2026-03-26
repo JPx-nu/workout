@@ -116,6 +116,7 @@ export default function LoginPage() {
 	return (
 		<div
 			className="flex min-h-screen items-center justify-center p-4"
+			data-testid="login-page"
 			style={{ background: "var(--color-bg-primary)" }}
 		>
 			<div className="glass-card w-full max-w-sm p-8 space-y-6">

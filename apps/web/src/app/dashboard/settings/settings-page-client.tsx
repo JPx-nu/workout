@@ -181,7 +181,7 @@ export default function SettingsPage() {
 	};
 
 	return (
-		<div className="max-w-3xl space-y-8 animate-fade-in">
+		<div className="max-w-3xl space-y-8 animate-fade-in" data-testid="settings-page">
 			<div>
 				<h1 className="text-2xl font-bold">Settings</h1>
 				<p className="mt-1 text-sm" style={{ color: "var(--color-text-secondary)" }}>
@@ -209,7 +209,7 @@ export default function SettingsPage() {
 				</div>
 			)}
 
-			<div className="glass-card p-4 lg:p-6">
+			<div className="glass-card p-4 lg:p-6" data-testid="settings-profile-panel">
 				<h3
 					className="mb-4 flex items-center gap-2 text-sm font-semibold"
 					style={{ color: "var(--color-text-secondary)" }}
@@ -329,7 +329,7 @@ export default function SettingsPage() {
 				</div>
 			</div>
 
-			<div className="glass-card p-4 lg:p-6">
+			<div className="glass-card p-4 lg:p-6" data-testid="settings-dashboard-view-panel">
 				<h3
 					className="mb-4 flex items-center gap-2 text-sm font-semibold"
 					style={{ color: "var(--color-text-secondary)" }}
@@ -370,7 +370,7 @@ export default function SettingsPage() {
 				</div>
 			</div>
 
-			<div className="glass-card p-4 lg:p-6">
+			<div className="glass-card p-4 lg:p-6" data-testid="settings-integrations-panel">
 				<div className="mb-4 flex items-start justify-between gap-4">
 					<div>
 						<h3

@@ -160,6 +160,7 @@ export function DashboardShell({
 						type="button"
 						onClick={() => setCollapsed(!collapsed)}
 						className="hidden lg:flex items-center justify-center h-10 border-t transition-colors hover-surface"
+						aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
 						style={{
 							borderColor: "var(--color-glass-border)",
 							color: "var(--color-text-muted)",

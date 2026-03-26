@@ -22,9 +22,12 @@ Tooling:
 - `biome`
 - `vitest`
 - API end-to-end user-flow tests run through `pnpm --filter @triathlon/api test:e2e`
-- Web Playwright browser tests run through `pnpm --filter web test:e2e` against a live environment
+- Web Playwright browser tests run through `pnpm --filter web test:e2e` against a live environment, with `test:e2e:smoke` for PR coverage and `test:e2e:matrix` for the broader desktop/mobile-web matrix
+- Storybook powers isolated web UI stories and Chromatic visual review from `apps/web/src/**/*.stories.tsx`
+- Lighthouse CI audits critical web routes through `pnpm --filter web test:lighthouse`
 - Local Playwright runs auto-start the real API and web dev servers when targeting `http://localhost:3100/workout`
 - Playwright auth uses explicit `PLAYWRIGHT_TEST_EMAIL` / `PLAYWRIGHT_TEST_PASSWORD` when provided; otherwise local runs fall back to the live demo athlete account
+- Web QA artifacts are written under repo-level `.qa-artifacts/` so generated reports do not pollute workspace lint/build inputs
 - Azure App Service deploy targets: `jpx-workout-web`, `jpx-workout-api`
 
 Repo notes:
@@ -106,6 +109,7 @@ Frontend behavior notes:
 - Web CSP `connect-src` is built from `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WEB_URL` at build time.
 - The web app exposes `GET /health`, which is served as `/workout/health` in deployed environments because the web `basePath` is `/workout`.
 - Public env access inside `apps/web/src` must use static `process.env.NEXT_PUBLIC_*` property reads; dynamic `process.env[name]` access is blocked by a repo check.
+- Playwright smoke runs keep axe-core checks enabled and attach any detected violations to the test artifacts; strict failure can be enabled with `PLAYWRIGHT_STRICT_A11Y=true`.
 
 ## 5. API Surface
 
@@ -168,6 +172,7 @@ Build/deploy note:
 - Azure App Service uses Node `24.x`, `alwaysOn`, and Health Check paths `/health` (API) and `/workout/health` (web).
 - The deploy workflow maps API `API_URL` from `NEXT_PUBLIC_API_URL` and API `SUPABASE_ANON_KEY` from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - GitHub is the deploy source of truth for build-critical/public values, while Azure can remain the source of truth for runtime-only API secrets in dev.
+- CI now includes explicit web QA jobs: Playwright smoke on PRs, broader Playwright matrix on `main`/nightly, Chromatic on PRs when configured, and Lighthouse report generation with retained artifacts.
 
 ## 6. Integrations Status
 

@@ -97,10 +97,39 @@ Run the suite:
 pnpm --filter web test:e2e
 ```
 
+PR smoke slice:
+
+```bash
+pnpm --filter web test:e2e:smoke
+```
+
+Broader desktop + mobile-web matrix:
+
+```bash
+pnpm --filter web test:e2e:matrix
+```
+
 Current browser coverage focuses on:
 
 - live login through Supabase auth
+- desktop + mobile-web route smoke coverage for login, dashboard, coach, training, workouts, Workout Center, and settings
 - opening the Workout Center from workout history
 - logging a past strength workout
 - scheduling a future strength session
 - sending an AI Coach quick-log flow and verifying the workout appears in history
+
+Accessibility and performance:
+
+- `@axe-core/playwright` runs in the smoke suite and attaches violations to Playwright artifacts
+- set `PLAYWRIGHT_STRICT_A11Y=true` if you want local runs to fail on serious/critical axe findings
+- `pnpm --filter web test:lighthouse` runs Lighthouse CI against the critical routes
+
+Visual review:
+
+- `pnpm --filter web storybook` starts local Storybook
+- `pnpm --filter web storybook:build` builds the Storybook/Chromatic bundle
+- the first visual stories live alongside the app in `src/**/*.stories.tsx`
+
+Artifact output:
+
+- generated QA artifacts are written to repo-level `.qa-artifacts/`

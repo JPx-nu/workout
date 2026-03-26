@@ -8,6 +8,7 @@ import {
 const ROUTE_MARKERS: Record<string, string> = {
 	dashboard: "dashboard-page",
 	"dashboard/coach": "coach-page",
+	"dashboard/settings": "settings-page",
 	"dashboard/training": "training-page",
 	"dashboard/workouts": "workouts-page",
 	"dashboard/workouts/new": "workout-center-page",
