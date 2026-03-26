@@ -96,88 +96,105 @@ export default function CoachPage({
 							</div>
 						)}
 
-						{messages.map((msg, index) => (
-							<div
-								key={msg.id}
-								className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-							>
-								<div
-									className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-									style={{
-										background:
-											msg.role === "assistant"
-												? "linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))"
-												: "linear-gradient(135deg, var(--color-swim), oklch(0.5 0.15 220))",
-									}}
-								>
-									{msg.role === "assistant" ? <Bot size={14} /> : <User size={14} />}
-								</div>
-								<div
-									className={`glass-card p-3 lg:p-4 max-w-[85%] lg:max-w-[70%]`}
-									style={
-										msg.role === "user"
-											? {
-													background: "oklch(from var(--color-brand) l c h / 0.12)",
-												}
-											: undefined
-									}
-								>
-									{/* Image thumbnails */}
-									{msg.metadata?.imageUrls && msg.metadata.imageUrls.length > 0 && (
-										<div className="flex flex-wrap gap-2 mb-2">
-											{msg.metadata.imageUrls.map((url) => (
-												<button
-													key={url}
-													type="button"
-													className="p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-105"
-													onClick={() => window.open(url, "_blank")}
-												>
-													{/* biome-ignore lint/performance/noImgElement: user-uploaded signed URLs, not static assets */}
-													<img
-														src={url}
-														alt={`Attachment from ${msg.role === "user" ? "you" : "coach"}`}
-														className="rounded-lg object-cover"
-														style={{
-															width: msg.metadata?.imageUrls?.length === 1 ? "240px" : "120px",
-															height: msg.metadata?.imageUrls?.length === 1 ? "180px" : "90px",
-															border: "1px solid var(--color-glass-border)",
-														}}
-													/>
-												</button>
-											))}
-										</div>
-									)}
-									<div className="text-sm leading-relaxed whitespace-pre-wrap">
-										{uiMessages[index]?.parts
-											?.map((part) => {
-												if (part.type === "text") {
-													return part.text;
-												}
+						{messages.map((msg, index) => {
+							const renderedContent =
+								uiMessages[index]?.parts
+									?.map((part) => {
+										if (part.type === "text") {
+											return part.text;
+										}
 
-												return `[${part.type}]`;
-											})
-											.filter(Boolean)
-											.join("\n") || msg.content}
+										return `[${part.type}]`;
+									})
+									.filter(Boolean)
+									.join("\n") || msg.content;
+							const hasImages = Boolean(
+								msg.metadata?.imageUrls && msg.metadata.imageUrls.length > 0,
+							);
+							const isEmptyAssistantPlaceholder =
+								msg.role === "assistant" &&
+								renderedContent.trim().length === 0 &&
+								!hasImages &&
+								!msg.metadata?.sources?.length;
+
+							if (isEmptyAssistantPlaceholder) {
+								return null;
+							}
+
+							return (
+								<div
+									key={msg.id}
+									className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+								>
+									<div
+										className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+										style={{
+											background:
+												msg.role === "assistant"
+													? "linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))"
+													: "linear-gradient(135deg, var(--color-swim), oklch(0.5 0.15 220))",
+										}}
+									>
+										{msg.role === "assistant" ? <Bot size={14} /> : <User size={14} />}
 									</div>
-									{msg.metadata?.sources && (
-										<div className="mt-2 flex flex-wrap gap-1">
-											{msg.metadata.sources.map((src) => (
-												<span
-													key={src}
-													className="text-[10px] px-1.5 py-0.5 rounded"
-													style={{
-														background: "var(--color-glass-bg-subtle)",
-														color: "var(--color-text-muted)",
-													}}
-												>
-													{src}
-												</span>
-											))}
+									<div
+										className={`glass-card p-3 lg:p-4 max-w-[85%] lg:max-w-[70%]`}
+										style={
+											msg.role === "user"
+												? {
+														background: "oklch(from var(--color-brand) l c h / 0.12)",
+													}
+												: undefined
+										}
+									>
+										{/* Image thumbnails */}
+										{msg.metadata?.imageUrls && msg.metadata.imageUrls.length > 0 && (
+											<div className="flex flex-wrap gap-2 mb-2">
+												{msg.metadata.imageUrls.map((url) => (
+													<button
+														key={url}
+														type="button"
+														className="p-0 border-0 bg-transparent cursor-pointer transition-transform hover:scale-105"
+														onClick={() => window.open(url, "_blank")}
+													>
+														{/* biome-ignore lint/performance/noImgElement: user-uploaded signed URLs, not static assets */}
+														<img
+															src={url}
+															alt={`Attachment from ${msg.role === "user" ? "you" : "coach"}`}
+															className="rounded-lg object-cover"
+															style={{
+																width: msg.metadata?.imageUrls?.length === 1 ? "240px" : "120px",
+																height: msg.metadata?.imageUrls?.length === 1 ? "180px" : "90px",
+																border: "1px solid var(--color-glass-border)",
+															}}
+														/>
+													</button>
+												))}
+											</div>
+										)}
+										<div className="text-sm leading-relaxed whitespace-pre-wrap">
+											{renderedContent}
 										</div>
-									)}
+										{msg.metadata?.sources && (
+											<div className="mt-2 flex flex-wrap gap-1">
+												{msg.metadata.sources.map((src) => (
+													<span
+														key={src}
+														className="text-[10px] px-1.5 py-0.5 rounded"
+														style={{
+															background: "var(--color-glass-bg-subtle)",
+															color: "var(--color-text-muted)",
+														}}
+													>
+														{src}
+													</span>
+												))}
+											</div>
+										)}
+									</div>
 								</div>
-							</div>
-						))}
+							);
+						})}
 
 						{isResponding && (
 							<div className="flex gap-3">
